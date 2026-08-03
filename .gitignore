@@ -58,3 +58,7 @@ venv/
 .rag/
 mcp/primeng/node_modules/
 infra/terraform/build/
+
+# Excel lock files
+~\$*.xlsx
+~\$*.xls
