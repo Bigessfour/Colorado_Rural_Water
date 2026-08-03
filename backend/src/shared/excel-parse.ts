@@ -306,15 +306,16 @@ function readWorkbook(buffer: Buffer | ArrayBuffer | Uint8Array): XLSX.WorkBook 
         ? Buffer.from(buffer)
         : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   assertExcelBufferWithinLimit(data);
-  const wb = XLSX.read(data, {
+  // Sheet-name pass first (bookSheets) so we reject oversized workbooks before full parse.
+  const stub = XLSX.read(data, { type: 'buffer', bookSheets: true });
+  if (stub.SheetNames.length > MAX_EXCEL_SHEETS) {
+    throw new Error(
+      `Workbook has ${stub.SheetNames.length} sheets (max ${MAX_EXCEL_SHEETS}). Export only meter-data sheets.`,
+    );
+  }
+  return XLSX.read(data, {
     type: 'buffer',
     cellDates: true,
     sheetRows: MAX_EXCEL_SHEET_ROWS,
   });
-  if (wb.SheetNames.length > MAX_EXCEL_SHEETS) {
-    throw new Error(
-      `Workbook has ${wb.SheetNames.length} sheets (max ${MAX_EXCEL_SHEETS}). Export only meter-data sheets.`,
-    );
-  }
-  return wb;
 }

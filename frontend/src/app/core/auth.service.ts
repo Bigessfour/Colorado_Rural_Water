@@ -264,7 +264,38 @@ export class AuthService {
     });
   }
 
-  async disableSoftwareMfa(): Promise<void> {
+  /**
+   * Disable authenticator MFA only after re-proving the account password
+   * (stolen access token alone must not strip MFA).
+   */
+  async disableSoftwareMfa(password: string): Promise<void> {
+    const email = this.email();
+    if (!email) throw new Error('Sign in again before changing MFA.');
+    if (!password.trim()) throw new Error('Enter your current password to turn off MFA.');
+
+    // Step-up: prove password still works before stripping MFA.
+    const probe = await this.cognito('InitiateAuth', {
+      AuthFlow: 'USER_PASSWORD_AUTH',
+      ClientId: environment.cognito.clientId,
+      AuthParameters: {
+        USERNAME: email,
+        PASSWORD: password,
+      },
+    });
+    if (probe.ChallengeName === 'SOFTWARE_TOKEN_MFA' || probe.ChallengeName === 'SMS_MFA') {
+      // Password accepted (MFA challenge means credentials were valid).
+    } else if (!probe.AuthenticationResult?.AccessToken && !probe.ChallengeName) {
+      throw new Error('Could not verify password.');
+    } else if (
+      probe.ChallengeName &&
+      probe.ChallengeName !== 'SOFTWARE_TOKEN_MFA' &&
+      probe.ChallengeName !== 'SMS_MFA' &&
+      probe.ChallengeName !== 'NEW_PASSWORD_REQUIRED' &&
+      probe.ChallengeName !== 'MFA_SETUP'
+    ) {
+      throw new Error(`Unexpected sign-in challenge while verifying password (${probe.ChallengeName}).`);
+    }
+
     const access = this.requireAccessToken();
     await this.cognito('SetUserMFAPreference', {
       AccessToken: access,

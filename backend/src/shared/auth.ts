@@ -68,7 +68,9 @@ export function parseAuthFromClaims(claims: Record<string, unknown>): AuthContex
     userId: String(claims.sub ?? ''),
     email: String(claims.email ?? ''),
     tenantId,
-    roles: roles.length ? roles : ['operator'],
+    // No default operator — empty Cognito groups must not grant municipal access by implication.
+    // Users are assigned to operators / system_admins / crwa_admins on invite (D1–D3).
+    roles,
   };
 }
 

@@ -41,6 +41,8 @@ export class AccountPageComponent implements OnInit {
   setupSecret = '';
   setupOtpauth = '';
   setupCode = '';
+  /** Required step-up before turning MFA off. */
+  disableMfaPassword = '';
 
   ngOnInit(): void {
     void this.refreshMfa();
@@ -135,9 +137,14 @@ export class AccountPageComponent implements OnInit {
   async disableMfa(): Promise<void> {
     this.error.set('');
     this.status.set('');
+    if (!this.disableMfaPassword.trim()) {
+      this.error.set('Enter your current password to turn off MFA.');
+      return;
+    }
     this.busy.set(true);
     try {
-      await this.auth.disableSoftwareMfa();
+      await this.auth.disableSoftwareMfa(this.disableMfaPassword);
+      this.disableMfaPassword = '';
       this.status.set('Authenticator MFA turned off.');
       await this.refreshMfa();
     } catch (err) {

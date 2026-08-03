@@ -244,17 +244,16 @@ export function applyMeterLocationUpsert(
   const addressConflict =
     normalizeAddressKey(existing.serviceAddress) !== normalizeAddressKey(normalizedAddress);
 
-  // Keep the saved address on conflict, but still apply mutable attributes (name, account, route).
+  // Keep the saved address on conflict. Identity fields (name/account/route) and assets
+  // only overwrite when the incoming value is non-empty — blank archive cells must not wipe.
   return {
     addressConflict,
     location: {
       ...existing,
       serviceAddress: existing.serviceAddress,
-      occupantName:
-        input.occupantName !== undefined ? input.occupantName : existing.occupantName,
-      accountNumber:
-        input.accountNumber !== undefined ? input.accountNumber : existing.accountNumber,
-      route: input.route !== undefined ? input.route : existing.route,
+      occupantName: mergeIdentityField(existing.occupantName, input.occupantName),
+      accountNumber: mergeIdentityField(existing.accountNumber, input.accountNumber),
+      route: mergeIdentityField(existing.route, input.route),
       manufacturer: mergeAssetField(existing.manufacturer, input.manufacturer),
       model: mergeAssetField(existing.model, input.model),
       serialNumber: mergeAssetField(existing.serialNumber, input.serialNumber),
@@ -268,6 +267,16 @@ export function applyMeterLocationUpsert(
       updatedAt,
     },
   };
+}
+
+/** Blank / null ingest cells keep the prior value (archive sheets often omit customer cols). */
+function mergeIdentityField(
+  existing: string | null,
+  incoming: string | null | undefined,
+): string | null {
+  if (incoming === undefined) return existing;
+  if (!isNonEmptyAssetValue(incoming)) return existing;
+  return incoming.trim();
 }
 
 /** Loose normalize for comparing rural addresses without over-fitting. */

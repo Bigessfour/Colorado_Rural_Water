@@ -118,6 +118,20 @@ describe('applyMeterLocationUpsert', () => {
     assert.equal(location.notes, 'OK');
   });
 
+  it('does not wipe occupant/account/route when archive cells are blank', () => {
+    const { location } = applyMeterLocationUpsert(base, {
+      tenantId: 'town-wiley',
+      meterId: '1042',
+      serviceAddress: '112 N Main St, Wiley CO',
+      occupantName: null,
+      accountNumber: '',
+      route: '   ',
+    });
+    assert.equal(location.occupantName, 'J Smith');
+    assert.equal(location.accountNumber, 'A-2201');
+    assert.equal(location.route, 'R3');
+  });
+
   it('updates asset fields when incoming values are non-empty', () => {
     const { location } = applyMeterLocationUpsert(base, {
       tenantId: 'town-wiley',

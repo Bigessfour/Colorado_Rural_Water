@@ -72,6 +72,17 @@ describe('parseAuthFromClaims', () => {
     assert.ok(hasRole(auth, 'crwa_admin'));
     assert.throws(() => requireTenantId(auth), /select a tenant context/);
   });
+
+  it('does not grant operator when Cognito groups are empty', () => {
+    const auth = parseAuthFromClaims({
+      sub: 'orphan-1',
+      email: 'orphan@example.com',
+      'custom:tenant_id': 'town-wiley',
+      'cognito:groups': [],
+    });
+    assert.deepEqual(auth.roles, []);
+    assert.equal(hasRole(auth, 'operator'), false);
+  });
 });
 
 describe('requireAnyRole', () => {
