@@ -9,6 +9,14 @@
     <a routerLink="/alerts" routerLinkActive="active">Alerts</a>
     <a routerLink="/crwa" routerLinkActive="active">CRWA</a>
   </nav>
+  <div class="auth">
+    @if (auth.isLoggedIn()) {
+      <span class="auth-email">{{ auth.email() }}</span>
+      <button type="button" class="auth-btn" (click)="logout()">Sign out</button>
+    } @else {
+      <a routerLink="/login" class="auth-link">Sign in</a>
+    }
+  </div>
 </header>
 <main class="main">
   <router-outlet />

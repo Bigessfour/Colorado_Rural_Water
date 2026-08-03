@@ -56,6 +56,36 @@
   color: #f5fafb;
 }
 
+.auth {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  margin-left: auto;
+}
+
+.auth-email {
+  font-size: 0.85rem;
+  color: #4a6368;
+}
+
+.auth-link,
+.auth-btn {
+  font: inherit;
+  color: #0f3d42;
+  background: transparent;
+  border: 1px solid rgba(15, 61, 66, 0.25);
+  border-radius: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.auth-link:hover,
+.auth-btn:hover {
+  background: rgba(15, 61, 66, 0.08);
+}
+
 .main {
   padding: 0.5rem 1.75rem 2.5rem;
   max-width: 1100px;

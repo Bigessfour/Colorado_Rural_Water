@@ -28,6 +28,19 @@
   margin-bottom: 1rem;
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+}
+
+.toolbar a {
+  color: #1a6b73;
+}
+
 .token {
   display: grid;
   gap: 0.35rem;

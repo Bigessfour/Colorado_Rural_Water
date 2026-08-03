@@ -6,17 +6,17 @@
   </p>
 
   <p-message severity="info" styleClass="hint">{{ confidenceNote() }}</p-message>
-  @if (error) {
-    <p-message severity="error" styleClass="hint">{{ error }}</p-message>
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
   }
 
-  <p-card styleClass="table-card token-card">
-    <label class="token">
-      Cognito ID token
-      <textarea rows="2" [(ngModel)]="authToken" placeholder="Paste Bearer token"></textarea>
-    </label>
-    <p-button label="Refresh alerts" [loading]="busy" (onClick)="refresh()" />
-  </p-card>
+  <div class="toolbar">
+    @if (!auth.isLoggedIn()) {
+      <a routerLink="/login">Sign in</a>
+      <span class="muted"> to load alerts for your tenant.</span>
+    }
+    <p-button label="Refresh alerts" [loading]="busy()" (onClick)="refresh()" />
+  </div>
 
   <p-card styleClass="table-card">
     <p-table [value]="alerts()" [tableStyle]="{ 'min-width': '44rem' }">

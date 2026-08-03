@@ -4,8 +4,10 @@ import { DashboardPageComponent } from './pages/dashboard/dashboard-page.compone
 import { UploadPageComponent } from './pages/upload/upload-page.component';
 import { AlertsPageComponent } from './pages/alerts/alerts-page.component';
 import { CrwaRollupPageComponent } from './pages/crwa/crwa-rollup-page.component';
+import { LoginPageComponent } from './pages/login/login-page.component';
 
 export const routes: Routes = [
+  { path: 'login', component: LoginPageComponent },
   {
     path: '',
     component: ShellComponent,

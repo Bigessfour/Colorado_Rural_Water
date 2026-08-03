@@ -31,14 +31,14 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 ## Epic C — Alerts & Dashboard
 
-| ID  | Title                                                       | Priority | Status | Notes                                                                                               |
-| --- | ----------------------------------------------------------- | -------- | ------ | --------------------------------------------------------------------------------------------------- |
-| C1  | Alert engine v1 (high usage, stuck, drops, flags, outliers) | P0       | done   | Deterministic rules + Confidence Watch/Actionable; GET /alerts |
-| C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | todo   | Angular + PrimeNG; include water-balance panel (G5) + Confidence card (H4)                          |
-| C3  | Acknowledge / resolve alerts                                | P0       | todo   | Session ack wired; persist audit who/when                       |
-| C4  | Export flagged meters                                       | P1       | todo   | CSV download; include Confidence note on Watch rows                                                 |
-| C5  | Basic meter history view                                    | P1       | todo   | Drill-down shows service address + current occupant name                                            |
-| C6  | AI plain-language alert explanations                        | P1       | todo   | Bedrock; tenant-scoped context only; explain loss/gain + Confidence in plain language               |
+| ID  | Title                                                       | Priority | Status | Notes                                                                                 |
+| --- | ----------------------------------------------------------- | -------- | ------ | ------------------------------------------------------------------------------------- |
+| C1  | Alert engine v1 (high usage, stuck, drops, flags, outliers) | P0       | done   | Deterministic rules + Confidence Watch/Actionable; GET /alerts                        |
+| C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | in_progress | Live Confidence + alert feed from GET /alerts; water-balance still demo |
+| C3  | Acknowledge / resolve alerts                                | P0       | todo   | Session ack wired; persist audit who/when                                             |
+| C4  | Export flagged meters                                       | P1       | todo   | CSV download; include Confidence note on Watch rows                                   |
+| C5  | Basic meter history view                                    | P1       | todo   | Drill-down shows service address + current occupant name                              |
+| C6  | AI plain-language alert explanations                        | P1       | todo   | Bedrock; tenant-scoped context only; explain loss/gain + Confidence in plain language |
 
 ## Epic D — Auth, roles & CRWA roll-up
 
@@ -48,7 +48,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | D2  | System Admin: invite users within tenant    | P1       | todo   |                                                                                |
 | D3  | CRWA Admin: provision tenant + initial user | P0       | todo   | Onboarding entry point                                                         |
 | D4  | CRWA enterprise roll-up (sanitized)         | P1       | todo   | No cross-tenant PII leakage; include water-balance KPIs (G6) + Confidence (H5) |
-| D5  | Self-service password + MFA UX              | P1       | todo   | Cognito hosted or custom                                                       |
+| D5  | Self-service password + MFA UX              | P1       | in_progress | SPA email/password login via Cognito InitiateAuth; MFA UX later |
 
 ## Epic G — Water balance (production in vs billed out)
 

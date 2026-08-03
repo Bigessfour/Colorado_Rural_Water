@@ -1,0 +1,29 @@
+<section class="page">
+  <h1>Sign in</h1>
+  <p class="lede">Operator access for your water system. Accounts are provisioned by an admin.</p>
+
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+
+  <p-card styleClass="login-card">
+    <form class="form" (ngSubmit)="submit()">
+      <label>
+        Email
+        <input type="email" name="email" autocomplete="username" [(ngModel)]="email" required />
+      </label>
+      <label>
+        Password
+        <input
+          type="password"
+          name="password"
+          autocomplete="current-password"
+          [(ngModel)]="password"
+          required
+        />
+      </label>
+      <p-button type="submit" label="Sign in" [loading]="busy()" [disabled]="busy()" />
+    </form>
+    <p class="back"><a routerLink="/dashboard">Back to dashboard</a></p>
+  </p-card>
+</section>

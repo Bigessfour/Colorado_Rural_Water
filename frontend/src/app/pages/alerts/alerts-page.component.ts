@@ -1,10 +1,11 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
 import { MessageModule } from 'primeng/message';
+import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
 
 interface AlertRow {
@@ -19,41 +20,37 @@ interface AlertRow {
 
 @Component({
   selector: 'app-alerts-page',
-  standalone: true,
-  imports: [FormsModule, CardModule, ButtonModule, TagModule, TableModule, MessageModule],
+  imports: [RouterLink, CardModule, ButtonModule, TagModule, TableModule, MessageModule],
   templateUrl: './alerts-page.component.html',
   styleUrl: './alerts-page.component.scss',
 })
 export class AlertsPageComponent implements OnInit {
+  readonly auth = inject(AuthService);
+
   alerts = signal<AlertRow[]>([]);
-  confidenceNote = signal('Load alerts with a Cognito token after ingest.');
-  authToken = '';
-  busy = false;
-  error = '';
+  confidenceNote = signal('Sign in to load alerts for your system.');
+  busy = signal(false);
+  error = signal('');
 
   ngOnInit(): void {
-    const saved = sessionStorage.getItem('ws_id_token');
-    if (saved) {
-      this.authToken = saved;
-      void this.refresh();
-    }
+    void this.refresh();
   }
 
   async refresh(): Promise<void> {
-    if (!this.authToken.trim()) {
-      this.error = 'Paste a Cognito ID token (same as Upload page) to load live alerts.';
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.error.set('Sign in to load live alerts.');
       return;
     }
-    this.busy = true;
-    this.error = '';
-    sessionStorage.setItem('ws_id_token', this.authToken.trim());
+    this.busy.set(true);
+    this.error.set('');
     try {
       const res = await fetch(`${environment.apiBaseUrl}/alerts`, {
-        headers: { authorization: `Bearer ${this.authToken.trim()}` },
+        headers: { authorization: `Bearer ${token}` },
       });
       const body = await res.json();
       if (!res.ok) {
-        this.error = body.error ?? `Failed (${res.status})`;
+        this.error.set(body.error ?? `Failed (${res.status})`);
         return;
       }
       this.confidenceNote.set(
@@ -81,19 +78,20 @@ export class AlertsPageComponent implements OnInit {
         ),
       );
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Network error';
+      this.error.set(err instanceof Error ? err.message : 'Network error');
     } finally {
-      this.busy = false;
+      this.busy.set(false);
     }
   }
 
   async acknowledge(alert: AlertRow): Promise<void> {
     alert.status = 'acknowledged';
-    if (!this.authToken.trim()) return;
+    const token = this.auth.getBearerToken();
+    if (!token) return;
     await fetch(`${environment.apiBaseUrl}/alerts`, {
       method: 'POST',
       headers: {
-        authorization: `Bearer ${this.authToken.trim()}`,
+        authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
       body: JSON.stringify({ action: 'acknowledge', alertId: alert.id }),

@@ -72,12 +72,10 @@
         </table>
       </div>
 
-      <label class="token">
-        Cognito ID token (temporary until SPA login)
-        <textarea rows="2" [(ngModel)]="authToken" placeholder="Paste Bearer token"></textarea>
-      </label>
-
       <div class="actions">
+        @if (!auth.isLoggedIn()) {
+          <p class="signin-hint"><a routerLink="/login">Sign in</a> to ingest readings.</p>
+        }
         <p-button
           label="Dry run"
           [outlined]="true"

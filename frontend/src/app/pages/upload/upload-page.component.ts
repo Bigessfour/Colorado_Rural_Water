@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule, type FileUploadHandlerEvent } from 'primeng/fileupload';
 import { MessageModule } from 'primeng/message';
+import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
 
 type CanonicalField =
@@ -43,12 +45,13 @@ const ALIASES: Record<CanonicalField, string[]> = {
 
 @Component({
   selector: 'app-upload-page',
-  standalone: true,
-  imports: [FormsModule, CardModule, ButtonModule, FileUploadModule, MessageModule],
+  imports: [FormsModule, RouterLink, CardModule, ButtonModule, FileUploadModule, MessageModule],
   templateUrl: './upload-page.component.html',
   styleUrl: './upload-page.component.scss',
 })
 export class UploadPageComponent {
+  readonly auth = inject(AuthService);
+
   readonly fieldLabels = FIELD_LABELS;
   readonly fields = Object.keys(FIELD_LABELS) as CanonicalField[];
   readonly sampleHint =
@@ -60,7 +63,6 @@ export class UploadPageComponent {
   previewRows: Record<string, string>[] = [];
   statusMessage = '';
   statusSeverity: 'info' | 'success' | 'warn' | 'error' = 'info';
-  authToken = '';
   busy = false;
 
   onCustomUpload(event: FileUploadHandlerEvent): void {
@@ -121,9 +123,9 @@ export class UploadPageComponent {
       this.statusSeverity = 'warn';
       return;
     }
-    if (!this.authToken.trim()) {
-      this.statusMessage =
-        'Paste a Cognito ID token to call the API (SPA login lands with auth wiring).';
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.statusMessage = 'Sign in to ingest readings.';
       this.statusSeverity = 'warn';
       return;
     }
@@ -134,7 +136,7 @@ export class UploadPageComponent {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          authorization: `Bearer ${this.authToken.trim()}`,
+          authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           csvText: this.csvText,

@@ -104,4 +104,15 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
+  align-items: center;
+}
+
+.signin-hint {
+  margin: 0;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #4a6368;
+}
+
+.signin-hint a {
+  color: #1a6b73;
 }
