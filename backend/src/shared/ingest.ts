@@ -15,6 +15,11 @@ export interface MeterStore {
   listReadings(tenantId: string): Promise<MeterReading[]>;
   /** Readings for one meter under the tenant (C5 history). */
   listReadingsForMeter(tenantId: string, meterId: string): Promise<MeterReading[]>;
+  /**
+   * Deletes LOC# and cascades all RDG# for that meter (tenant-scoped).
+   * Returns false if the location was not found for this tenant.
+   */
+  deleteLocation(tenantId: string, meterId: string): Promise<boolean>;
 }
 
 export interface IngestCommitSummary {

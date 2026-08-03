@@ -33,13 +33,14 @@ Role enforcement (Pilot D1–D3):
 | --------------------- | --------------------------------------------------------------------------------------------- |
 | **S3 uploads**        | Bucket per env; keys `tenants/{tenant_id}/uploads/...` (customer) or `tenants/{tenant_id}/uploads/sources/...` (source CSVs; G2) |
 | **DynamoDB (chosen)** | Single-table `water-saver-{env}-data`; `pk=TENANT#{tenantId}`, `sk=LOC#…` / `RDG#…` / `MAP#…` / `SRC#…` / `SRD#…` / `ALERT#STATUS#…` / `CFG#…` / `META#…` / `USER#…` / `BILL#EVENT#…` |
-| Meter locations       | `sk=LOC#{meterId}`; **service address stable**; occupant name mutable; optional asset fields (manufacturer, model, serialNumber, meterSize, installDate, meterType, locationDetail, radioId, lastTestedAt, notes) |
+| Meter locations       | `sk=LOC#{meterId}`; **service address stable**; occupant name mutable; optional asset fields (manufacturer, model, serialNumber, meterSize, installDate, meterType, locationDetail, radioId, lastTestedAt, notes); **DELETE `/meters/{meterId}`** removes `LOC#` and cascades all `RDG#{meterId}#…` for that tenant only (mirrors SRC→SRD cascade) |
 | Readings              | `sk=RDG#{meterId}#{isoTimestamp}`; denormalized address for alert visibility                  |
 | Named sources (G1)    | `sk=SRC#{sourceId}`; name + type (well/spring/purchase/other); tenant PK only; DELETE cascades `SRD#` |
 | Source readings (G2)  | `sk=SRD#{sourceId}#{isoTimestamp}`; period volume or cumulative; tenant PK only               |
 | Column mappings       | `sk=MAP#customer_readings` or `MAP#source_readings` remembered per tenant                     |
 | Alert status (C3)     | `sk=ALERT#STATUS#{alertId}`; acknowledged/resolved + `actorUserId` / `actorEmail` / `updatedAt` |
 | Balance thresholds (G4) | `sk=CFG#balance_thresholds`; per-tenant overrides of Spec §7a defaults; audit who/when      |
+| Meter inventory (C7/B9) | `GET/POST /meters` list + create without reading; `GET/PUT/DELETE /meters/{meterId}`; JWT tenant only; PUT rejects address relocate |
 | Meter history (C5/B8) | Read/update path: `LOC#{meterId}` + `RDG#{meterId}#…` via `GET/PUT /meters/{meterId}` (JWT tenant only; PUT is metadata only — no address relocate) |
 | Tenant profile (D3)   | `sk=META#profile`; registry mirror `pk=TENANT#_registry` / `sk=TENANT#{tenantId}`             |
 | Tenant users (D2)     | `sk=USER#{email}`; role + audit; Cognito is source of auth, Dynamo is invite roster           |

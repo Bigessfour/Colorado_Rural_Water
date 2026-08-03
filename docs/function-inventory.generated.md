@@ -2,7 +2,7 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — Colorado Rural Water
-Generated: 2026-08-03T18:21:15.439267+00:00
+Generated: 2026-08-03T18:48:35.003405+00:00
 
 **Summary:** 0 tracked functions | 0 with proof | 0 without proof
 Focus on the ones without proof for your key paths.

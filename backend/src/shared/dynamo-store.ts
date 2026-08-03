@@ -240,6 +240,30 @@ export class DynamoMeterStore
     return (res.Items ?? []).map(itemToReading);
   }
 
+  async deleteLocation(tenantId: string, meterId: string): Promise<boolean> {
+    const existing = await this.getLocation(tenantId, meterId);
+    if (!existing) return false;
+
+    // Cascade delete RDG# for this meter (mirror SRC# → SRD# cascade).
+    const readings = await this.listReadingsForMeter(tenantId, meterId);
+    for (const r of readings) {
+      await client.send(
+        new DeleteCommand({
+          TableName: this.tableName,
+          Key: { pk: pk(tenantId), sk: rdgSk(r.meterId, r.timestamp) },
+        }),
+      );
+    }
+
+    await client.send(
+      new DeleteCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: locSk(meterId) },
+      }),
+    );
+    return true;
+  }
+
   async listReadingsForMeter(tenantId: string, meterId: string): Promise<MeterReading[]> {
     const res = await client.send(
       new QueryCommand({

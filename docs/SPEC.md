@@ -237,7 +237,7 @@ Reuse Epic B ingest (forgiving mapper + S3 drop). Support multiple files / date 
 | **Occupant / customer name**                          | Who is currently billed or living there      | **Mutable** — renters move, owners sell; updates do not move the meter          |
 | Account Number                                        | Billing account (may change with ownership)  | Mutable                                                                         |
 | Timestamp, Cumulative Reading, Unit, Diagnostic Flags | Reading stream                               | Per reading                                                                     |
-| Meter Size, Install Date, Route, Manufacturer, Model, Serial, Meter Type, Location detail, Radio/endpoint ID, Last tested, Notes | Optional meter asset / inventory metadata (LOC#) | Optional — ingest only overwrites when CSV value is non-empty; operators edit via PUT /meters/{id} |
+| Meter Size, Install Date, Route, Manufacturer, Model, Serial, Meter Type, Location detail, Radio/endpoint ID, Last tested, Notes | Optional meter asset / inventory metadata (LOC#) | Optional — ingest only overwrites when CSV value is non-empty; operators edit via PUT /meters/{id} or Meters page; create via POST /meters without a reading |
 
 Also map any additional columns the AI helps when needed. **Do not collapse name and address into one field** in the canonical store — uploads may still ship them mashed together; the mapper separates them.
 

@@ -48,4 +48,14 @@ export class MemoryMeterStore implements MeterStore {
       .filter((r) => r.tenantId === tenantId && r.meterId === meterId)
       .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   }
+
+  async deleteLocation(tenantId: string, meterId: string): Promise<boolean> {
+    const key = this.locKey(tenantId, meterId);
+    if (!this.locations.has(key)) return false;
+    this.locations.delete(key);
+    this.readings = this.readings.filter(
+      (r) => !(r.tenantId === tenantId && r.meterId === meterId),
+    );
+    return true;
+  }
 }

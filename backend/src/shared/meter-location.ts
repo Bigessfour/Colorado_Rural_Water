@@ -162,6 +162,100 @@ export function applyMeterMetadataPatch(
 }
 
 /**
+ * Parse POST /meters body into a new MeterLocation (no reading required).
+ * meterId + serviceAddress required; occupant/account/route + asset fields optional.
+ */
+export function parseMeterCreateBody(
+  tenantId: string,
+  body: Record<string, unknown>,
+  updatedAt?: string,
+): { ok: true; location: MeterLocation } | { ok: false; error: string } {
+  if (body.tenantId !== undefined && body.tenantId !== tenantId) {
+    return { ok: false, error: 'tenantId cannot be set in the request body' };
+  }
+
+  const rawMeterId = body.meterId;
+  if (typeof rawMeterId !== 'string' || !rawMeterId.trim()) {
+    return { ok: false, error: 'meterId is required' };
+  }
+  const meterId = rawMeterId.trim();
+  if (meterId.length > 64 || /[\u0000-\u001f\\/#?]/.test(meterId)) {
+    return { ok: false, error: 'meterId contains invalid characters or is too long' };
+  }
+
+  const rawAddress = body.serviceAddress;
+  if (typeof rawAddress !== 'string' || !rawAddress.trim()) {
+    return { ok: false, error: 'serviceAddress is required' };
+  }
+
+  const optionalString = (key: string): string | null | undefined => {
+    if (!(key in body)) return undefined;
+    const v = body[key];
+    if (v === null) return null;
+    if (typeof v !== 'string') return undefined;
+    const trimmed = v.trim();
+    return trimmed.length ? trimmed : null;
+  };
+
+  for (const key of [
+    'occupantName',
+    'accountNumber',
+    'route',
+    ...METER_ASSET_FIELDS,
+  ] as const) {
+    if (key in body && body[key] !== null && typeof body[key] !== 'string') {
+      return { ok: false, error: `Field ${key} must be a string or null` };
+    }
+  }
+
+  const { location } = applyMeterLocationUpsert(null, {
+    tenantId,
+    meterId,
+    serviceAddress: rawAddress.trim(),
+    occupantName: optionalString('occupantName') ?? null,
+    accountNumber: optionalString('accountNumber') ?? null,
+    route: optionalString('route') ?? null,
+    manufacturer: optionalString('manufacturer'),
+    model: optionalString('model'),
+    serialNumber: optionalString('serialNumber'),
+    meterSize: optionalString('meterSize'),
+    installDate: optionalString('installDate'),
+    meterType: optionalString('meterType'),
+    locationDetail: optionalString('locationDetail'),
+    radioId: optionalString('radioId'),
+    lastTestedAt: optionalString('lastTestedAt'),
+    notes: optionalString('notes'),
+    updatedAt: updatedAt ?? new Date().toISOString(),
+  });
+
+  return { ok: true, location };
+}
+
+/** Sanitize a meter location for list/detail API responses (no tenant secrets). */
+export function sanitizeMeterLocationForResponse(location: MeterLocation): Omit<MeterLocation, 'tenantId'> & {
+  meterId: string;
+} {
+  return {
+    meterId: location.meterId,
+    serviceAddress: location.serviceAddress,
+    occupantName: location.occupantName,
+    accountNumber: location.accountNumber,
+    route: location.route,
+    manufacturer: location.manufacturer,
+    model: location.model,
+    serialNumber: location.serialNumber,
+    meterSize: location.meterSize,
+    installDate: location.installDate,
+    meterType: location.meterType,
+    locationDetail: location.locationDetail,
+    radioId: location.radioId,
+    lastTestedAt: location.lastTestedAt,
+    notes: location.notes,
+    updatedAt: location.updatedAt,
+  };
+}
+
+/**
  * Parse a PUT /meters body into a metadata patch (ignores unknown keys / address relocate).
  */
 export function parseMeterMetadataPatch(body: Record<string, unknown>): {
@@ -172,7 +266,7 @@ export function parseMeterMetadataPatch(body: Record<string, unknown>): {
     return {
       ok: false,
       error:
-        'Cannot change serviceAddress, meterId, or tenantId via this endpoint (meters are not relocated here).',
+        'Service address cannot be changed here — it is the stable meter location. Contact support or use a dedicated relocate flow if the meter truly moved. meterId and tenantId also cannot change via this endpoint.',
     };
   }
 

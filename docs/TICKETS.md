@@ -47,6 +47,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | B6  | Ingestion status UX (progress / failures)     | P1       | done   | Pilot | Phase list + friendly `status` from API + warnings panel |
 | B7  | Occupant-name update without relocating meter | P1       | done   | Kelly | Covered by meter-location upsert + ingest commit       |
 | B8  | Operator meter asset metadata edit            | P1       | done   | Pilot | `PUT /meters/{id}` partial metadata; Alerts History form; CSV aliases for common asset headers |
+| B9  | Meter inventory CRUD (list/create/delete)     | P1       | done   | Pilot | `GET/POST /meters` + `DELETE /meters/{id}` cascade RDG#; SPA `/meters`; address stable on PUT |
 
 ## Epic C — Alerts & Dashboard
 
@@ -58,6 +59,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | C4  | Export flagged meters                                       | P1       | done        | Pilot  | `GET /alerts?format=csv` + Alerts “Export flagged CSV”; confidenceNote on Watch rows |
 | C5  | Basic meter history view                                    | P1       | done        | Pilot  | `GET/PUT /meters/{meterId}`; History dialog shows + edits optional asset metadata |
 | C6  | AI plain-language alert explanations                        | P1       | done        | Pilot  | Templates always; Bedrock Nova Lite polish when available (`?explain=1` / `POST /alerts/explain`) |
+| C7  | Meter inventory CRUD                                        | P1       | done        | Pilot  | List/add/edit/delete on `/meters`; POST without reading; DELETE cascades RDG#; address reject on PUT |
 
 ## Epic D — Auth, roles & CRWA roll-up
 

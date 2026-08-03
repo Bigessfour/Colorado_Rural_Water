@@ -11,11 +11,14 @@ flowchart TB
         Login["/login\nAuth + MFA challenges"]
         Account["/account\nPassword + TOTP MFA"]
         Dash["/dashboard\nBalance + confidence + alerts"]
-        Upload["/upload\nCustomer CSV"]
+        Upload["/upload\nCustomer CSV / Excel"]
+        MetersPage["/meters\nInventory CRUD"]
         Sources["/sources\nCRUD + source ingest"]
-        Alerts["/alerts\nAck / resolve / CSV"]
-        Admin["/admin\nTenants + invite"]
-        Crwa["/crwa\nRoll-up stub"]
+        Alerts["/alerts\nAck / resolve / CSV / explain"]
+        Assistant["/assistant\nAgent chat"]
+        Billing["/billing\nMunicipality membership"]
+        Admin["/admin\nTenants + invite + billing"]
+        Crwa["/crwa\nSanitized roll-up"]
     end
 
     subgraph Api["HTTP API JWT"]
@@ -26,17 +29,22 @@ flowchart TB
         IngestSrc["POST /ingest/sources"]
         SourcesApi["/sources CRUD"]
         Balance["GET /balance\nPUT /thresholds"]
-        AlertsApi["GET/POST /alerts"]
-        Meters["GET/PUT /meters/{id}"]
-        AdminApi["/admin/*"]
+        AlertsApi["GET/POST /alerts\nPOST /alerts/explain"]
+        Meters["GET/POST /meters\nGET/PUT/DELETE /meters/{id}"]
+        AgentApi["GET/POST /agent"]
+        BillingApi["GET /billing"]
+        AdminApi["/admin/*\ntenants users billing rollup"]
     end
 
     subgraph Shared["Shared domain"]
         Auth["auth + tenant-admin"]
-        Csv["csv-parse + source-csv"]
+        Csv["csv-parse + excel-parse + source-csv"]
         Loc["meter-location"]
         WB["water-balance"]
-        AE["alert-engine + balance-alerts"]
+        AE["alert-engine + balance-alerts + explain"]
+        Bill["billing"]
+        AgCtx["agent-context + conversation"]
+        Rollup["crwa-rollup"]
         Store["dynamo / memory stores"]
     end
 
@@ -56,7 +64,10 @@ flowchart TB
     Dash --> AlertsApi
     Alerts --> AlertsApi
     Alerts --> Meters
+    Assistant --> AgentApi
+    Billing --> BillingApi
     Admin --> AdminApi
+    Crwa --> AdminApi
 
     Ingest --> Csv --> Loc --> Store
     IngestSrc --> Csv --> Store
@@ -64,8 +75,11 @@ flowchart TB
     Balance --> WB --> Store
     AlertsApi --> AE
     AlertsApi --> Store
-    Me --> Auth
+    AgentApi --> AgCtx --> Store
     AdminApi --> Auth
+    AdminApi --> Bill
+    AdminApi --> Rollup
+    Me --> Auth
     Health -.-> Api
 ```
 
@@ -79,11 +93,14 @@ flowchart LR
     AllHandlers --> Dynamo[DATA table PK tenant]
 ```
 
-## AI / agent (deferred)
+## AI / agent
 
 ```mermaid
 flowchart LR
-    AgentStub[agent.ts stub\nbundled only] -.-> EpicE[Epic E Bedrock]
+    AgentApi[GET/POST /agent] --> Guard[agent-context isolation + confirm]
+    Guard --> Template[templateAgentReply]
+    Guard -.-> Bedrock[bedrock optional]
+    Explain[POST /alerts/explain] --> ExplainTpl[explainAlertTemplate]
 ```
 
 See [action-items.md](./action-items.md) for proof status per function.

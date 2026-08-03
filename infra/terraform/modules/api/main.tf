@@ -484,6 +484,22 @@ resource "aws_apigatewayv2_route" "balance_thresholds_put" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "meters_list" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /meters"
+  target             = "integrations/${aws_apigatewayv2_integration.meters.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "meters_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /meters"
+  target             = "integrations/${aws_apigatewayv2_integration.meters.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_route" "meters_get" {
   api_id             = aws_apigatewayv2_api.http.id
   route_key          = "GET /meters/{meterId}"
@@ -495,6 +511,14 @@ resource "aws_apigatewayv2_route" "meters_get" {
 resource "aws_apigatewayv2_route" "meters_put" {
   api_id             = aws_apigatewayv2_api.http.id
   route_key          = "PUT /meters/{meterId}"
+  target             = "integrations/${aws_apigatewayv2_integration.meters.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "meters_delete" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "DELETE /meters/{meterId}"
   target             = "integrations/${aws_apigatewayv2_integration.meters.id}"
   authorization_type = "JWT"
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
