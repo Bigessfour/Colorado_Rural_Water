@@ -50,7 +50,17 @@ output "meters_url" {
 
 output "admin_tenants_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/admin/tenants"
-  description = "GET/POST /admin/tenants (JWT, CRWA Admin D3)"
+  description = "GET/POST /admin/tenants (JWT, CRWA Admin D3 + I0 billing fields)"
+}
+
+output "admin_tenant_billing_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/admin/tenants/{tenantId}/billing"
+  description = "GET billing + POST .../billing/{action} (JWT, CRWA Admin I1)"
+}
+
+output "billing_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/billing"
+  description = "GET /billing municipality membership status (JWT, System Admin I2)"
 }
 
 output "admin_users_url" {

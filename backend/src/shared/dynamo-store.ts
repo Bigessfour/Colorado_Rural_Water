@@ -16,6 +16,13 @@ import type { MeterStore } from './ingest.js';
 import type { SourceReading, SourceVolumeMode } from './source-reading.js';
 import type { SourceStore } from './source-store.js';
 import type {
+  BillingEvent,
+  BillingMode,
+  BillingStatus,
+  PlanCode,
+} from './billing.js';
+import { billEventSk, isBillingMode, isBillingStatus, isPlanCode } from './billing.js';
+import type {
   TenantProfile,
   TenantStore,
   TenantUserRecord,
@@ -67,6 +74,29 @@ function userSk(email: string): string {
 
 function registrySk(tenantId: string): string {
   return `TENANT#${tenantId}`;
+}
+
+const BILL_EVENT_SK_PREFIX = 'BILL#EVENT#';
+
+function profileItemFields(profile: TenantProfile): Record<string, unknown> {
+  return {
+    tenantId: profile.tenantId,
+    displayName: profile.displayName,
+    createdAt: profile.createdAt,
+    createdByUserId: profile.createdByUserId,
+    createdByEmail: profile.createdByEmail,
+    initialUserEmail: profile.initialUserEmail,
+    billingStatus: profile.billingStatus,
+    billingMode: profile.billingMode,
+    planCode: profile.planCode,
+    meterCountEstimate: profile.meterCountEstimate,
+    retentionMonths: profile.retentionMonths,
+    billingContactEmail: profile.billingContactEmail,
+    pilotExpiresAt: profile.pilotExpiresAt,
+    lastPaymentAt: profile.lastPaymentAt,
+    billingNotes: profile.billingNotes,
+    paymentProvider: profile.paymentProvider,
+  };
 }
 
 export class DynamoMeterStore
@@ -447,12 +477,7 @@ export class DynamoMeterStore
           pk: pk(profile.tenantId),
           sk: META_PROFILE_SK,
           entityType: 'tenant_profile',
-          tenantId: profile.tenantId,
-          displayName: profile.displayName,
-          createdAt: profile.createdAt,
-          createdByUserId: profile.createdByUserId,
-          createdByEmail: profile.createdByEmail,
-          initialUserEmail: profile.initialUserEmail,
+          ...profileItemFields(profile),
         },
         ConditionExpression: 'attribute_not_exists(pk)',
       }),
@@ -464,12 +489,32 @@ export class DynamoMeterStore
           pk: pk(REGISTRY_TENANT_ID),
           sk: registrySk(profile.tenantId),
           entityType: 'tenant_registry',
-          tenantId: profile.tenantId,
-          displayName: profile.displayName,
-          createdAt: profile.createdAt,
-          createdByUserId: profile.createdByUserId,
-          createdByEmail: profile.createdByEmail,
-          initialUserEmail: profile.initialUserEmail,
+          ...profileItemFields(profile),
+        },
+      }),
+    );
+  }
+
+  async updateTenantProfile(profile: TenantProfile): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(profile.tenantId),
+          sk: META_PROFILE_SK,
+          entityType: 'tenant_profile',
+          ...profileItemFields(profile),
+        },
+      }),
+    );
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(REGISTRY_TENANT_ID),
+          sk: registrySk(profile.tenantId),
+          entityType: 'tenant_registry',
+          ...profileItemFields(profile),
         },
       }),
     );
@@ -527,6 +572,52 @@ export class DynamoMeterStore
         ConditionExpression: 'attribute_not_exists(pk)',
       }),
     );
+  }
+
+  async putBillingEvent(event: BillingEvent): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(event.tenantId),
+          sk: billEventSk(event.createdAt, event.eventId),
+          entityType: 'billing_event',
+          tenantId: event.tenantId,
+          eventId: event.eventId,
+          createdAt: event.createdAt,
+          eventType: event.eventType,
+          source: event.source,
+          billingStatusAfter: event.billingStatusAfter,
+          amountCents: event.amountCents,
+          currency: event.currency,
+          method: event.method,
+          actorUserId: event.actorUserId,
+          actorEmail: event.actorEmail,
+          note: event.note,
+          pilotExpiresAt: event.pilotExpiresAt,
+          externalEventId: event.externalEventId,
+        },
+        ConditionExpression: 'attribute_not_exists(pk)',
+      }),
+    );
+  }
+
+  async listBillingEvents(tenantId: string, limit = 50): Promise<BillingEvent[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':prefix': BILL_EVENT_SK_PREFIX,
+        },
+        ScanIndexForward: false,
+        Limit: Math.min(Math.max(limit, 1), 200),
+      }),
+    );
+    return (res.Items ?? [])
+      .map((item) => itemToBillingEvent(item))
+      .filter((e): e is BillingEvent => e !== null);
   }
 
   async getTenantUser(tenantId: string, email: string): Promise<TenantUserRecord | null> {
@@ -636,6 +727,36 @@ function itemToTenantProfile(item: Record<string, unknown>): TenantProfile | nul
   const tenantId = item.tenantId;
   const displayName = item.displayName;
   if (typeof tenantId !== 'string' || typeof displayName !== 'string') return null;
+
+  const billingStatus: BillingStatus = isBillingStatus(item.billingStatus)
+    ? item.billingStatus
+    : 'pilot';
+  const billingMode: BillingMode = isBillingMode(item.billingMode)
+    ? item.billingMode
+    : billingStatus === 'pilot'
+      ? 'pilot'
+      : 'manual';
+  const planCode: PlanCode = isPlanCode(item.planCode) ? item.planCode : 'meters_0_100';
+
+  const meterRaw = item.meterCountEstimate;
+  const meterCountEstimate =
+    typeof meterRaw === 'number' && Number.isFinite(meterRaw)
+      ? Math.floor(meterRaw)
+      : undefined;
+  const retentionRaw = item.retentionMonths;
+  const retentionMonths =
+    typeof retentionRaw === 'number' && Number.isFinite(retentionRaw)
+      ? Math.floor(retentionRaw)
+      : undefined;
+
+  const paymentProvider =
+    item.paymentProvider === 'stripe' ||
+    item.paymentProvider === 'square' ||
+    item.paymentProvider === 'manual' ||
+    item.paymentProvider === 'other'
+      ? item.paymentProvider
+      : 'none';
+
   return {
     tenantId,
     displayName,
@@ -643,6 +764,54 @@ function itemToTenantProfile(item: Record<string, unknown>): TenantProfile | nul
     createdByUserId: String(item.createdByUserId ?? ''),
     createdByEmail: String(item.createdByEmail ?? ''),
     initialUserEmail: String(item.initialUserEmail ?? ''),
+    billingStatus,
+    billingMode,
+    planCode,
+    meterCountEstimate,
+    retentionMonths,
+    billingContactEmail:
+      typeof item.billingContactEmail === 'string' ? item.billingContactEmail : undefined,
+    pilotExpiresAt: typeof item.pilotExpiresAt === 'string' ? item.pilotExpiresAt : undefined,
+    lastPaymentAt: typeof item.lastPaymentAt === 'string' ? item.lastPaymentAt : undefined,
+    billingNotes: typeof item.billingNotes === 'string' ? item.billingNotes : undefined,
+    paymentProvider,
+  };
+}
+
+function itemToBillingEvent(item: Record<string, unknown>): BillingEvent | null {
+  const tenantId = item.tenantId;
+  const eventId = item.eventId;
+  const createdAt = item.createdAt;
+  const eventType = item.eventType;
+  const source = item.source;
+  const billingStatusAfter = item.billingStatusAfter;
+  if (
+    typeof tenantId !== 'string' ||
+    typeof eventId !== 'string' ||
+    typeof createdAt !== 'string' ||
+    typeof eventType !== 'string' ||
+    typeof source !== 'string' ||
+    !isBillingStatus(billingStatusAfter)
+  ) {
+    return null;
+  }
+  const amountRaw = item.amountCents;
+  return {
+    tenantId,
+    eventId,
+    createdAt,
+    eventType: eventType as BillingEvent['eventType'],
+    source: source as BillingEvent['source'],
+    billingStatusAfter,
+    amountCents:
+      typeof amountRaw === 'number' && Number.isFinite(amountRaw) ? Math.round(amountRaw) : undefined,
+    currency: typeof item.currency === 'string' ? item.currency : undefined,
+    method: typeof item.method === 'string' ? (item.method as BillingEvent['method']) : undefined,
+    actorUserId: String(item.actorUserId ?? ''),
+    actorEmail: String(item.actorEmail ?? ''),
+    note: typeof item.note === 'string' ? item.note : undefined,
+    pilotExpiresAt: typeof item.pilotExpiresAt === 'string' ? item.pilotExpiresAt : undefined,
+    externalEventId: typeof item.externalEventId === 'string' ? item.externalEventId : undefined,
   };
 }
 

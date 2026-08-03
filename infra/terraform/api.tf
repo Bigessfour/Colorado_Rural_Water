@@ -63,6 +63,16 @@ output "api_admin_tenants_url" {
   description = "GET/POST /admin/tenants (JWT, CRWA Admin)"
 }
 
+output "api_admin_tenant_billing_url" {
+  value       = try(module.api[0].admin_tenant_billing_url, null)
+  description = "GET/POST admin tenant billing (JWT, CRWA Admin I1)"
+}
+
+output "api_billing_url" {
+  value       = try(module.api[0].billing_url, null)
+  description = "GET /billing (JWT, System Admin I2)"
+}
+
 output "api_admin_users_url" {
   value       = try(module.api[0].admin_users_url, null)
   description = "GET /admin/users + POST /admin/users/invite (JWT)"

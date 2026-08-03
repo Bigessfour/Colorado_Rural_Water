@@ -470,6 +470,30 @@ resource "aws_apigatewayv2_route" "admin_users_invite_post" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "admin_tenant_billing_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /admin/tenants/{tenantId}/billing"
+  target             = "integrations/${aws_apigatewayv2_integration.admin.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "admin_tenant_billing_action_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /admin/tenants/{tenantId}/billing/{action}"
+  target             = "integrations/${aws_apigatewayv2_integration.admin.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "billing_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /billing"
+  target             = "integrations/${aws_apigatewayv2_integration.admin.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"

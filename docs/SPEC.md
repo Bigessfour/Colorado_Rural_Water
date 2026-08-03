@@ -2,7 +2,7 @@
 
 *Working name: Water Saver (final name to be chosen by Colorado Rural Water Association)*
 *Status: Scoped for Kelly demo → Pilot hardening → vNext (see §0)*
-*Last updated: August 3, 2026*
+*Last updated: August 3, 2026 (membership billing §9 / Epic I — processor-agnostic)*
 *Scope freeze: section walkthrough defaults applied (subject to Kelly / pilot feedback where marked)*
 
 ---
@@ -95,7 +95,7 @@ A non-technical city clerk can upload (or drop) a messy real-world CSV/Excel fil
 | ----------------- | -------------------------------- | ---------------------------------- | ------------------------------------- |
 | Operator          | City clerk / operator            | **Stay** — primary demo persona    | Full                                  |
 | System Admin      | Designated person at the utility | Stub / same as Operator OK         | Invite users (D2) + source management |
-| CRWA Admin        | CRWA staff                       | Not required for Kelly walkthrough | Provision tenant (D3) + roll-up (D4)  |
+| CRWA Admin        | CRWA staff                       | Not required for Kelly walkthrough | Provision tenant (D3) + roll-up (D4); membership billing status (Epic I, early pilot) |
 | Conversational AI | System agent                     | Rules stay; full agent = Pilot     | Epic E                                |
 
 **Capabilities (product intent — timing per §0)**
@@ -103,9 +103,14 @@ A non-technical city clerk can upload (or drop) a messy real-world CSV/Excel fil
 | Role              | Capabilities                                                                                                                                     |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Operator          | Upload customer & source readings, view dashboard & alerts (including water balance), acknowledge alerts, manage own profile (password + MFA)    |
-| System Admin      | Everything an Operator can do + invite/manage users **within their own system only** + manage named water sources                                |
-| CRWA Admin        | Provision new municipalities (one initial user per system), view sanitized enterprise roll-up (incl. water-balance KPIs), manage global settings |
+| System Admin      | Everything an Operator can do + invite/manage users **within their own system only** + manage named water sources + view own membership billing status (Epic I) |
+| CRWA Admin        | Provision new municipalities (one initial user per system); set plan / pilot vs paid; record external payment & payment status; suspend / reactivate; view sanitized enterprise roll-up (incl. water-balance KPIs); manage global settings |
 | Conversational AI | Guides onboarding, helps map data, explains alerts & loss figures, assists with configuration (with strict guardrails)                           |
+
+**Membership billing vs municipal billing systems**
+
+- **Membership billing** (Epic I): CRWA collecting dues for Water Saver as a member service — pilot status, plans, invoices, payment status. See §9 and [docs/BILLING.md](BILLING.md).
+- **Municipal CIS / billing write-back** (vNext, §0): pushing meter data back into the town’s own billing system — **out of scope** for pilot; do not conflate with membership dues.
 
 ---
 
@@ -133,6 +138,7 @@ A non-technical city clerk can upload (or drop) a messy real-world CSV/Excel fil
 - Conversational AI agent for onboarding, mapping help, explanations, confidence coaching, and guided configuration (Epic E) with cost transparency
 - Roles + CRWA enterprise roll-up (D1–D4)
 - Self-service MFA UX; true per-tenant IAM ABAC (A6)
+- Membership billing status on tenants (Epic I0–I2): pilot/paid, manual mark paid, suspend visibility — **no payment-processor SDK required** (processor = discover-and-install due-out; §9 / [BILLING.md](BILLING.md))
 
 ### Explicitly out of scope (vNext)
 
@@ -257,7 +263,7 @@ Mapper and store accept **both** period volumes and cumulative readings (same as
 - Source (in) readings may be entered manually, uploaded as a small spreadsheet, or dropped to S3 — same forgiving UX as customer meters
 
 **Retention**
-Default 24 months, configurable per municipality. Longer retention may affect the subscription fee (pricing formula = Pilot / open).
+Default 24 months, configurable per municipality. Longer retention may affect the membership fee (meter-band + add-on suggestion; dollars set by CRWA — §9).
 
 ---
 
@@ -414,13 +420,44 @@ Produce:
 
 ---
 
-## 9. Cost & Pricing Model
+## 9. Cost & Pricing Model (membership billing)
+
+*Product dues for Water Saver as a CRWA member service — not municipal customer billing CIS. Implementation notes: [docs/BILLING.md](BILLING.md). Tickets: Epic I.*
+
+### Product rules (processor-agnostic)
+
+- **Pricing axes (suggestions only):** meter-count bands (e.g. ≤100 / 101–300 / 301–750 / 750+) plus add-ons that affect cost (longer retention, extra users, higher support tier).
+- **CRWA sets dollar amounts;** the system only *suggests* a band from meter estimate / complexity and shows transparent line items boards can defend.
+- **Statuses on every municipality (tenant):** `pilot` | `active` | `past_due` | `suspended` (optional `canceled` later).
+- **Payment methods at product level:** card and/or invoice + ACH/check — via a processor *or* offline. Never force small boards onto cards only.
+- **Pilot / complimentary** is a first-class status (no fake $0 processor invoice required for free pilots).
+- **Early pilot (3–10 systems)** may run entirely on **manual status + offline payments** (Record external payment in CRWA Admin). No payment-processor SDK is required for I0–I2.
+- **Secrets:** any processor keys live in AWS Secrets Manager / SSM only — never in the frontend or git.
+- **Non-goals:** custom PCI card forms in our SPA; raw card data in Dynamo; QuickBooks-only as the long-term engine without a deliberate decision; conflating this with municipal CIS write-back (vNext).
+
+### Payment processor — due-out (discover and install)
+
+| Item | Approach |
+| ---- | -------- |
+| **Discovery** | Confirm with CRWA whether they already collect member dues (processor name, QuickBooks, bank ACH/check only, or none). See [BILLING.md](BILLING.md) checklist. |
+| **Decision** | Reuse existing → adapter/install; none / prefer SaaS → **recommend Stripe Billing** as the default greenfield engine; other commercial vendor → evaluate effort. |
+| **Install** | Separate tickets after written decision (I3 → I4+). Keep a **PaymentProvider** boundary so core admin status never hard-codes a vendor. |
+| **Hybrid always** | Even after a processor is installed, keep admin **Mark paid / Record external payment** for check/ACH offline. |
+
+If CRWA chooses greenfield SaaS, **Stripe Billing** (Invoicing + Customer Portal / Checkout + webhooks) is the recommended install path — documented as an appendix in [BILLING.md](BILLING.md), not as a mandatory engine in this Spec.
+
+### Transparency & AI
 
 - Transparent AWS cost structure — **Pilot** (F3 polish)
-- CRWA sets the target price point for the service — **open** (business)
-- System can suggest pricing to municipalities based on number of meters and complexity of needs — **Pilot / open**
 - AI always surfaces cost implications of configuration choices — **Pilot** (with agent)
 - **Kelly:** no pricing UI required
+
+### Tenant billing fields (product contract)
+
+Stored on tenant profile / related ledger (exact Dynamo keys in TENANT_ISOLATION + I0 implementation):
+
+- `billingStatus`, plan code, meter-count estimate, retention months, billing contact, pilot expiry, last payment, internal notes
+- Optional after processor install: `paymentProvider`, external customer / subscription / invoice ids (vendor-neutral names)
 
 ---
 
@@ -460,6 +497,16 @@ Produce:
 - [ ] Epic E agent obeys §6 (cost, deletes, no cross-tenant)
 - [ ] D1–D3 roles; A6 ABAC progress; D5 MFA UX
 - [ ] Onboarding paths B–D usable without shame copy
+- [x] Epic I0–I1: CRWA can set pilot vs paid, record external payment, see billing status without a payment processor
+- [x] Epic I2: Municipality System Admin can view own membership billing status + ledger history (no card update)
+
+### 11c. Ready for paid member service (after processor decision)
+
+- [ ] Payment processor discovery written (I3) — or deliberate “manual only” policy for scale
+- [ ] If processor installed (I4+): invoices/pay links sync; past_due/suspended visible and consistent
+- [ ] Municipality System Admin can see own status / history; self-serve payment-method update when processor supports it
+- [ ] No processor secrets or raw card data in frontend/repo
+- [ ] Suspend policy documented (soft banner vs hard API block) and implemented accordingly
 
 ---
 
@@ -468,9 +515,18 @@ Produce:
 ### Still open (need CRWA / business input)
 
 - Final product name (CRWA)
-- Exact list of “top” billing systems to pre-support in the first pilot release
-- Detailed pricing formula (meter count bands, retention multipliers, etc.)
+- Exact list of “top” **municipal** billing/CIS systems to pre-support later (ingestion connectors — not membership dues)
+- Membership **dollar amounts** for meter bands and add-ons (CRWA business; system only suggests bands)
 - Additional sample data sets beyond current fixtures (expand as pilots join)
+- **Payment processor discovery (I3):** existing vendor vs none vs prefer SaaS; if none, confirm Stripe (recommended) or alternate — see [BILLING.md](BILLING.md)
+- If existing processor: adapter feasibility (API/webhooks vs CSV vs manual only)
+- **Suspend policy:** soft warning banner only vs hard block of uploads/API when `suspended`
+- ACH: processor-native vs offline-only for early pilots
+
+### Narrowed (no longer fully open)
+
+- **Pricing structure:** meter-count bands + retention/users/support add-ons; dollars remain CRWA-owned (§9)
+- **Membership payment engine:** not fixed to a vendor in core product; discover-and-install; Stripe recommended for greenfield SaaS
 
 ### Frozen for Kelly (revisit in Pilot / H8 — not blockers)
 

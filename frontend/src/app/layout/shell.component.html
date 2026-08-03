@@ -11,6 +11,9 @@
     @if (auth.canManageUsers()) {
       <a routerLink="/admin" routerLinkActive="active">Admin</a>
     }
+    @if (auth.isSystemAdmin()) {
+      <a routerLink="/billing" routerLinkActive="active">Billing</a>
+    }
     @if (auth.isCrwaAdmin()) {
       <a routerLink="/crwa" routerLinkActive="active">CRWA</a>
     }

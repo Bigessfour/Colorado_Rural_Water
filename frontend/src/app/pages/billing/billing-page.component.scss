@@ -1,0 +1,51 @@
+.page {
+  max-width: 48rem;
+}
+
+.lede {
+  color: var(--p-text-muted-color, #5c6b73);
+  margin-bottom: 1rem;
+}
+
+.hint {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.block {
+  margin-bottom: 1.25rem;
+}
+
+.facts {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.facts div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.facts dt {
+  font-size: 0.85rem;
+  color: var(--p-text-muted-color, #5c6b73);
+  font-weight: 600;
+}
+
+.facts dd {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.calm {
+  margin: 0;
+  color: var(--p-text-muted-color, #5c6b73);
+  font-size: 0.95rem;
+}
+
+.method {
+  color: var(--p-text-muted-color, #5c6b73);
+  font-size: 0.9em;
+  margin-left: 0.25rem;
+}

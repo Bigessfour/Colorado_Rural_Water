@@ -1,8 +1,8 @@
 <section class="page">
   <h1>Admin</h1>
   <p class="lede">
-    Provision municipalities (CRWA) and invite users within your system (System Admin). Tenant comes from
-    your sign-in — never from the form.
+    Provision municipalities (CRWA), manage membership billing status, and invite users within your system
+    (System Admin). Tenant comes from your sign-in — never from the form.
   </p>
 
   @if (!auth.isLoggedIn()) {
@@ -42,8 +42,11 @@
 
   @if (auth.isCrwaAdmin()) {
     <p-card header="Provision municipality" styleClass="block">
-      <p class="card-lede">Creates the tenant record and one initial user (default: System Admin).</p>
-      <form class="form" (ngSubmit)="provisionTenant()">
+      <p class="card-lede">
+        Creates the tenant record, billing profile (pilot or paid), and one initial user (default: System
+        Admin). No payment processor — offline / pilot only.
+      </p>
+      <form class="form form-wide" (ngSubmit)="provisionTenant()">
         <label>
           System id (slug)
           <input pInputText name="tenantId" [(ngModel)]="tenantId" placeholder="town-wiley" required />
@@ -74,6 +77,59 @@
             styleClass="w-full"
           />
         </label>
+        <label>
+          Pilot or paid
+          <p-select
+            [options]="pilotOrPaidOptions"
+            [(ngModel)]="pilotOrPaid"
+            name="pilotOrPaid"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        <label>
+          Plan band
+          <p-select
+            [options]="planOptions"
+            [(ngModel)]="planCode"
+            name="planCode"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        <label>
+          Meter estimate (optional)
+          <input
+            pInputText
+            type="number"
+            name="meterCountEstimate"
+            [(ngModel)]="meterCountEstimate"
+            placeholder="150"
+            min="0"
+          />
+        </label>
+        <label>
+          Billing contact email (optional)
+          <input
+            pInputText
+            type="email"
+            name="billingContactEmail"
+            [(ngModel)]="billingContactEmail"
+            placeholder="finance@town.gov"
+          />
+        </label>
+        @if (pilotOrPaid === 'pilot') {
+          <label>
+            Pilot expiry (optional)
+            <input pInputText type="date" name="pilotExpiresAt" [(ngModel)]="pilotExpiresAt" />
+          </label>
+        }
+        <label>
+          Internal notes (optional)
+          <textarea pTextarea name="billingNotes" [(ngModel)]="billingNotes" rows="2" class="w-full"></textarea>
+        </label>
         <p-button type="submit" label="Provision system" [loading]="busy()" [disabled]="busy()" />
       </form>
     </p-card>
@@ -84,24 +140,116 @@
           <tr>
             <th>Id</th>
             <th>Name</th>
+            <th>Billing</th>
+            <th>Plan</th>
+            <th>Meters</th>
             <th>Initial user</th>
             <th>Created</th>
+            <th></th>
           </tr>
         </ng-template>
         <ng-template #body let-row>
           <tr>
             <td>{{ row.tenantId }}</td>
             <td>{{ row.displayName }}</td>
+            <td>
+              <p-tag [value]="billingLabel(row)" [severity]="billingSeverity(row.billingStatus)" />
+            </td>
+            <td>{{ planLabelFor(row) }}</td>
+            <td>{{ row.meterCountEstimate ?? '—' }}</td>
             <td>{{ row.initialUserEmail }}</td>
             <td>{{ row.createdAt | date: 'mediumDate' }}</td>
+            <td>
+              <p-button
+                type="button"
+                label="Select"
+                [text]="true"
+                size="small"
+                (onClick)="selectTenantForAction(row.tenantId)"
+              />
+            </td>
           </tr>
         </ng-template>
         <ng-template #emptymessage>
           <tr>
-            <td colspan="4">No systems provisioned yet.</td>
+            <td colspan="8">No systems provisioned yet.</td>
           </tr>
         </ng-template>
       </p-table>
+    </p-card>
+
+    <p-card header="Membership billing actions" styleClass="block">
+      <p class="card-lede">
+        Record offline payments, extend pilots, or change status. Writes an audit event under the tenant
+        ledger — no payment processor.
+      </p>
+      <form class="form form-wide" (ngSubmit)="runBillingAction()">
+        <label>
+          Municipality
+          <p-select
+            [options]="tenantSelectOptions()"
+            [(ngModel)]="actionTenantId"
+            name="actionTenantId"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select system"
+            styleClass="w-full"
+          />
+        </label>
+        <label>
+          Action
+          <p-select
+            [options]="actionOptions"
+            [(ngModel)]="action"
+            name="action"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        @if (action === 'record-payment') {
+          <label>
+            Amount (USD, optional)
+            <input
+              pInputText
+              type="number"
+              name="actionAmountDollars"
+              [(ngModel)]="actionAmountDollars"
+              placeholder="150.00"
+              min="0"
+              step="0.01"
+            />
+          </label>
+          <label>
+            Method
+            <p-select
+              [options]="paymentMethodOptions"
+              [(ngModel)]="actionMethod"
+              name="actionMethod"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+            />
+          </label>
+        }
+        @if (action === 'extend-pilot') {
+          <label>
+            New pilot expiry
+            <input
+              pInputText
+              type="date"
+              name="actionPilotExpiresAt"
+              [(ngModel)]="actionPilotExpiresAt"
+              required
+            />
+          </label>
+        }
+        <label>
+          Note (optional)
+          <textarea pTextarea name="actionNote" [(ngModel)]="actionNote" rows="2" class="w-full"></textarea>
+        </label>
+        <p-button type="submit" label="Apply billing action" [loading]="busy()" [disabled]="busy()" />
+      </form>
     </p-card>
   }
 
@@ -110,6 +258,9 @@
       <p class="card-lede">
         Invites stay inside <strong>{{ auth.tenantId() ?? 'your system' }}</strong>. Client tenant overrides are
         rejected by the API.
+        @if (auth.isSystemAdmin()) {
+          · <a routerLink="/billing">View membership billing</a>
+        }
       </p>
       <form class="form" (ngSubmit)="inviteUser()">
         <label>

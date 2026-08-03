@@ -1,0 +1,105 @@
+<section class="page">
+  <h1>Membership billing</h1>
+  <p class="lede">
+    Status of your municipality’s Water Saver membership with CRWA. This is not customer utility billing.
+    Payment method updates will appear here after CRWA connects a processor.
+  </p>
+
+  @if (!auth.isLoggedIn()) {
+    <p-message severity="warn" styleClass="hint">
+      <a routerLink="/login">Sign in</a> to continue.
+    </p-message>
+  }
+
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+
+  @if (billing(); as b) {
+    <p-card [header]="displayName() || 'Your system'" styleClass="block">
+      <dl class="facts">
+        <div>
+          <dt>Status</dt>
+          <dd>
+            <p-tag [value]="b.billingStatusLabel" [severity]="billingSeverity(b.billingStatus)" />
+          </dd>
+        </div>
+        <div>
+          <dt>Plan</dt>
+          <dd>{{ b.planLabel }}</dd>
+        </div>
+        @if (b.meterCountEstimate !== undefined) {
+          <div>
+            <dt>Meter estimate</dt>
+            <dd>{{ b.meterCountEstimate }}</dd>
+          </div>
+        }
+        @if (b.pilotExpiresAt) {
+          <div>
+            <dt>Pilot ends</dt>
+            <dd>{{ b.pilotExpiresAt | date: 'mediumDate' }}</dd>
+          </div>
+        }
+        @if (b.lastPaymentAt) {
+          <div>
+            <dt>Last payment</dt>
+            <dd>{{ b.lastPaymentAt | date: 'mediumDate' }}</dd>
+          </div>
+        }
+        @if (b.billingContactEmail) {
+          <div>
+            <dt>Billing contact</dt>
+            <dd>{{ b.billingContactEmail }}</dd>
+          </div>
+        }
+      </dl>
+      <p class="calm">
+        Questions about invoices or status? Contact CRWA. There is no card update in this app yet.
+      </p>
+    </p-card>
+
+    <p-card header="History" styleClass="block">
+      <p-table [value]="events()" [loading]="busy()" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>When</th>
+            <th>What</th>
+            <th>Status after</th>
+            <th>Amount</th>
+            <th>Note</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td>{{ row.createdAt | date: 'medium' }}</td>
+            <td>{{ eventLabel(row.eventType) }}</td>
+            <td>
+              <p-tag
+                [value]="row.billingStatusAfter"
+                [severity]="billingSeverity(row.billingStatusAfter)"
+              />
+            </td>
+            <td>
+              @if (amountDisplay(row); as amt) {
+                {{ amt | currency: row.currency || 'USD' }}
+                @if (row.method) {
+                  <span class="method">({{ row.method }})</span>
+                }
+              } @else {
+                —
+              }
+            </td>
+            <td>{{ row.note || '—' }}</td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="5">No billing history yet.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  } @else if (auth.isLoggedIn() && !error() && !busy()) {
+    <p-message severity="info" styleClass="hint">No billing profile loaded yet.</p-message>
+  }
+</section>

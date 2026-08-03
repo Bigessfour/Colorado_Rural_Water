@@ -117,6 +117,24 @@ Work with any amount of history (none → years); never treat thin-data flags as
 | H7  | Agent Confidence copy + never-overclaim guardrails              | P1       | todo   | Pilot       | Same intent as E6; ship with Epic E                                               |
 | H8  | Kelly review: Confidence threshold defaults                     | P1       | todo   | Pilot       | Revisit Spec §7b freeze after Kelly feedback                                      |
 
+## Epic I — CRWA membership billing (processor-agnostic)
+
+Water Saver as a **CRWA member service** (dues / pilot status) — not municipal CIS write-back (vNext). Spec §9; living notes [docs/BILLING.md](BILLING.md).
+
+**Do not** add a payment-processor SDK, webhooks, or secrets until **I3** is written with a decision. I0–I2 ship without a processor.
+
+| ID  | Title                                                                                          | Priority | Status | Layer              | Notes                                                                                          |
+| --- | ---------------------------------------------------------------------------------------------- | -------- | ------ | ------------------ | ---------------------------------------------------------------------------------------------- |
+| I0  | Tenant billing fields + status on CRWA tenant list; provision form plan + pilot/paid           | P1       | done   | Early pilot        | `billingStatus`, plan, meter estimate; extend D3 profile; no processor                         |
+| I1  | Admin: Record external payment, Extend pilot, Mark past due / Suspend / Reactivate + audit     | P1       | done   | Early pilot        | Internal `BILL#EVENT` ledger; offline check/ACH; no processor                                  |
+| I2  | Municipality Billing page (status + plain-language plan; history from our ledger)              | P1       | done   | Early pilot / near | System Admin only; no “update card” until I4–I6                                                |
+| I3  | **Due-out:** Payment processor discovery with CRWA                                             | P1       | todo   | Discovery          | Outcome in Spec §12 / BILLING.md; blocks I4+ only                                              |
+| I4  | **Install:** Processor adapter (Stripe recommended if greenfield)                              | P1       | todo   | After I3           | Secrets in SSM/Secrets Manager; vendor-neutral `paymentProvider` + external ids                |
+| I5  | Webhooks / sync → auto `billingStatus`                                                         | P0       | todo   | After I4           | Idempotent external event ids                                                                  |
+| I6  | Self-serve payment-method update (portal or vendor equivalent)                                 | P1       | todo   | After I4           | Municipality System Admin                                                                      |
+| I7  | Subscriptions + dunning automation                                                             | P2       | todo   | Later              | After pilot hardens                                                                            |
+| I8  | Usage band suggestion polish + basic revenue export                                            | P2       | todo   | Later              | Meter band on create-tenant; export for CRWA bookkeeping                                       |
+
 ---
 
 ## Suggested next sprint (Pilot)
@@ -124,5 +142,9 @@ Work with any amount of history (none → years); never treat thin-data flags as
 1. Smoke D1–D3: CRWA provision tenant → initial System Admin signs in → invite Operator → upload path
 2. MFA UX (**D5** remainder); IAM ABAC (**A6**) thin if needed
 3. Then Epic E / D4 roll-up (G6/H5) — not before admin onboarding smoke is green
+4. When CRWA needs pilot vs paid tracking: **I0–I2 done** (manual status; still no processor SDK)
+5. **I3** discovery conversation before any processor install (I4+)
 
-Do **not** start vNext (AMI, resident portal, billing write-back, custom ML, formal address parse, agent AWS provisioning).
+Do **not** start vNext (AMI, resident portal, **municipal CIS** billing write-back, custom ML, formal address parse, agent AWS provisioning).
+
+Do **not** start membership payment-processor code (I4+) until I3 is closed with a written decision.

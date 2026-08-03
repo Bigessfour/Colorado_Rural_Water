@@ -7,6 +7,7 @@ import { CrwaRollupPageComponent } from './pages/crwa/crwa-rollup-page.component
 import { LoginPageComponent } from './pages/login/login-page.component';
 import { SourcesPageComponent } from './pages/sources/sources-page.component';
 import { AdminPageComponent } from './pages/admin/admin-page.component';
+import { BillingPageComponent } from './pages/billing/billing-page.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -20,6 +21,7 @@ export const routes: Routes = [
       { path: 'sources', component: SourcesPageComponent },
       { path: 'alerts', component: AlertsPageComponent },
       { path: 'admin', component: AdminPageComponent },
+      { path: 'billing', component: BillingPageComponent },
       { path: 'crwa', component: CrwaRollupPageComponent },
     ],
   },

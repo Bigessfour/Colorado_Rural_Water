@@ -9,16 +9,35 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
 import { AuthService, type TenantRole } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
 
 type AssignableRole = 'operator' | 'system_admin';
+type PilotOrPaid = 'pilot' | 'paid';
+type PlanCode =
+  | 'meters_0_100'
+  | 'meters_101_300'
+  | 'meters_301_750'
+  | 'meters_750_plus'
+  | 'custom';
+type BillingStatus = 'pilot' | 'active' | 'past_due' | 'suspended';
+type PaymentMethod = 'check' | 'ach' | 'card' | 'other';
+type BillingAction = 'record-payment' | 'extend-pilot' | 'mark-past-due' | 'suspend' | 'reactivate';
 
 interface TenantRow {
   tenantId: string;
   displayName: string;
   createdAt: string;
   initialUserEmail: string;
+  billingStatus: BillingStatus;
+  billingStatusLabel?: string;
+  planCode: PlanCode;
+  planLabel?: string;
+  meterCountEstimate?: number;
+  pilotExpiresAt?: string;
+  lastPaymentAt?: string;
+  billingNotes?: string;
 }
 
 interface UserRow {
@@ -36,6 +55,7 @@ interface UserRow {
     CardModule,
     ButtonModule,
     InputTextModule,
+    TextareaModule,
     SelectModule,
     TableModule,
     MessageModule,
@@ -52,6 +72,26 @@ export class AdminPageComponent implements OnInit {
     { label: 'System Admin', value: 'system_admin' as AssignableRole },
   ];
 
+  readonly pilotOrPaidOptions = [
+    { label: 'Pilot (complimentary)', value: 'pilot' as PilotOrPaid },
+    { label: 'Paid (manual / offline)', value: 'paid' as PilotOrPaid },
+  ];
+
+  readonly planOptions = [
+    { label: 'Up to 100 meters', value: 'meters_0_100' as PlanCode },
+    { label: '101–300 meters', value: 'meters_101_300' as PlanCode },
+    { label: '301–750 meters', value: 'meters_301_750' as PlanCode },
+    { label: '750+ meters', value: 'meters_750_plus' as PlanCode },
+    { label: 'Custom', value: 'custom' as PlanCode },
+  ];
+
+  readonly paymentMethodOptions = [
+    { label: 'Check', value: 'check' as PaymentMethod },
+    { label: 'ACH', value: 'ach' as PaymentMethod },
+    { label: 'Card (offline)', value: 'card' as PaymentMethod },
+    { label: 'Other', value: 'other' as PaymentMethod },
+  ];
+
   tenants = signal<TenantRow[]>([]);
   users = signal<UserRow[]>([]);
   busy = signal(false);
@@ -59,15 +99,37 @@ export class AdminPageComponent implements OnInit {
   status = signal('');
   tempPassword = signal('');
 
-  // D3 provision
+  // D3 + I0 provision
   tenantId = '';
   displayName = '';
   initialUserEmail = '';
   initialUserRole: AssignableRole = 'system_admin';
+  pilotOrPaid: PilotOrPaid = 'pilot';
+  planCode: PlanCode = 'meters_0_100';
+  meterCountEstimate = '';
+  billingContactEmail = '';
+  pilotExpiresAt = '';
+  billingNotes = '';
 
   // D2 invite
   inviteEmail = '';
   inviteRole: AssignableRole = 'operator';
+
+  // I1 actions
+  actionTenantId = '';
+  action: BillingAction = 'record-payment';
+  actionAmountDollars = '';
+  actionMethod: PaymentMethod = 'check';
+  actionPilotExpiresAt = '';
+  actionNote = '';
+
+  readonly actionOptions = [
+    { label: 'Record external payment', value: 'record-payment' as BillingAction },
+    { label: 'Extend pilot', value: 'extend-pilot' as BillingAction },
+    { label: 'Mark past due', value: 'mark-past-due' as BillingAction },
+    { label: 'Suspend', value: 'suspend' as BillingAction },
+    { label: 'Reactivate', value: 'reactivate' as BillingAction },
+  ];
 
   ngOnInit(): void {
     void this.bootstrap();
@@ -101,8 +163,12 @@ export class AdminPageComponent implements OnInit {
         this.error.set(body.error ?? `Failed (${res.status})`);
         return;
       }
-      this.tenants.set((body.tenants ?? []) as TenantRow[]);
+      const rows = (body.tenants ?? []) as TenantRow[];
+      this.tenants.set(rows);
       this.status.set(`${body.count ?? 0} municipality system(s).`);
+      if (!this.actionTenantId && rows[0]) {
+        this.actionTenantId = rows[0].tenantId;
+      }
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Failed to load tenants');
     } finally {
@@ -142,18 +208,34 @@ export class AdminPageComponent implements OnInit {
     this.error.set('');
     this.tempPassword.set('');
     try {
+      const payload: Record<string, unknown> = {
+        tenantId: this.tenantId,
+        displayName: this.displayName,
+        initialUserEmail: this.initialUserEmail,
+        initialUserRole: this.initialUserRole,
+        pilotOrPaid: this.pilotOrPaid,
+        planCode: this.planCode,
+      };
+      if (this.meterCountEstimate.trim()) {
+        payload['meterCountEstimate'] = Number(this.meterCountEstimate);
+      }
+      if (this.billingContactEmail.trim()) {
+        payload['billingContactEmail'] = this.billingContactEmail.trim();
+      }
+      if (this.pilotOrPaid === 'pilot' && this.pilotExpiresAt.trim()) {
+        payload['pilotExpiresAt'] = new Date(this.pilotExpiresAt).toISOString();
+      }
+      if (this.billingNotes.trim()) {
+        payload['billingNotes'] = this.billingNotes.trim();
+      }
+
       const res = await fetch(`${environment.apiBaseUrl}/admin/tenants`, {
         method: 'POST',
         headers: {
           authorization: `Bearer ${token}`,
           'content-type': 'application/json',
         },
-        body: JSON.stringify({
-          tenantId: this.tenantId,
-          displayName: this.displayName,
-          initialUserEmail: this.initialUserEmail,
-          initialUserRole: this.initialUserRole,
-        }),
+        body: JSON.stringify(payload),
       });
       const body = await res.json();
       if (!res.ok) {
@@ -162,12 +244,18 @@ export class AdminPageComponent implements OnInit {
       }
       this.tempPassword.set(body.initialUser?.temporaryPassword ?? '');
       this.status.set(
-        `Provisioned ${body.tenant?.displayName ?? this.displayName}. Share the temporary password securely.`,
+        `Provisioned ${body.tenant?.displayName ?? this.displayName} (${body.tenant?.billingStatus ?? this.pilotOrPaid}). Share the temporary password securely.`,
       );
       this.tenantId = '';
       this.displayName = '';
       this.initialUserEmail = '';
       this.initialUserRole = 'system_admin';
+      this.pilotOrPaid = 'pilot';
+      this.planCode = 'meters_0_100';
+      this.meterCountEstimate = '';
+      this.billingContactEmail = '';
+      this.pilotExpiresAt = '';
+      this.billingNotes = '';
       await this.refreshTenants();
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Provision failed');
@@ -214,6 +302,78 @@ export class AdminPageComponent implements OnInit {
     }
   }
 
+  selectTenantForAction(tenantId: string): void {
+    this.actionTenantId = tenantId;
+  }
+
+  async runBillingAction(): Promise<void> {
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.error.set('Sign in as a CRWA Admin.');
+      return;
+    }
+    if (!this.actionTenantId) {
+      this.error.set('Select a municipality first.');
+      return;
+    }
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const payload: Record<string, unknown> = {};
+      if (this.actionNote.trim()) payload['note'] = this.actionNote.trim();
+
+      if (this.action === 'record-payment') {
+        if (this.actionAmountDollars.trim()) {
+          const dollars = Number(this.actionAmountDollars);
+          if (!Number.isFinite(dollars) || dollars < 0) {
+            this.error.set('Amount must be a non-negative number.');
+            this.busy.set(false);
+            return;
+          }
+          payload['amountCents'] = Math.round(dollars * 100);
+        }
+        payload['method'] = this.actionMethod;
+        payload['currency'] = 'USD';
+      }
+      if (this.action === 'extend-pilot') {
+        if (!this.actionPilotExpiresAt.trim()) {
+          this.error.set('Pilot expiry date is required.');
+          this.busy.set(false);
+          return;
+        }
+        payload['pilotExpiresAt'] = new Date(this.actionPilotExpiresAt).toISOString();
+      }
+
+      const res = await fetch(
+        `${environment.apiBaseUrl}/admin/tenants/${encodeURIComponent(this.actionTenantId)}/billing/${this.action}`,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+      const body = await res.json();
+      if (!res.ok) {
+        this.error.set(body.error ?? `Billing action failed (${res.status})`);
+        return;
+      }
+      this.status.set(
+        `Updated ${body.tenant?.displayName ?? this.actionTenantId} → ${body.tenant?.billingStatus ?? 'ok'}.`,
+      );
+      this.actionAmountDollars = '';
+      this.actionNote = '';
+      this.actionPilotExpiresAt = '';
+      await this.refreshTenants();
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Billing action failed');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   roleLabel(role: TenantRole | AssignableRole): string {
     switch (role) {
       case 'crwa_admin':
@@ -223,5 +383,35 @@ export class AdminPageComponent implements OnInit {
       default:
         return 'Operator';
     }
+  }
+
+  billingSeverity(status: BillingStatus): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'pilot':
+        return 'info';
+      case 'past_due':
+        return 'warn';
+      case 'suspended':
+        return 'danger';
+      default:
+        return 'secondary';
+    }
+  }
+
+  billingLabel(row: TenantRow): string {
+    return row.billingStatusLabel ?? row.billingStatus ?? '—';
+  }
+
+  planLabelFor(row: TenantRow): string {
+    return row.planLabel ?? row.planCode ?? '—';
+  }
+
+  tenantSelectOptions(): { label: string; value: string }[] {
+    return this.tenants().map((t) => ({
+      label: `${t.displayName} (${t.tenantId})`,
+      value: t.tenantId,
+    }));
   }
 }
