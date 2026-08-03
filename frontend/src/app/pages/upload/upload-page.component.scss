@@ -66,6 +66,18 @@
   color: #0f3d42;
 }
 
+.sheet-row {
+  margin-bottom: 0.85rem;
+}
+
+.merge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #0f3d42;
+}
+
 .preview {
   overflow-x: auto;
   margin: 1rem 0;

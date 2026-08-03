@@ -39,9 +39,9 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 | ID  | Title                                         | Priority | Status | Layer | Notes                                                  |
 | --- | --------------------------------------------- | -------- | ------ | ----- | ------------------------------------------------------ |
-| B1  | Sample messy CSV/Excel fixtures               | P0       | done   | Kelly | Customer + source CSVs; address + name churn           |
+| B1  | Sample messy CSV/Excel fixtures               | P0       | done   | Kelly | Customer + source CSVs; **Town_of_Steve_Meter_Export_MESSY.xlsx** primary Excel stress fixture |
 | B2  | Presigned upload + S3 drop zone per tenant    | P0       | done   | Kelly | Presign + S3 notify → s3-ingest; `kind:source` path    |
-| B3  | Parse CSV/Excel with forgiving heuristics     | P0       | done   | Kelly | `csv-parse.ts` + tests on sample fixture (Excel later) |
+| B3  | Parse CSV/Excel with forgiving heuristics     | P0       | done   | Kelly | `csv-parse.ts` + `excel-parse.ts` (xlsx); header detect, footers, aliases, CF warn; tests on Town of Steve workbook |
 | B4  | Visual column mapper UI + saved mapping       | P0       | done   | Kelly | Upload mapper UI + Dynamo `MAP#customer_readings`      |
 | B5  | Canonical reading + meter-location store      | P0       | done   | Kelly | Dynamo LOC#/RDG#; POST /ingest smoked with sample CSV  |
 | B6  | Ingestion status UX (progress / failures)     | P1       | todo   | Pilot | Non-technical friendly                                 |

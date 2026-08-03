@@ -1,8 +1,8 @@
 <section class="page">
   <h1>Upload meter readings</h1>
   <p class="lede">
-    Drop a messy CSV. We guess columns in everyday language — address stays with the meter; occupant
-    name can change.
+    Drop a messy CSV or Excel export. We guess columns in everyday language — address stays with the
+    meter; occupant name can change.
   </p>
 
   <p-message severity="info" styleClass="hint">{{ sampleHint }}</p-message>
@@ -20,15 +20,46 @@
       cancelLabel="Clear"
       [customUpload]="true"
       [auto]="false"
-      accept=".csv,.txt"
+      accept=".csv,.txt,.xlsx,.xls"
       [maxFileSize]="20000000"
       (uploadHandler)="onCustomUpload($event)"
     >
       <ng-template pTemplate="empty">
-        <div class="drop">Drag a CSV here, or choose a file to preview column mapping.</div>
+        <div class="drop">
+          Drag a CSV or Excel file here, or choose a file to preview column mapping.
+        </div>
       </ng-template>
     </p-fileupload>
   </p-card>
+
+  @if (isExcel && sheetOptions.length) {
+    <p-card header="Workbook sheet" styleClass="upload-card map-card">
+      <p class="map-lede">
+        Clerk Notes and free-text sheets are hidden. Prefer Meter Reads / July for the current cycle.
+      </p>
+      <label class="map-row sheet-row">
+        <span>Sheet</span>
+        <p-select
+          [options]="sheetOptions"
+          [(ngModel)]="selectedSheet"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Choose sheet"
+          fluid
+          (onChange)="onSheetChange()"
+        />
+      </label>
+      <label class="merge-row" for="mergeArchive">
+        <p-checkbox
+          [(ngModel)]="mergeArchive"
+          [binary]="true"
+          inputId="mergeArchive"
+          name="mergeArchive"
+        />
+        <span>Also merge Older Reads / archive sheet on ingest</span>
+      </label>
+    </p-card>
+  }
 
   @if (headers.length) {
     <p-card header="Column mapping" styleClass="upload-card map-card">

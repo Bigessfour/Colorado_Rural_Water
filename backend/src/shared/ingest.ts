@@ -49,7 +49,13 @@ export async function commitCustomerIngest(
     await store.putMapping(tenantId, 'customer_readings', mappingRecord);
   }
 
-  const rows = [...parsed.rows].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  // Address-bearing rows first so archive history without address can attach afterward.
+  const rows = [...parsed.rows].sort((a, b) => {
+    const aHas = a.serviceAddress.trim() ? 0 : 1;
+    const bHas = b.serviceAddress.trim() ? 0 : 1;
+    if (aHas !== bHas) return aHas - bHas;
+    return a.timestamp.localeCompare(b.timestamp);
+  });
   for (const row of rows) {
     await upsertFromRow(store, tenantId, row, summary);
   }
@@ -64,17 +70,27 @@ async function upsertFromRow(
   summary: IngestCommitSummary,
 ): Promise<void> {
   const existing = await store.getLocation(tenantId, row.meterId);
+  const incomingAddress = row.serviceAddress.trim();
+
+  // Archive / incomplete sheets may omit address — keep saved location when present.
+  if (!incomingAddress && !existing) {
+    summary.warnings.push(
+      `Meter ${row.meterId}: skipped reading — no service address in file and this meter is not on file yet.`,
+    );
+    return;
+  }
+
   const { location, addressConflict } = applyMeterLocationUpsert(existing, {
     tenantId,
     meterId: row.meterId,
-    serviceAddress: row.serviceAddress,
+    serviceAddress: incomingAddress || existing!.serviceAddress,
     occupantName: row.occupantName,
     accountNumber: row.accountNumber,
     route: row.route,
     updatedAt: new Date().toISOString(),
   });
 
-  if (addressConflict && existing) {
+  if (addressConflict && existing && incomingAddress) {
     summary.addressConflicts.push({
       meterId: row.meterId,
       existingAddress: existing.serviceAddress,

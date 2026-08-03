@@ -17,6 +17,7 @@ describe('parseFlexibleDate', () => {
     assert.equal(parseFlexibleDate('07/15/2026')?.slice(0, 10), '2026-07-15');
     assert.equal(parseFlexibleDate('7/15/26')?.slice(0, 10), '2026-07-15');
     assert.equal(parseFlexibleDate('15-Jul-2026')?.slice(0, 10), '2026-07-15');
+    assert.equal(parseFlexibleDate('July 15, 2026')?.slice(0, 10), '2026-07-15');
   });
 });
 
