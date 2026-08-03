@@ -45,7 +45,7 @@ output "balance_url" {
 
 output "meters_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/meters/{meterId}"
-  description = "GET /meters/{meterId} history drill-down (JWT, C5)"
+  description = "GET/PUT /meters/{meterId} history + metadata (JWT, C5)"
 }
 
 output "admin_tenants_url" {

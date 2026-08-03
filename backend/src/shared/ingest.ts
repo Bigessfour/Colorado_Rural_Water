@@ -87,6 +87,16 @@ async function upsertFromRow(
     occupantName: row.occupantName,
     accountNumber: row.accountNumber,
     route: row.route,
+    manufacturer: row.manufacturer,
+    model: row.model,
+    serialNumber: row.serialNumber,
+    meterSize: row.meterSize,
+    installDate: row.installDate,
+    meterType: row.meterType,
+    locationDetail: row.locationDetail,
+    radioId: row.radioId,
+    lastTestedAt: row.lastTestedAt,
+    notes: row.notes,
     updatedAt: new Date().toISOString(),
   });
 

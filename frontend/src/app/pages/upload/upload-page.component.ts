@@ -20,7 +20,13 @@ type CanonicalField =
   | 'cumulativeReading'
   | 'unit'
   | 'route'
-  | 'diagnosticFlags';
+  | 'diagnosticFlags'
+  | 'manufacturer'
+  | 'model'
+  | 'serialNumber'
+  | 'meterSize'
+  | 'installDate'
+  | 'radioId';
 
 const FIELD_LABELS: Record<CanonicalField, string> = {
   meterId: 'Meter ID',
@@ -32,6 +38,12 @@ const FIELD_LABELS: Record<CanonicalField, string> = {
   unit: 'Unit',
   route: 'Route',
   diagnosticFlags: 'Diagnostic flags',
+  manufacturer: 'Manufacturer',
+  model: 'Model',
+  serialNumber: 'Serial number',
+  meterSize: 'Meter size',
+  installDate: 'Install date',
+  radioId: 'Radio / endpoint ID',
 };
 
 /** Keep in sync with backend HEADER_ALIASES (csv-parse) for preview guesses. */
@@ -67,6 +79,18 @@ const ALIASES: Record<CanonicalField, string[]> = {
     'flag / alarm',
     'alarm',
   ],
+  manufacturer: ['manufacturer', 'mfr', 'make', 'meter manufacturer', 'meter make'],
+  model: ['model', 'meter model', 'model number', 'model #'],
+  serialNumber: ['serial', 'serial number', 'serial #', 'serial no', 'meter serial', 'sn'],
+  meterSize: ['meter size', 'size', 'size (in)', 'size in', 'meter_size'],
+  installDate: [
+    'install date',
+    'installed',
+    'date installed',
+    'installation date',
+    'install dt',
+  ],
+  radioId: ['radio id', 'radio', 'endpoint id', 'endpoint', 'ami id', 'ami', 'mxu'],
 };
 
 /** Match backend MAX_EXCEL_BYTES — API JSON+base64 cannot carry 20MB workbooks. */

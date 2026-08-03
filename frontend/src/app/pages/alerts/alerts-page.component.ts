@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -6,6 +7,8 @@ import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
 import { MessageModule } from 'primeng/message';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -31,10 +34,38 @@ interface MeterHistoryReading {
   occupantNameAtRead: string | null;
 }
 
+interface MeterMetadataForm {
+  occupantName: string;
+  accountNumber: string;
+  route: string;
+  manufacturer: string;
+  model: string;
+  serialNumber: string;
+  meterSize: string;
+  installDate: string;
+  meterType: string;
+  locationDetail: string;
+  radioId: string;
+  lastTestedAt: string;
+  notes: string;
+}
+
 interface MeterHistoryView {
   meterId: string;
   serviceAddress: string;
   occupantName: string | null;
+  accountNumber: string | null;
+  route: string | null;
+  manufacturer: string | null;
+  model: string | null;
+  serialNumber: string | null;
+  meterSize: string | null;
+  installDate: string | null;
+  meterType: string | null;
+  locationDetail: string | null;
+  radioId: string | null;
+  lastTestedAt: string | null;
+  notes: string | null;
   readings: MeterHistoryReading[];
 }
 
@@ -42,12 +73,15 @@ interface MeterHistoryView {
   selector: 'app-alerts-page',
   imports: [
     RouterLink,
+    FormsModule,
     CardModule,
     ButtonModule,
     TagModule,
     TableModule,
     MessageModule,
     DialogModule,
+    InputTextModule,
+    TextareaModule,
   ],
   templateUrl: './alerts-page.component.html',
   styleUrl: './alerts-page.component.scss',
@@ -67,6 +101,9 @@ export class AlertsPageComponent implements OnInit {
   historyBusy = signal(false);
   history = signal<MeterHistoryView | null>(null);
   historyError = signal('');
+  historyNotice = signal('');
+  saveBusy = signal(false);
+  metaForm = signal<MeterMetadataForm>(emptyMetaForm());
 
   ngOnInit(): void {
     void this.refresh();
@@ -197,7 +234,9 @@ export class AlertsPageComponent implements OnInit {
     this.historyVisible.set(true);
     this.historyBusy.set(true);
     this.historyError.set('');
+    this.historyNotice.set('');
     this.history.set(null);
+    this.metaForm.set(emptyMetaForm());
     try {
       const res = await fetch(
         `${environment.apiBaseUrl}/meters/${encodeURIComponent(alert.meterId)}`,
@@ -208,12 +247,26 @@ export class AlertsPageComponent implements OnInit {
         this.historyError.set(body.error ?? `Failed (${res.status})`);
         return;
       }
-      this.history.set({
+      const view: MeterHistoryView = {
         meterId: body.meterId,
         serviceAddress: body.serviceAddress,
         occupantName: body.occupantName ?? null,
+        accountNumber: body.accountNumber ?? null,
+        route: body.route ?? null,
+        manufacturer: body.manufacturer ?? null,
+        model: body.model ?? null,
+        serialNumber: body.serialNumber ?? null,
+        meterSize: body.meterSize ?? null,
+        installDate: body.installDate ?? null,
+        meterType: body.meterType ?? null,
+        locationDetail: body.locationDetail ?? null,
+        radioId: body.radioId ?? null,
+        lastTestedAt: body.lastTestedAt ?? null,
+        notes: body.notes ?? null,
         readings: (body.readings ?? []) as MeterHistoryReading[],
-      });
+      };
+      this.history.set(view);
+      this.metaForm.set(formFromHistory(view));
     } catch (err) {
       this.historyError.set(err instanceof Error ? err.message : 'Network error');
     } finally {
@@ -226,6 +279,81 @@ export class AlertsPageComponent implements OnInit {
     if (!visible) {
       this.history.set(null);
       this.historyError.set('');
+      this.historyNotice.set('');
+      this.metaForm.set(emptyMetaForm());
+    }
+  }
+
+  updateMetaField<K extends keyof MeterMetadataForm>(key: K, value: MeterMetadataForm[K]): void {
+    this.metaForm.update((f) => ({ ...f, [key]: value }));
+  }
+
+  async saveMetadata(): Promise<void> {
+    const h = this.history();
+    const token = this.auth.getBearerToken();
+    if (!h || !token) {
+      this.historyError.set('Sign in to save meter metadata.');
+      return;
+    }
+    this.saveBusy.set(true);
+    this.historyError.set('');
+    this.historyNotice.set('');
+    const form = this.metaForm();
+    const body = {
+      occupantName: nullIfBlank(form.occupantName),
+      accountNumber: nullIfBlank(form.accountNumber),
+      route: nullIfBlank(form.route),
+      manufacturer: nullIfBlank(form.manufacturer),
+      model: nullIfBlank(form.model),
+      serialNumber: nullIfBlank(form.serialNumber),
+      meterSize: nullIfBlank(form.meterSize),
+      installDate: nullIfBlank(form.installDate),
+      meterType: nullIfBlank(form.meterType),
+      locationDetail: nullIfBlank(form.locationDetail),
+      radioId: nullIfBlank(form.radioId),
+      lastTestedAt: nullIfBlank(form.lastTestedAt),
+      notes: nullIfBlank(form.notes),
+    };
+    try {
+      const res = await fetch(
+        `${environment.apiBaseUrl}/meters/${encodeURIComponent(h.meterId)}`,
+        {
+          method: 'PUT',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        },
+      );
+      const resBody = await res.json();
+      if (!res.ok) {
+        this.historyError.set(resBody.error ?? `Save failed (${res.status})`);
+        return;
+      }
+      const updated: MeterHistoryView = {
+        ...h,
+        occupantName: resBody.occupantName ?? null,
+        accountNumber: resBody.accountNumber ?? null,
+        route: resBody.route ?? null,
+        manufacturer: resBody.manufacturer ?? null,
+        model: resBody.model ?? null,
+        serialNumber: resBody.serialNumber ?? null,
+        meterSize: resBody.meterSize ?? null,
+        installDate: resBody.installDate ?? null,
+        meterType: resBody.meterType ?? null,
+        locationDetail: resBody.locationDetail ?? null,
+        radioId: resBody.radioId ?? null,
+        lastTestedAt: resBody.lastTestedAt ?? null,
+        notes: resBody.notes ?? null,
+      };
+      this.history.set(updated);
+      this.metaForm.set(formFromHistory(updated));
+      this.historyNotice.set('Meter metadata saved for your system.');
+    } catch (err) {
+      this.historyError.set(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      this.saveBusy.set(false);
     }
   }
 
@@ -283,6 +411,47 @@ export class AlertsPageComponent implements OnInit {
       this.actionBusyId.set(null);
     }
   }
+}
+
+function emptyMetaForm(): MeterMetadataForm {
+  return {
+    occupantName: '',
+    accountNumber: '',
+    route: '',
+    manufacturer: '',
+    model: '',
+    serialNumber: '',
+    meterSize: '',
+    installDate: '',
+    meterType: '',
+    locationDetail: '',
+    radioId: '',
+    lastTestedAt: '',
+    notes: '',
+  };
+}
+
+function formFromHistory(h: MeterHistoryView): MeterMetadataForm {
+  return {
+    occupantName: h.occupantName ?? '',
+    accountNumber: h.accountNumber ?? '',
+    route: h.route ?? '',
+    manufacturer: h.manufacturer ?? '',
+    model: h.model ?? '',
+    serialNumber: h.serialNumber ?? '',
+    meterSize: h.meterSize ?? '',
+    installDate: (h.installDate ?? '').slice(0, 10),
+    meterType: h.meterType ?? '',
+    locationDetail: h.locationDetail ?? '',
+    radioId: h.radioId ?? '',
+    lastTestedAt: (h.lastTestedAt ?? '').slice(0, 10),
+    notes: h.notes ?? '',
+  };
+}
+
+function nullIfBlank(value: string): string | null {
+  const t = value.trim();
+  return t ? t : null;
 }
 
 function formatShortWhen(iso: string): string {

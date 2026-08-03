@@ -112,7 +112,7 @@
     header="Meter history"
     [modal]="true"
     [draggable]="false"
-    [style]="{ width: 'min(42rem, 96vw)' }"
+    [style]="{ width: 'min(48rem, 96vw)' }"
     [visible]="historyVisible()"
     (visibleChange)="onHistoryVisibleChange($event)"
   >
@@ -121,6 +121,9 @@
     }
     @if (historyError()) {
       <p-message severity="error" styleClass="hint">{{ historyError() }}</p-message>
+    }
+    @if (historyNotice()) {
+      <p-message severity="success" styleClass="hint">{{ historyNotice() }}</p-message>
     }
     @if (history(); as h) {
       <div class="history-meta">
@@ -132,11 +135,163 @@
           <div class="kpi-label">Service address</div>
           <div class="history-value">{{ h.serviceAddress }}</div>
         </div>
-        <div>
-          <div class="kpi-label">Current occupant</div>
-          <div class="history-value">{{ h.occupantName || '—' }}</div>
-        </div>
       </div>
+
+      <h2 class="history-section">Meter metadata</h2>
+      <p class="muted meta-lede">
+        Optional record-keeping fields (manufacturer, size, install date, etc.). Blank clears a
+        field. Re-ingest will not wipe values omitted from a CSV.
+      </p>
+      @if (metaForm(); as form) {
+        <form class="meta-form" (ngSubmit)="saveMetadata()">
+          <label>
+            Current occupant
+            <input
+              pInputText
+              name="occupantName"
+              [ngModel]="form.occupantName"
+              (ngModelChange)="updateMetaField('occupantName', $event)"
+              fluid
+            />
+          </label>
+          <label>
+            Account number
+            <input
+              pInputText
+              name="accountNumber"
+              [ngModel]="form.accountNumber"
+              (ngModelChange)="updateMetaField('accountNumber', $event)"
+              fluid
+            />
+          </label>
+          <label>
+            Route
+            <input
+              pInputText
+              name="route"
+              [ngModel]="form.route"
+              (ngModelChange)="updateMetaField('route', $event)"
+              fluid
+            />
+          </label>
+          <label>
+            Manufacturer
+            <input
+              pInputText
+              name="manufacturer"
+              [ngModel]="form.manufacturer"
+              (ngModelChange)="updateMetaField('manufacturer', $event)"
+              fluid
+            />
+          </label>
+          <label>
+            Model
+            <input
+              pInputText
+              name="model"
+              [ngModel]="form.model"
+              (ngModelChange)="updateMetaField('model', $event)"
+              fluid
+            />
+          </label>
+          <label>
+            Serial number
+            <input
+              pInputText
+              name="serialNumber"
+              [ngModel]="form.serialNumber"
+              (ngModelChange)="updateMetaField('serialNumber', $event)"
+              fluid
+            />
+          </label>
+          <label>
+            Meter size
+            <input
+              pInputText
+              name="meterSize"
+              [ngModel]="form.meterSize"
+              (ngModelChange)="updateMetaField('meterSize', $event)"
+              fluid
+              placeholder="e.g. 5/8"
+            />
+          </label>
+          <label>
+            Install date
+            <input
+              pInputText
+              type="date"
+              name="installDate"
+              [ngModel]="form.installDate"
+              (ngModelChange)="updateMetaField('installDate', $event)"
+              fluid
+            />
+          </label>
+          <label>
+            Meter type
+            <input
+              pInputText
+              name="meterType"
+              [ngModel]="form.meterType"
+              (ngModelChange)="updateMetaField('meterType', $event)"
+              fluid
+              placeholder="e.g. ultrasonic"
+            />
+          </label>
+          <label>
+            Location detail
+            <input
+              pInputText
+              name="locationDetail"
+              [ngModel]="form.locationDetail"
+              (ngModelChange)="updateMetaField('locationDetail', $event)"
+              fluid
+              placeholder="pit / basement / curb"
+            />
+          </label>
+          <label>
+            Radio / endpoint ID
+            <input
+              pInputText
+              name="radioId"
+              [ngModel]="form.radioId"
+              (ngModelChange)="updateMetaField('radioId', $event)"
+              fluid
+            />
+          </label>
+          <label>
+            Last tested
+            <input
+              pInputText
+              type="date"
+              name="lastTestedAt"
+              [ngModel]="form.lastTestedAt"
+              (ngModelChange)="updateMetaField('lastTestedAt', $event)"
+              fluid
+            />
+          </label>
+          <label class="span-2">
+            Notes
+            <textarea
+              pTextarea
+              name="notes"
+              rows="2"
+              class="w-full"
+              [ngModel]="form.notes"
+              (ngModelChange)="updateMetaField('notes', $event)"
+            ></textarea>
+          </label>
+          <div class="meta-actions span-2">
+            <p-button
+              type="submit"
+              label="Save metadata"
+              [loading]="saveBusy()"
+              [disabled]="saveBusy()"
+            />
+          </div>
+        </form>
+      }
+
+      <h2 class="history-section">Readings</h2>
       <p-table [value]="h.readings" [tableStyle]="{ 'min-width': '28rem' }">
         <ng-template pTemplate="header">
           <tr>

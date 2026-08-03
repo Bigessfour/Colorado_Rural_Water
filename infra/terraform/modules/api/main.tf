@@ -438,6 +438,14 @@ resource "aws_apigatewayv2_route" "meters_get" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "meters_put" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "PUT /meters/{meterId}"
+  target             = "integrations/${aws_apigatewayv2_integration.meters.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_route" "admin_tenants_get" {
   api_id             = aws_apigatewayv2_api.http.id
   route_key          = "GET /admin/tenants"

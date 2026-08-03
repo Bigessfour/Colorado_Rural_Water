@@ -15,7 +15,17 @@ export type CanonicalField =
   | 'cumulativeReading'
   | 'unit'
   | 'route'
-  | 'diagnosticFlags';
+  | 'diagnosticFlags'
+  | 'manufacturer'
+  | 'model'
+  | 'serialNumber'
+  | 'meterSize'
+  | 'installDate'
+  | 'meterType'
+  | 'locationDetail'
+  | 'radioId'
+  | 'lastTestedAt'
+  | 'notes';
 
 export type ColumnMapping = Partial<Record<CanonicalField, string>>;
 
@@ -38,6 +48,17 @@ export interface MappedReadingRow {
   unit: string;
   route: string | null;
   diagnosticFlags: string[];
+  manufacturer: string | null;
+  model: string | null;
+  serialNumber: string | null;
+  meterSize: string | null;
+  /** YYYY-MM-DD when parseable. */
+  installDate: string | null;
+  meterType: string | null;
+  locationDetail: string | null;
+  radioId: string | null;
+  lastTestedAt: string | null;
+  notes: string | null;
   sourceLine: number;
 }
 
@@ -119,6 +140,50 @@ const HEADER_ALIASES: Record<CanonicalField, string[]> = {
     'flag / alarm',
     'alarm',
   ],
+  manufacturer: ['manufacturer', 'mfr', 'make', 'meter manufacturer', 'meter make'],
+  model: ['model', 'meter model', 'model number', 'model #'],
+  serialNumber: [
+    'serial',
+    'serial number',
+    'serial #',
+    'serial no',
+    'meter serial',
+    'sn',
+  ],
+  meterSize: ['meter size', 'size', 'size (in)', 'size in', 'meter_size'],
+  installDate: [
+    'install date',
+    'installed',
+    'date installed',
+    'installation date',
+    'install_dt',
+    'install dt',
+  ],
+  meterType: ['meter type', 'meter_type'],
+  locationDetail: [
+    'location detail',
+    'meter location',
+    'location type',
+    'set location',
+  ],
+  radioId: [
+    'radio id',
+    'radio',
+    'endpoint id',
+    'endpoint',
+    'ami id',
+    'ami',
+    'transmitter id',
+    'mxu',
+  ],
+  lastTestedAt: [
+    'last tested',
+    'tested',
+    'test date',
+    'certification date',
+    'last test date',
+  ],
+  notes: ['notes', 'note', 'comments', 'comment', 'remarks'],
 };
 
 const ALL_ALIAS_KEYS = new Set(
@@ -382,6 +447,8 @@ export function applyMapping(
     }
 
     const diagRaw = cell(raw, mapping.diagnosticFlags);
+    const installRaw = emptyToNull(cell(raw, mapping.installDate));
+    const lastTestedRaw = emptyToNull(cell(raw, mapping.lastTestedAt));
     rows.push({
       meterId,
       serviceAddress: serviceAddress || '',
@@ -392,6 +459,16 @@ export function applyMapping(
       unit,
       route: emptyToNull(cell(raw, mapping.route)),
       diagnosticFlags: parseDiagnosticFlags(diagRaw),
+      manufacturer: emptyToNull(cell(raw, mapping.manufacturer)),
+      model: emptyToNull(cell(raw, mapping.model)),
+      serialNumber: emptyToNull(cell(raw, mapping.serialNumber)),
+      meterSize: emptyToNull(cell(raw, mapping.meterSize)),
+      installDate: installRaw ? toDateOnlyField(installRaw) : null,
+      meterType: emptyToNull(cell(raw, mapping.meterType)),
+      locationDetail: emptyToNull(cell(raw, mapping.locationDetail)),
+      radioId: emptyToNull(cell(raw, mapping.radioId)),
+      lastTestedAt: lastTestedRaw ? toDateOnlyField(lastTestedRaw) : null,
+      notes: emptyToNull(cell(raw, mapping.notes)),
       sourceLine: lineNo,
     });
   });
@@ -507,6 +584,16 @@ function cell(row: Record<string, string>, header: string | undefined): string {
 function emptyToNull(value: string): string | null {
   const t = value.trim();
   return t ? t : null;
+}
+
+/** Prefer YYYY-MM-DD for install / last-tested asset dates. */
+function toDateOnlyField(raw: string): string | null {
+  const iso = parseFlexibleDate(raw);
+  if (!iso) {
+    const trimmed = raw.trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : emptyToNull(raw);
+  }
+  return iso.slice(0, 10);
 }
 
 /** Accepts common clerk handheld / Excel date shapes. */

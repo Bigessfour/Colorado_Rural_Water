@@ -138,8 +138,16 @@ function buildSeries(
         occupantName: list[0]?.occupantName ?? null,
         accountNumber: null,
         route: null,
+        manufacturer: null,
+        model: null,
+        serialNumber: null,
         meterSize: null,
         installDate: null,
+        meterType: null,
+        locationDetail: null,
+        radioId: null,
+        lastTestedAt: null,
+        notes: null,
         updatedAt: new Date().toISOString(),
       } satisfies MeterLocation);
 

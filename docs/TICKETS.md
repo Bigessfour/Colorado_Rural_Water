@@ -43,9 +43,10 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | B2  | Presigned upload + S3 drop zone per tenant    | P0       | done   | Kelly | Presign + S3 notify → s3-ingest; `kind:source` path    |
 | B3  | Parse CSV/Excel with forgiving heuristics     | P0       | done   | Kelly | `csv-parse.ts` + `excel-parse.ts` (xlsx); header detect, footers, aliases, CF warn; **size/DoS caps + tenantFromKey harden** (post-review); tests on Town of Steve workbook |
 | B4  | Visual column mapper UI + saved mapping       | P0       | done   | Kelly | Upload mapper UI + Dynamo `MAP#customer_readings`      |
-| B5  | Canonical reading + meter-location store      | P0       | done   | Kelly | Dynamo LOC#/RDG#; POST /ingest smoked with sample CSV  |
+| B5  | Canonical reading + meter-location store      | P0       | done   | Kelly | Dynamo LOC#/RDG#; POST /ingest smoked with sample CSV; optional asset metadata (manufacturer/model/serial/size/install/type/location/radio/lastTested/notes) with non-wipe upsert |
 | B6  | Ingestion status UX (progress / failures)     | P1       | todo   | Pilot | Non-technical friendly                                 |
 | B7  | Occupant-name update without relocating meter | P1       | done   | Kelly | Covered by meter-location upsert + ingest commit       |
+| B8  | Operator meter asset metadata edit            | P1       | done   | Pilot | `PUT /meters/{id}` partial metadata; Alerts History form; CSV aliases for common asset headers |
 
 ## Epic C — Alerts & Dashboard
 
@@ -55,7 +56,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | done        | Kelly  | Live Confidence + balance chart (In/Out/Loss) + meter/balance alert feed |
 | C3  | Acknowledge / resolve alerts                                | P0       | done        | Pilot  | Dynamo `ALERT#STATUS#`; audit who/when; resolved hidden from default GET   |
 | C4  | Export flagged meters                                       | P1       | done        | Pilot  | `GET /alerts?format=csv` + Alerts “Export flagged CSV”; confidenceNote on Watch rows |
-| C5  | Basic meter history view                                    | P1       | done        | Pilot  | `GET /meters/{meterId}`; Alerts History dialog (address + current occupant)          |
+| C5  | Basic meter history view                                    | P1       | done        | Pilot  | `GET/PUT /meters/{meterId}`; History dialog shows + edits optional asset metadata |
 | C6  | AI plain-language alert explanations                        | P1       | todo        | Pilot  | Bedrock; tenant-scoped; Kelly may use static/heuristic copy                  |
 
 ## Epic D — Auth, roles & CRWA roll-up
