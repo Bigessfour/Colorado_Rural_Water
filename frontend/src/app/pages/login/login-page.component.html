@@ -5,25 +5,139 @@
   @if (error()) {
     <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
   }
+  @if (hint() && !error()) {
+    <p-message severity="info" styleClass="hint">{{ hint() }}</p-message>
+  }
 
   <p-card styleClass="login-card">
-    <form class="form" (ngSubmit)="submit()">
-      <label>
-        Email
-        <input type="email" name="email" autocomplete="username" [(ngModel)]="email" required />
-      </label>
-      <label>
-        Password
-        <input
-          type="password"
-          name="password"
-          autocomplete="current-password"
-          [(ngModel)]="password"
-          required
+    @if (step() === 'credentials') {
+      <form class="form" (ngSubmit)="submitCredentials()">
+        <label>
+          Email
+          <input
+            pInputText
+            type="email"
+            name="email"
+            autocomplete="username"
+            [(ngModel)]="email"
+            required
+          />
+        </label>
+        <label>
+          Password
+          <input
+            type="password"
+            name="password"
+            autocomplete="current-password"
+            [(ngModel)]="password"
+            required
+          />
+        </label>
+        <p-button type="submit" label="Sign in" [loading]="busy()" [disabled]="busy()" />
+      </form>
+    }
+
+    @if (step() === 'mfa') {
+      <form class="form" (ngSubmit)="submitMfa()">
+        <p class="step-lede">Authenticator code</p>
+        <p-inputotp
+          [(ngModel)]="mfaCode"
+          name="mfaCode"
+          [length]="6"
+          [integerOnly]="true"
+          styleClass="otp"
         />
-      </label>
-      <p-button type="submit" label="Sign in" [loading]="busy()" [disabled]="busy()" />
-    </form>
+        <p-button type="submit" label="Verify and continue" [loading]="busy()" [disabled]="busy()" />
+        <p-button
+          type="button"
+          label="Back"
+          severity="secondary"
+          [text]="true"
+          (onClick)="backToCredentials()"
+          [disabled]="busy()"
+        />
+      </form>
+    }
+
+    @if (step() === 'new_password') {
+      <form class="form" (ngSubmit)="submitNewPassword()">
+        <p class="step-lede">Choose a permanent password</p>
+        <label>
+          New password
+          <input
+            type="password"
+            name="newPassword"
+            autocomplete="new-password"
+            [(ngModel)]="newPassword"
+            required
+          />
+        </label>
+        <label>
+          Confirm password
+          <input
+            type="password"
+            name="confirmPassword"
+            autocomplete="new-password"
+            [(ngModel)]="confirmPassword"
+            required
+          />
+        </label>
+        <p class="policy">At least 12 characters with upper, lower, number, and symbol.</p>
+        <p-button type="submit" label="Save password and continue" [loading]="busy()" [disabled]="busy()" />
+        <p-button
+          type="button"
+          label="Back"
+          severity="secondary"
+          [text]="true"
+          (onClick)="backToCredentials()"
+          [disabled]="busy()"
+        />
+      </form>
+    }
+
+    @if (step() === 'mfa_setup') {
+      <form class="form" (ngSubmit)="submitMfaSetup()">
+        <p class="step-lede">Set up authenticator (TOTP)</p>
+        @if (setupSecret) {
+          <label>
+            Secret key
+            <input pInputText [ngModel]="setupSecret" name="setupSecret" readonly />
+          </label>
+          <p-button
+            type="button"
+            label="Copy secret"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="copySecret()"
+          />
+          <p class="policy">
+            In your authenticator app, add an account and paste this key (or open the otpauth link on
+            your phone).
+          </p>
+          @if (setupOtpauth) {
+            <p class="otpauth"><a [href]="setupOtpauth">Open authenticator link</a></p>
+          }
+        }
+        <p class="step-lede">Confirm with a code</p>
+        <p-inputotp
+          [(ngModel)]="mfaCode"
+          name="setupCode"
+          [length]="6"
+          [integerOnly]="true"
+          styleClass="otp"
+        />
+        <p-button type="submit" label="Verify and finish sign-in" [loading]="busy()" [disabled]="busy()" />
+        <p-button
+          type="button"
+          label="Back"
+          severity="secondary"
+          [text]="true"
+          (onClick)="backToCredentials()"
+          [disabled]="busy()"
+        />
+      </form>
+    }
+
     <p class="back"><a routerLink="/dashboard">Back to dashboard</a></p>
   </p-card>
 </section>

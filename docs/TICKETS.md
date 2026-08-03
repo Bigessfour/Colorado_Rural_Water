@@ -67,7 +67,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | D2  | System Admin: invite users within tenant    | P1       | done        | Pilot       | `POST /admin/users/invite`; JWT tenant only; temp password once        |
 | D3  | CRWA Admin: provision tenant + initial user | P0       | done        | Pilot       | `POST /admin/tenants`; META#profile + Cognito AdminCreateUser          |
 | D4  | CRWA enterprise roll-up (sanitized)         | P1       | todo        | Pilot       | No cross-tenant PII; include water-balance KPIs (G6) + Confidence (H5) |
-| D5  | Self-service password + MFA UX              | P1       | in_progress | Kelly/Pilot | SPA email/password done (Kelly); MFA UX later (Pilot)                  |
+| D5  | Self-service password + MFA UX              | P1       | done        | Kelly/Pilot | Password change + TOTP setup on Account; login MFA / NEW_PASSWORD / MFA_SETUP challenges; pool already OPTIONAL+software token (no TF apply). Residual: no SMS MFA; no QR render (otpauth link + copy secret); re-login if old session lacks access token |
 
 ## Epic G — Water balance (production in vs billed out)
 
@@ -141,7 +141,7 @@ Water Saver as a **CRWA member service** (dues / pilot status) — not municipal
 ## Suggested next sprint (Pilot)
 
 1. Smoke D1–D3: CRWA provision tenant → initial System Admin signs in → invite Operator → upload path
-2. MFA UX (**D5** remainder); IAM ABAC (**A6**) thin if needed
+2. IAM ABAC (**A6**) thin if needed; D5 MFA/password **done** (Account + login challenges)
 3. Then Epic E / D4 roll-up (G6/H5) — not before admin onboarding smoke is green
 4. When CRWA needs pilot vs paid tracking: **I0–I2 done** (manual status; still no processor SDK)
 5. **I3** discovery conversation before any processor install (I4+)

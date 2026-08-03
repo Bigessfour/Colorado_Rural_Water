@@ -55,7 +55,8 @@ cd backend && npm test
 
 | Page / route  | Component                 | Proof                          | Status          |
 | ------------- | ------------------------- | ------------------------------ | --------------- |
-| `/login`      | `LoginPageComponent`      | Manual F2 #6                   | Needs automated |
+| `/login`      | `LoginPageComponent`      | Manual F2 #6 + D5 MFA challenge | Needs automated |
+| `/account`    | `AccountPageComponent`    | Manual D5 smoke (SMOKE)         | Needs automated |
 | `/dashboard`  | `DashboardPageComponent`  | Manual F2 #2                   | Needs automated |
 | `/upload`     | `UploadPageComponent`     | Manual F2 #1                   | Needs automated |
 | `/sources`    | `SourcesPageComponent`    | Manual F2 #3                   | Needs automated |
@@ -87,7 +88,7 @@ cd backend && npm test
 | Dynamo factories                                | `shared/dynamo-store.ts`       | Indirect via stores                   | Thin env wiring OK |
 | Cognito admin client                            | `shared/cognito-admin.ts`      | `admin-isolation.test.ts` (mock)      | Yes                |
 | HTTP helpers (`ok`/`csv`/…)                     | `shared/http.ts`               | Indirect via handlers                 | Yes                |
-| `AuthService` (login, `/me`, roles)             | `frontend/.../auth.service.ts` | Manual login smoke                    | Needs unit test    |
+| `AuthService` (login, MFA, password, `/me`)     | `frontend/.../auth.service.ts` | Manual D5 + F2 login smoke            | Needs unit test    |
 
 ---
 

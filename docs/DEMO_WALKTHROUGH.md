@@ -38,4 +38,4 @@
 ## Avoid in this demo
 
 - Claiming “we found a leak”
-- CRWA roll-up, AI chat, MFA, threshold editing, multi-year bulk history
+- CRWA roll-up, AI chat, MFA setup walkthrough (Pilot — Account page exists but skip unless asked), threshold editing, multi-year bulk history

@@ -1,3 +1,7 @@
+.page {
+  max-width: 36rem;
+}
+
 .page h1 {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 1.75rem;
@@ -9,7 +13,6 @@
 .lede {
   font-family: 'Source Sans 3', system-ui, sans-serif;
   color: #4a6368;
-  max-width: 36rem;
   margin: 0 0 1rem;
 }
 
@@ -18,11 +21,23 @@
   width: 100%;
 }
 
-:host ::ng-deep .login-card {
-  max-width: 26rem;
+.who {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #0f3d42;
+  margin: 0 0 1rem;
+}
+
+:host ::ng-deep .block {
+  margin-bottom: 1.25rem;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(15, 61, 66, 0.08);
   box-shadow: none;
+}
+
+.card-lede {
+  margin: 0 0 0.85rem;
+  color: #4a6368;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
 }
 
 .form {
@@ -37,28 +52,13 @@
   color: #0f3d42;
 }
 
-.form input {
+.form input[type='password'],
+.form input[type='text'],
+.form input[type='email'] {
   font: inherit;
   padding: 0.5rem 0.6rem;
   border: 1px solid rgba(15, 61, 66, 0.2);
   border-radius: 4px;
-}
-
-.back {
-  margin: 1rem 0 0;
-  font-family: 'Source Sans 3', system-ui, sans-serif;
-  font-size: 0.9rem;
-}
-
-.back a {
-  color: #1a6b73;
-}
-
-.step-lede {
-  margin: 0;
-  font-family: 'Source Sans 3', system-ui, sans-serif;
-  font-weight: 600;
-  color: #0f3d42;
 }
 
 .policy {
@@ -67,14 +67,29 @@
   color: #4a6368;
 }
 
-.otpauth {
-  margin: 0;
-  font-size: 0.9rem;
-  word-break: break-all;
+.mfa-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
 }
 
-.otpauth a {
+.pref {
+  font-size: 0.85rem;
+  color: #4a6368;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.otpauth-link {
   color: #1a6b73;
+  font-size: 0.9rem;
 }
 
 :host ::ng-deep .otp {

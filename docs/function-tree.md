@@ -8,7 +8,8 @@ flowchart TB
     User((Operator / Admin))
 
     subgraph Spa["Angular SPA"]
-        Login["/login\nAuthService Cognito"]
+        Login["/login\nAuth + MFA challenges"]
+        Account["/account\nPassword + TOTP MFA"]
         Dash["/dashboard\nBalance + confidence + alerts"]
         Upload["/upload\nCustomer CSV"]
         Sources["/sources\nCRUD + source ingest"]

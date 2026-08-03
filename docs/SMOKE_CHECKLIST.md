@@ -38,4 +38,14 @@ Expect: `200`, JSON scoped to one tenant; `balanceAlerts` present (may be `[]`);
 
 ## Not required for Kelly (Pilot)
 
-Persisted ack audit (C3 — shipped), export (C4 — shipped), meter history (C5 — shipped), CRWA roll-up, AI agent, MFA UX, bulk multi-year history.
+Persisted ack audit (C3 — shipped), export (C4 — shipped), meter history (C5 — shipped), CRWA roll-up, AI agent, bulk multi-year history.
+
+## Pilot smoke — D5 password + MFA (optional)
+
+Pool: Cognito `OPTIONAL` + software token (no SMS). Client-side Cognito APIs only (no Admin MFA IAM).
+
+1. Sign in → **Account** → Change password (current + new; policy ≥12 with upper/lower/number/symbol).
+2. **Account** → Set up authenticator → copy secret / open otpauth link → enter 6-digit code → status **On**.
+3. Sign out → sign in → enter TOTP on login challenge → land on dashboard.
+4. Invited users with temp password: login shows permanent-password step (`NEW_PASSWORD_REQUIRED`).
+5. If Account MFA says access token missing: sign out and sign in once (access token now stored in sessionStorage).

@@ -35,7 +35,7 @@ Agents and humans use this section to decide what “done” means. Prefer this 
 - Real Confidence calculator + store (H3), bulk history UX (H2), full H6 gating polish
 - Roles D1–D3; CRWA roll-up D4 + H5
 - Conversational AI shell + onboarding interview + mapping help + cost/safety (Epic E) with Confidence coaching
-- True per-tenant IAM ABAC (A6); MFA UX (D5 remainder)
+- True per-tenant IAM ABAC (A6); MFA UX shipped (D5 — Account + login challenges)
 - Per-meter Confidence; configurable reading cycles (beyond UTC calendar month)
 
 ### vNext / post-pilot — Defer
@@ -137,7 +137,7 @@ A non-technical city clerk can upload (or drop) a messy real-world CSV/Excel fil
 - Real Confidence calculator (H3) + CRWA Confidence roll-up (H5)
 - Conversational AI agent for onboarding, mapping help, explanations, confidence coaching, and guided configuration (Epic E) with cost transparency
 - Roles + CRWA enterprise roll-up (D1–D4)
-- Self-service MFA UX; true per-tenant IAM ABAC (A6)
+- Self-service MFA UX (**done** D5); true per-tenant IAM ABAC (A6)
 - Membership billing status on tenants (Epic I0–I2): pilot/paid, manual mark paid, suspend visibility — **no payment-processor SDK required** (processor = discover-and-install due-out; §9 / [BILLING.md](BILLING.md))
 
 ### Explicitly out of scope (vNext)
@@ -412,7 +412,7 @@ Produce:
 
 - Full tenant isolation (data, users, configuration) — **Kelly Stay** (demonstrable)
 - Encryption at rest and in transit — **Stay**
-- Cognito-managed authentication with optional MFA — password **Kelly**; MFA UX **Pilot**
+- Cognito-managed authentication with optional MFA — password **Kelly**; MFA UX **Pilot (done D5)**
 - AI explains data protection in plain language — **Pilot** (with agent)
 - Clear auditability of important actions — ack audit **Pilot** (C3)
 - No dramatic data changes without multi-step intentional confirmation — **Stay** (agent rules)
@@ -495,7 +495,7 @@ Stored on tenant profile / related ledger (exact Dynamo keys in TENANT_ISOLATION
 - [ ] G4 tenant thresholds; G5 viz polish; G6 + D4 + H5 CRWA roll-up (balance + Confidence)
 - [ ] H3 Confidence calculator stored; H2 bulk history; H6 gating complete
 - [ ] Epic E agent obeys §6 (cost, deletes, no cross-tenant)
-- [ ] D1–D3 roles; A6 ABAC progress; D5 MFA UX
+- [ ] D1–D3 roles; A6 ABAC progress; D5 MFA UX (**done**)
 - [ ] Onboarding paths B–D usable without shame copy
 - [x] Epic I0–I1: CRWA can set pilot vs paid, record external payment, see billing status without a payment processor
 - [x] Epic I2: Municipality System Admin can view own membership billing status + ledger history (no card update)

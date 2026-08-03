@@ -1,0 +1,155 @@
+<section class="page">
+  <h1>Account</h1>
+  <p class="lede">
+    Change your password or turn on authenticator MFA (TOTP). Tenant access still comes from your
+    sign-in — nothing here switches municipalities.
+  </p>
+
+  @if (!auth.isLoggedIn()) {
+    <p-message severity="warn" styleClass="hint">
+      <a routerLink="/login">Sign in</a> to manage your password and MFA.
+    </p-message>
+  }
+
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+  @if (status()) {
+    <p-message severity="success" styleClass="hint">{{ status() }}</p-message>
+  }
+
+  @if (auth.isLoggedIn()) {
+    <p class="who">
+      Signed in as {{ auth.email() }}
+      @if (auth.tenantId()) {
+        · system <strong>{{ auth.tenantId() }}</strong>
+      }
+    </p>
+
+    <p-card header="Change password" styleClass="block">
+      <form class="form" (ngSubmit)="changePassword()">
+        <label>
+          Current password
+          <input
+            type="password"
+            name="currentPassword"
+            autocomplete="current-password"
+            [(ngModel)]="currentPassword"
+            required
+          />
+        </label>
+        <label>
+          New password
+          <input
+            type="password"
+            name="newPassword"
+            autocomplete="new-password"
+            [(ngModel)]="newPassword"
+            required
+          />
+        </label>
+        <label>
+          Confirm new password
+          <input
+            type="password"
+            name="confirmPassword"
+            autocomplete="new-password"
+            [(ngModel)]="confirmPassword"
+            required
+          />
+        </label>
+        <p class="policy">At least 12 characters with upper, lower, number, and symbol.</p>
+        <p-button type="submit" label="Update password" [loading]="busy()" [disabled]="busy()" />
+      </form>
+    </p-card>
+
+    <p-card header="Authenticator MFA" styleClass="block">
+      <p class="card-lede">
+        Optional TOTP for rural operators (works offline). SMS MFA is not configured on this pool —
+        authenticator apps only.
+      </p>
+      <p class="mfa-status">
+        Status:
+        @if (mfaEnabled()) {
+          <p-tag value="On" severity="success" />
+          @if (mfaPreferred()) {
+            <span class="pref">preferred: {{ mfaPreferred() }}</span>
+          }
+        } @else {
+          <p-tag value="Off" severity="secondary" />
+        }
+      </p>
+
+      @if (!setupOpen()) {
+        <div class="actions">
+          @if (!mfaEnabled()) {
+            <p-button
+              type="button"
+              label="Set up authenticator"
+              (onClick)="startSetup()"
+              [loading]="busy()"
+              [disabled]="busy()"
+            />
+          } @else {
+            <p-button
+              type="button"
+              label="Replace authenticator"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="startSetup()"
+              [loading]="busy()"
+              [disabled]="busy()"
+            />
+            <p-button
+              type="button"
+              label="Turn off MFA"
+              severity="danger"
+              [text]="true"
+              (onClick)="disableMfa()"
+              [loading]="busy()"
+              [disabled]="busy()"
+            />
+          }
+        </div>
+      } @else {
+        <form class="form" (ngSubmit)="confirmSetup()">
+          <label>
+            Secret key
+            <input pInputText [ngModel]="setupSecret" name="accountSetupSecret" readonly />
+          </label>
+          <div class="actions">
+            <p-button
+              type="button"
+              label="Copy secret"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="copySecret()"
+            />
+            @if (setupOtpauth) {
+              <a class="otpauth-link" [href]="setupOtpauth">Open authenticator link</a>
+            }
+          </div>
+          <p class="policy">Confirm with the 6-digit code from the app.</p>
+          <p-inputotp
+            [(ngModel)]="setupCode"
+            name="accountSetupCode"
+            [length]="6"
+            [integerOnly]="true"
+            styleClass="otp"
+          />
+          <div class="actions">
+            <p-button type="submit" label="Verify and turn on MFA" [loading]="busy()" [disabled]="busy()" />
+            <p-button
+              type="button"
+              label="Cancel"
+              severity="secondary"
+              [text]="true"
+              (onClick)="cancelSetup()"
+              [disabled]="busy()"
+            />
+          </div>
+        </form>
+      }
+    </p-card>
+  }
+</section>
