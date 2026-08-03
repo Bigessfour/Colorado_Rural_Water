@@ -155,4 +155,31 @@ describe('water balance calculator', () => {
     assert.equal(bal.billedGal, 40_000);
     assert.equal(bal.status, 'loss');
   });
+
+  it('prefers period volume over cumulative for same source in a month', () => {
+    const sources: SourceReading[] = [
+      src({
+        sourceId: 'w1',
+        timestamp: '2026-07-31T00:00:00.000Z',
+        value: 100_000,
+        volumeMode: 'period',
+      }),
+      src({
+        sourceId: 'w1',
+        timestamp: '2026-06-30T00:00:00.000Z',
+        value: 900_000,
+        volumeMode: 'cumulative',
+      }),
+      src({
+        sourceId: 'w1',
+        timestamp: '2026-07-31T00:00:00.000Z',
+        value: 1_050_000,
+        volumeMode: 'cumulative',
+      }),
+    ];
+    const { gallons, count } = sumSourceProduction(sources, '2026-07');
+    // Period 100k wins; cumulative delta 150k must not also apply.
+    assert.equal(gallons, 100_000);
+    assert.equal(count, 1);
+  });
 });

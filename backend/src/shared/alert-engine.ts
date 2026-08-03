@@ -25,9 +25,15 @@ export interface ConfidenceSnapshot {
   level: ConfidenceLevel;
   monthsOfHistory: number;
   meterCount: number;
+  /** Share of configured meters that have ≥1 reading (0–100). Spec §7b. */
+  coveragePct: number;
+  /** 0–100 display heuristic — never label as leak accuracy %. */
+  displayScore: number;
   /** Statistical alerts use Watch until Solid. */
   statisticalMode: AlertMode;
   plainLanguage: string;
+  /** Calm next step for operators (H4). */
+  improveHint: string;
 }
 
 interface MeterSeries {
@@ -38,21 +44,34 @@ interface MeterSeries {
 }
 
 /**
- * Tenant Confidence from history depth (Spec §7b MVP heuristic).
- * Proposed defaults — tune via H8.
+ * Tenant Confidence from history depth (Spec §7b Kelly freeze).
+ * Thin→Building: ≥3 months AND coverage ≥50%.
+ * Building→Solid: ≥6 months.
+ * Solid→Strong: ≥12 months AND winter+summer seasonality AND coverage ≥80%.
+ * Tune via H8 after Kelly feedback.
  */
 export function assessTenantConfidence(
   readings: MeterReading[],
   meterCount: number,
 ): ConfidenceSnapshot {
   const months = uniqueYearMonths(readings.map((r) => r.timestamp));
+  const metersWithData = new Set(readings.map((r) => r.meterId)).size;
+  const coveragePct =
+    meterCount > 0
+      ? Math.min(100, Math.round((metersWithData / meterCount) * 100))
+      : metersWithData > 0
+        ? 100
+        : 0;
+  const seasonality = hasWinterAndSummer(readings.map((r) => r.timestamp));
+
   let level: ConfidenceLevel;
-  if (months < 3) level = 'Thin';
+  if (months < 3 || coveragePct < 50) level = 'Thin';
   else if (months < 6) level = 'Building';
-  else if (months < 12) level = 'Solid';
+  else if (months < 12 || !seasonality || coveragePct < 80) level = 'Solid';
   else level = 'Strong';
 
   const statisticalMode: AlertMode = level === 'Thin' || level === 'Building' ? 'Watch' : 'Actionable';
+  const displayScore = displayScoreFor(level, months, coveragePct);
   const plainLanguage =
     level === 'Thin'
       ? 'Early data — statistical flags are for watching, not digging yet.'
@@ -61,13 +80,17 @@ export function assessTenantConfidence(
         : level === 'Solid'
           ? 'Strong enough for Actionable statistical alerts (still verify in the field).'
           : 'History is deep enough for firm comparative calls.';
+  const improveHint = improveHintFor(level, months, coveragePct, seasonality);
 
   return {
     level,
     monthsOfHistory: months,
     meterCount,
+    coveragePct,
+    displayScore,
     statisticalMode,
     plainLanguage,
+    improveHint,
   };
 }
 
@@ -162,7 +185,7 @@ function stuckAlerts(series: MeterSeries, confidence: ConfidenceSnapshot): Tenan
   ];
 }
 
-function diagnosticAlerts(series: MeterSeries, confidence: ConfidenceSnapshot): TenantAlert[] {
+function diagnosticAlerts(series: MeterSeries, _confidence: ConfidenceSnapshot): TenantAlert[] {
   const { location, readings } = series;
   const latest = readings[readings.length - 1];
   if (!latest) return [];
@@ -174,12 +197,13 @@ function diagnosticAlerts(series: MeterSeries, confidence: ConfidenceSnapshot): 
       id: `diag-${location.meterId}-${latest.timestamp}`,
       type: 'diagnostic_flag',
       priority: 'medium',
-      mode: confidence.statisticalMode,
+      // Spec §7b / H6: hardware diag bits stay Actionable with a clear why (not a leak model).
+      mode: 'Actionable',
       meterId: location.meterId,
       serviceAddress: location.serviceAddress,
       occupantName: location.occupantName,
       summary: `Handheld diagnostic flag on meter ${location.meterId} at ${location.serviceAddress}: ${leakish.join(', ')}.`,
-      confidenceNote: `${confidence.level} history — ${confidence.statisticalMode}`,
+      confidenceNote: 'Hardware diagnostic bit — Actionable even with thin history (not a leak model)',
       status: 'open',
     },
   ];
@@ -263,6 +287,61 @@ function uniqueYearMonths(timestamps: string[]): number {
     set.add(`${d.getUTCFullYear()}-${d.getUTCMonth() + 1}`);
   }
   return set.size;
+}
+
+/** Winter (Dec–Feb) and summer (Jun–Aug) both represented — Spec §7b Strong gate. */
+function hasWinterAndSummer(timestamps: string[]): boolean {
+  let winter = false;
+  let summer = false;
+  for (const ts of timestamps) {
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) continue;
+    const m = d.getUTCMonth(); // 0–11
+    if (m === 11 || m <= 1) winter = true;
+    if (m >= 5 && m <= 7) summer = true;
+  }
+  return winter && summer;
+}
+
+function displayScoreFor(
+  level: ConfidenceLevel,
+  months: number,
+  coveragePct: number,
+): number {
+  const base =
+    level === 'Thin' ? 28 : level === 'Building' ? 55 : level === 'Solid' ? 82 : 94;
+  const monthBump = Math.min(8, Math.max(0, months - 1));
+  const coverBump = Math.min(6, Math.round(coveragePct / 20));
+  return Math.min(99, base + monthBump + coverBump);
+}
+
+function improveHintFor(
+  level: ConfidenceLevel,
+  months: number,
+  coveragePct: number,
+  seasonality: boolean,
+): string {
+  if (coveragePct < 50) {
+    return 'Upload readings for more meters so coverage reaches about 50%.';
+  }
+  if (level === 'Thin') {
+    const need = Math.max(1, 3 - months);
+    return `Upload about ${need} more monthly cycle${need === 1 ? '' : 's'} to reach Building.`;
+  }
+  if (level === 'Building') {
+    const need = Math.max(1, 6 - months);
+    return `About ${need} more similar month${need === 1 ? '' : 's'} toward Solid confidence for usage outliers.`;
+  }
+  if (level === 'Solid' && !seasonality) {
+    return 'Add a colder-season and warmer-season cycle to reach Strong.';
+  }
+  if (level === 'Solid' && coveragePct < 80) {
+    return 'Raise meter coverage toward 80% for Strong confidence.';
+  }
+  if (level === 'Solid') {
+    return 'Keep loading monthly cycles — Strong needs ~12 months plus both seasons.';
+  }
+  return 'Keep verifying Actionable flags in the field; history is already deep.';
 }
 
 function medianOf(values: number[]): number {

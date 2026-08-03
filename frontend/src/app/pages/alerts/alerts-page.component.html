@@ -23,7 +23,7 @@
       <ng-template pTemplate="header">
         <tr>
           <th>Mode</th>
-          <th>Meter</th>
+          <th>Subject</th>
           <th>Summary</th>
           <th>Confidence</th>
           <th>Status</th>
@@ -39,7 +39,11 @@
             />
           </td>
           <td>
-            {{ alert.meterId }}
+            @if (alert.kind === 'balance') {
+              Water balance
+            } @else {
+              Meter {{ alert.meterId }}
+            }
             @if (alert.serviceAddress) {
               <div class="addr">{{ alert.serviceAddress }}</div>
             }

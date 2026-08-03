@@ -51,9 +51,8 @@ export const handler: AuthedHandler = async (event) => {
     ]);
     const { confidence, alerts } = evaluateAlerts(locations, readings);
     const balance = calculateWaterBalance(tenantId, sourceReadings, readings);
-    const balanceAlerts = evaluateBalanceAlerts(balance, {
-      mode: confidence.statisticalMode,
-    });
+    // Spec §7a Kelly freeze: balance alerts stay Watch until H6 balance gating matures.
+    const balanceAlerts = evaluateBalanceAlerts(balance, { mode: 'Watch' });
     return ok({
       tenantId,
       confidence,

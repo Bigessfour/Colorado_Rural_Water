@@ -13,7 +13,8 @@ export type ConfidenceLevel = 'Thin' | 'Building' | 'Solid' | 'Strong';
 interface LiveAlert {
   id: string;
   mode: 'Watch' | 'Actionable';
-  meterId: string;
+  kind: 'meter' | 'balance';
+  meterId?: string;
   serviceAddress?: string;
   summary: string;
   confidenceNote: string;
@@ -55,11 +56,12 @@ export class DashboardPageComponent implements OnInit {
     meaning:
       'Confidence measures how much comparable history and meter coverage we have — not how sure we are of a leak.',
     guidance: 'Sign in after ingest to refresh live Confidence from your readings.',
+    improveHint: '',
     plainLanguage: '',
     signals: [
-      { name: 'Customer usage outliers', level: 'Thin' as ConfidenceLevel | '—', mode: 'Watch' },
-      { name: 'Water balance', level: 'Thin' as ConfidenceLevel | '—', mode: 'Watch' },
-      { name: 'Stuck / diagnostic meters', level: '—' as const, mode: 'Actionable' },
+      { name: 'Customer usage outliers', level: 'Thin' as ConfidenceLevel | '—', mode: 'Watch' as const },
+      { name: 'Water balance', level: 'Thin' as ConfidenceLevel | '—', mode: 'Watch' as const },
+      { name: 'Stuck / diagnostic meters', level: '—' as const, mode: 'Actionable' as const },
     ],
   });
 
@@ -96,6 +98,15 @@ export class DashboardPageComponent implements OnInit {
         tension: 0.35,
         fill: false,
       },
+      {
+        label: 'Unaccounted',
+        data: [] as number[],
+        borderColor: '#5c6b73',
+        backgroundColor: 'transparent',
+        borderDash: [6, 4],
+        tension: 0.35,
+        fill: false,
+      },
     ],
   });
 
@@ -116,13 +127,41 @@ export class DashboardPageComponent implements OnInit {
     scales: {
       y: {
         title: { display: true, text: 'Million gallons' },
-        beginAtZero: false,
+        beginAtZero: true,
       },
     },
   };
 
   ngOnInit(): void {
     void this.refreshLive();
+  }
+
+  balanceStatusSeverity(
+    status: BalanceView['status'],
+  ): 'secondary' | 'info' | 'success' | 'warn' | 'danger' {
+    switch (status) {
+      case 'insufficient':
+        return 'secondary';
+      case 'ok':
+        return 'success';
+      case 'loss':
+        return 'warn';
+      case 'gain':
+        return 'info';
+    }
+  }
+
+  balanceStatusLabel(status: BalanceView['status']): string {
+    switch (status) {
+      case 'insufficient':
+        return 'Need both sides';
+      case 'ok':
+        return 'Balanced';
+      case 'loss':
+        return 'Unaccounted loss';
+      case 'gain':
+        return 'Sold > pumped';
+    }
   }
 
   async refreshLive(): Promise<void> {
@@ -150,36 +189,80 @@ export class DashboardPageComponent implements OnInit {
       const level = (alertsBody.confidence?.level ?? 'Thin') as ConfidenceLevel;
       const months = Number(alertsBody.confidence?.monthsOfHistory ?? 0);
       const meterCount = Number(alertsBody.confidence?.meterCount ?? 0);
-      const alerts = (alertsBody.alerts ?? []) as LiveAlert[];
+      const coveragePct = Number(alertsBody.confidence?.coveragePct ?? 0);
+      const displayScore = Number(
+        alertsBody.confidence?.displayScore ??
+          (level === 'Thin' ? 28 : level === 'Building' ? 55 : level === 'Solid' ? 82 : 94),
+      );
+      const meterAlerts = ((alertsBody.alerts ?? []) as Array<{
+        id: string;
+        mode: 'Watch' | 'Actionable';
+        meterId?: string;
+        serviceAddress?: string;
+        summary: string;
+        confidenceNote: string;
+      }>).map(
+        (a): LiveAlert => ({
+          id: a.id,
+          mode: a.mode,
+          kind: 'meter',
+          meterId: a.meterId,
+          serviceAddress: a.serviceAddress,
+          summary: a.summary,
+          confidenceNote: a.confidenceNote,
+        }),
+      );
+      const balanceAlerts = ((alertsBody.balanceAlerts ?? []) as Array<{
+        id: string;
+        mode: 'Watch' | 'Actionable';
+        summary: string;
+        confidenceNote: string;
+        periodLabel?: string;
+      }>).map(
+        (a): LiveAlert => ({
+          id: a.id,
+          mode: a.mode ?? 'Watch',
+          kind: 'balance',
+          summary: a.summary,
+          confidenceNote: a.confidenceNote,
+          serviceAddress: a.periodLabel,
+        }),
+      );
+      const alerts = [...balanceAlerts, ...meterAlerts];
       const watch = alerts.filter((a) => a.mode === 'Watch').length;
       const actionable = alerts.filter((a) => a.mode === 'Actionable').length;
-      const displayScore =
-        level === 'Thin' ? 28 : level === 'Building' ? 55 : level === 'Solid' ? 82 : 94;
 
       let balanceHint = 'Ingest customer + source readings for live In/Out.';
       let balanceKpi = '—';
       let balanceKpiHint = 'Unaccounted';
+      let balanceStatus: BalanceView['status'] = 'insufficient';
 
       if (balanceRes.ok) {
         const bal = await balanceRes.json();
         const pct = bal.unaccountedPct;
-        const status = (bal.status ?? 'insufficient') as BalanceView['status'];
+        balanceStatus = (bal.status ?? 'insufficient') as BalanceView['status'];
         this.balance.set({
           periodLabel: bal.periodLabel ?? bal.period ?? '—',
           producedGal: Number(bal.producedGal ?? 0),
           billedGal: Number(bal.billedGal ?? 0),
           unaccountedGal: Number(bal.unaccountedGal ?? 0),
           unaccountedPct: pct == null ? null : Number(pct),
-          status,
+          status: balanceStatus,
           live: true,
           hint:
-            status === 'insufficient'
-              ? 'Need source production and customer meter deltas in the same period.'
+            balanceStatus === 'insufficient'
+              ? 'Need source production and customer meter deltas in the same period — not a dig-now loss signal.'
               : 'Live from GET /balance — In − Out = unaccounted.',
         });
         balanceKpi = pct == null ? '—' : `${pct}%`;
         balanceKpiHint =
-          status === 'gain' ? 'Sold > pumped' : status === 'loss' ? 'Unaccounted loss' : 'Balanced';
+          balanceStatus === 'gain'
+            ? 'Sold > pumped'
+            : balanceStatus === 'loss'
+              ? 'Unaccounted loss'
+              : balanceStatus === 'ok'
+                ? 'Balanced'
+                : 'Insufficient data';
         balanceHint = bal.periodLabel ?? '';
 
         const trend = (bal.trend ?? []) as Array<{
@@ -187,6 +270,8 @@ export class DashboardPageComponent implements OnInit {
           period?: string;
           producedGal?: number;
           billedGal?: number;
+          unaccountedGal?: number;
+          status?: string;
         }>;
         if (trend.length) {
           this.balanceChartData.set({
@@ -208,6 +293,17 @@ export class DashboardPageComponent implements OnInit {
                 tension: 0.35,
                 fill: false,
               },
+              {
+                label: 'Unaccounted',
+                data: trend.map((t) =>
+                  t.status === 'insufficient' ? 0 : Number(t.unaccountedGal ?? 0) / 1_000_000,
+                ),
+                borderColor: '#5c6b73',
+                backgroundColor: 'transparent',
+                borderDash: [6, 4],
+                tension: 0.35,
+                fill: false,
+              },
             ],
           });
         }
@@ -216,15 +312,19 @@ export class DashboardPageComponent implements OnInit {
         balanceHint = balErr.error ?? `Balance unavailable (${balanceRes.status})`;
       }
 
+      const balanceSignalLevel: ConfidenceLevel | '—' =
+        balanceStatus === 'insufficient' ? 'Thin' : level;
+
       this.confidence.set({
         level,
         displayScore,
         monthsComparable: months,
-        coveragePct: meterCount ? Math.min(100, Math.round((meterCount / Math.max(meterCount, 1)) * 100)) : 0,
+        coveragePct,
         seasonality: months < 6 ? 'Incomplete (need more seasons)' : 'Broader seasonal coverage',
         meaning:
           'Confidence measures how much comparable history and meter coverage we have — not how sure we are of a leak.',
         guidance: alertsBody.confidence?.plainLanguage ?? '',
+        improveHint: alertsBody.confidence?.improveHint ?? '',
         plainLanguage: alertsBody.confidence?.plainLanguage ?? '',
         signals: [
           {
@@ -232,7 +332,11 @@ export class DashboardPageComponent implements OnInit {
             level,
             mode: alertsBody.confidence?.statisticalMode ?? 'Watch',
           },
-          { name: 'Water balance', level: 'Thin', mode: 'Watch' },
+          {
+            name: 'Water balance',
+            level: balanceSignalLevel,
+            mode: 'Watch',
+          },
           { name: 'Stuck / diagnostic meters', level: '—', mode: 'Actionable' },
         ],
       });
@@ -245,9 +349,13 @@ export class DashboardPageComponent implements OnInit {
           hint: `${watch} Watch · ${actionable} Actionable`,
         },
         { label: 'Water balance', value: balanceKpi, hint: balanceKpiHint || balanceHint },
-        { label: 'Data Confidence', value: level, hint: `${months} mo history` },
+        {
+          label: 'Data Confidence',
+          value: level,
+          hint: `${months} mo · ${coveragePct}% coverage`,
+        },
       ]);
-      this.liveAlerts.set(alerts.slice(0, 5));
+      this.liveAlerts.set(alerts.slice(0, 8));
     } catch (err) {
       this.loadError.set(err instanceof Error ? err.message : 'Network error');
     }

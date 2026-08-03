@@ -11,6 +11,7 @@ import { environment } from '../../../environments/environment';
 interface AlertRow {
   id: string;
   mode: 'Watch' | 'Actionable';
+  kind: 'meter' | 'balance';
   meterId: string;
   serviceAddress?: string;
   summary: string;
@@ -54,29 +55,48 @@ export class AlertsPageComponent implements OnInit {
         return;
       }
       this.confidenceNote.set(
-        `${body.confidence?.level ?? '—'} (~${body.confidence?.monthsOfHistory ?? 0} mo) — ${body.confidence?.plainLanguage ?? ''}`,
+        `${body.confidence?.level ?? '—'} (~${body.confidence?.monthsOfHistory ?? 0} mo, ${body.confidence?.coveragePct ?? 0}% coverage) — ${body.confidence?.plainLanguage ?? ''}`,
       );
-      this.alerts.set(
-        (body.alerts ?? []).map(
-          (a: {
-            id: string;
-            mode: 'Watch' | 'Actionable';
-            meterId: string;
-            serviceAddress?: string;
-            summary: string;
-            confidenceNote: string;
-            status?: string;
-          }) => ({
-            id: a.id,
-            mode: a.mode,
-            meterId: a.meterId,
-            serviceAddress: a.serviceAddress,
-            summary: a.summary,
-            confidenceNote: a.confidenceNote,
-            status: a.status ?? 'open',
-          }),
-        ),
+      const meterRows: AlertRow[] = (body.alerts ?? []).map(
+        (a: {
+          id: string;
+          mode: 'Watch' | 'Actionable';
+          meterId: string;
+          serviceAddress?: string;
+          summary: string;
+          confidenceNote: string;
+          status?: string;
+        }) => ({
+          id: a.id,
+          mode: a.mode,
+          kind: 'meter' as const,
+          meterId: a.meterId,
+          serviceAddress: a.serviceAddress,
+          summary: a.summary,
+          confidenceNote: a.confidenceNote,
+          status: a.status ?? 'open',
+        }),
       );
+      const balanceRows: AlertRow[] = (body.balanceAlerts ?? []).map(
+        (a: {
+          id: string;
+          mode?: 'Watch' | 'Actionable';
+          summary: string;
+          confidenceNote: string;
+          periodLabel?: string;
+          status?: string;
+        }) => ({
+          id: a.id,
+          mode: a.mode ?? 'Watch',
+          kind: 'balance' as const,
+          meterId: 'Balance',
+          serviceAddress: a.periodLabel,
+          summary: a.summary,
+          confidenceNote: a.confidenceNote,
+          status: a.status ?? 'open',
+        }),
+      );
+      this.alerts.set([...balanceRows, ...meterRows]);
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Network error');
     } finally {
@@ -85,7 +105,9 @@ export class AlertsPageComponent implements OnInit {
   }
 
   async acknowledge(alert: AlertRow): Promise<void> {
-    alert.status = 'acknowledged';
+    this.alerts.update((rows) =>
+      rows.map((r) => (r.id === alert.id ? { ...r, status: 'acknowledged' } : r)),
+    );
     const token = this.auth.getBearerToken();
     if (!token) return;
     await fetch(`${environment.apiBaseUrl}/alerts`, {

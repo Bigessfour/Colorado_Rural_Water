@@ -99,8 +99,13 @@ export function sumSourceProduction(readings: SourceReading[], period: string): 
     count += 1;
   }
 
+  // Prefer period volumes when both modes exist for the same source in this month
+  // (avoids double-counting period CSV + cumulative logger for one well).
+  const periodSourceIds = new Set(periodLatest.keys());
+
   for (const r of inPeriod) {
     if (r.volumeMode !== 'cumulative') continue;
+    if (periodSourceIds.has(r.sourceId)) continue;
     // Cumulative: usage for this reading = delta from previous cumulative for same source.
     const series = (bySource.get(r.sourceId) ?? [])
       .filter((x) => x.volumeMode === 'cumulative')

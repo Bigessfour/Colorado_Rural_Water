@@ -93,6 +93,11 @@
   line-height: 1.45;
 }
 
+.improve-hint {
+  margin: 0 0 0.75rem;
+  max-width: 42rem;
+}
+
 .confidence-facts {
   display: grid;
   gap: 0.75rem;
@@ -123,9 +128,17 @@
   margin-top: 0;
 }
 
+.balance-period-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
 .balance-period {
   font-family: 'Source Sans 3', system-ui, sans-serif;
-  margin: 0 0 1rem;
+  margin: 0;
   color: #4a6368;
 }
 

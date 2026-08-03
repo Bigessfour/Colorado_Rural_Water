@@ -43,6 +43,36 @@ describe('assessTenantConfidence', () => {
     );
     assert.equal(c.level, 'Thin');
     assert.equal(c.statisticalMode, 'Watch');
+    assert.ok(c.coveragePct >= 50);
+    assert.ok(c.displayScore > 0 && c.displayScore < 100);
+    assert.ok(c.improveHint.length > 0);
+  });
+
+  it('stays Thin when coverage is under 50% even with 4 months', () => {
+    const readings = [
+      rdg('1', '2026-04-15T00:00:00.000Z', 1),
+      rdg('1', '2026-05-15T00:00:00.000Z', 2),
+      rdg('1', '2026-06-15T00:00:00.000Z', 3),
+      rdg('1', '2026-07-15T00:00:00.000Z', 4),
+    ];
+    const c = assessTenantConfidence(readings, 4); // 1 of 4 meters → 25%
+    assert.equal(c.level, 'Thin');
+    assert.equal(c.coveragePct, 25);
+    assert.equal(c.statisticalMode, 'Watch');
+  });
+
+  it('reaches Building at 3+ months with coverage ≥50%', () => {
+    const readings = [
+      rdg('1', '2026-05-15T00:00:00.000Z', 1),
+      rdg('1', '2026-06-15T00:00:00.000Z', 2),
+      rdg('1', '2026-07-15T00:00:00.000Z', 3),
+      rdg('2', '2026-05-15T00:00:00.000Z', 1),
+      rdg('2', '2026-06-15T00:00:00.000Z', 2),
+      rdg('2', '2026-07-15T00:00:00.000Z', 3),
+    ];
+    const c = assessTenantConfidence(readings, 2);
+    assert.equal(c.level, 'Building');
+    assert.equal(c.statisticalMode, 'Watch');
   });
 });
 
@@ -72,5 +102,18 @@ describe('evaluateAlerts', () => {
     const high = alerts.find((a) => a.type === 'unusual_high_usage' && a.meterId === '1042');
     assert.ok(high, `alerts=${JSON.stringify(alerts.map((a) => a.type + ':' + a.meterId))}`);
     assert.equal(high.mode, 'Watch');
+  });
+
+  it('keeps diagnostic flags Actionable even when Thin', () => {
+    const locations = [loc({ meterId: 'm1' })];
+    const readings = [
+      rdg('m1', '2026-06-15T00:00:00.000Z', 100),
+      rdg('m1', '2026-07-15T00:00:00.000Z', 200, ['L']),
+    ];
+    const { confidence, alerts } = evaluateAlerts(locations, readings);
+    assert.equal(confidence.level, 'Thin');
+    const diag = alerts.find((a) => a.type === 'diagnostic_flag');
+    assert.ok(diag);
+    assert.equal(diag.mode, 'Actionable');
   });
 });

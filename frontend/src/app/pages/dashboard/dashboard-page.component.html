@@ -44,8 +44,8 @@
           <div class="balance-stat">{{ confidence().monthsComparable }}</div>
         </div>
         <div>
-          <div class="kpi-label">Meters in store</div>
-          <div class="balance-stat">{{ kpis()[0].value }}</div>
+          <div class="kpi-label">Meter coverage</div>
+          <div class="balance-stat">{{ confidence().coveragePct }}%</div>
         </div>
         <div>
           <div class="kpi-label">Seasonality</div>
@@ -55,6 +55,9 @@
     </div>
 
     <p class="confidence-guidance">{{ confidence().guidance }}</p>
+    @if (confidence().improveHint) {
+      <p class="muted improve-hint">What would help: {{ confidence().improveHint }}</p>
+    }
 
     <div class="signal-list">
       @for (signal of confidence().signals; track signal.name) {
@@ -75,7 +78,19 @@
   </p-card>
 
   <p-card header="Water balance — produced vs billed" styleClass="balance">
-    <p class="balance-period">{{ balance().periodLabel }}</p>
+    <div class="balance-period-row">
+      <p class="balance-period">{{ balance().periodLabel }}</p>
+      <p-tag
+        [severity]="balanceStatusSeverity(balance().status)"
+        [value]="balanceStatusLabel(balance().status)"
+      />
+    </div>
+    @if (balance().status === 'insufficient') {
+      <p-message severity="info" styleClass="hint">
+        Both source production (In) and customer billed usage (Out) are needed for the same period.
+        One-sided data is never shown as a dig-now loss or gain.
+      </p-message>
+    }
     <div class="balance-stats">
       <div>
         <div class="kpi-label">Produced (in)</div>
@@ -94,9 +109,13 @@
           [class.loss]="balance().status === 'loss'"
           [class.gain]="balance().status === 'gain'"
         >
-          {{ balance().unaccountedGal | number }} gal
-          @if (balance().unaccountedPct != null) {
-            ({{ balance().unaccountedPct }}%)
+          @if (balance().status === 'insufficient') {
+            —
+          } @else {
+            {{ balance().unaccountedGal | number }} gal
+            @if (balance().unaccountedPct != null) {
+              ({{ balance().unaccountedPct }}%)
+            }
           }
         </div>
         <div class="kpi-hint">Positive = loss; negative = sold more than pumped</div>
@@ -122,9 +141,13 @@
           [value]="alert.mode"
         />
         <div>
-          <strong>Meter {{ alert.meterId }}</strong>
-          @if (alert.serviceAddress) {
-            · {{ alert.serviceAddress }}
+          @if (alert.kind === 'balance') {
+            <strong>Water balance</strong>
+          } @else {
+            <strong>Meter {{ alert.meterId }}</strong>
+            @if (alert.serviceAddress) {
+              · {{ alert.serviceAddress }}
+            }
           }
           — {{ alert.summary }}
           <div class="muted">{{ alert.confidenceNote }}</div>
