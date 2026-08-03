@@ -68,7 +68,7 @@
 
   <p-card styleClass="table-card">
     <p-table [value]="sources()" [tableStyle]="{ 'min-width': '36rem' }">
-      <ng-template pTemplate="header">
+      <ng-template #header>
         <tr>
           <th>Name</th>
           <th>Type</th>
@@ -77,7 +77,7 @@
           <th></th>
         </tr>
       </ng-template>
-      <ng-template pTemplate="body" let-row>
+      <ng-template #body let-row>
         <tr>
           <td>{{ row.name }}</td>
           <td>{{ row.type }}</td>
@@ -89,7 +89,7 @@
           </td>
         </tr>
       </ng-template>
-      <ng-template pTemplate="emptymessage">
+      <ng-template #emptymessage>
         <tr>
           <td colspan="5">No named sources yet — add Well 1 / Well 2, or ingest a source CSV.</td>
         </tr>
@@ -169,7 +169,7 @@
       [maxFileSize]="20000000"
       (uploadHandler)="onSourceCsvUpload($event)"
     >
-      <ng-template pTemplate="empty">
+      <ng-template #empty>
         <div class="drop">Drag a source CSV here, or choose a file.</div>
       </ng-template>
     </p-fileupload>

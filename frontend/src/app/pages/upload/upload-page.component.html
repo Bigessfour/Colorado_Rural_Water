@@ -9,13 +9,25 @@
 
   <p-card header="Ingestion status" styleClass="status-card">
     <ol class="phase-list">
-      <li [class.done]="ingestPhase !== 'idle'">1. Load file</li>
+      <li [class.done]="ingestPhase !== 'idle' && ingestPhase !== 'loading'">1. Load file</li>
       <li [class.done]="ingestPhase === 'mapped' || ingestPhase === 'dry_run_ok' || ingestPhase === 'committed'">
         2. Map columns
       </li>
       <li [class.done]="ingestPhase === 'dry_run_ok' || ingestPhase === 'committed'">3. Dry run</li>
       <li [class.done]="ingestPhase === 'committed'">4. Import</li>
     </ol>
+    @if (progressLabel || progressValue > 0 || progressMode === 'indeterminate') {
+      <div class="progress-block">
+        @if (progressLabel) {
+          <div class="progress-label">{{ progressLabel }}</div>
+        }
+        <p-progressbar
+          [value]="progressValue"
+          [mode]="progressMode"
+          [showValue]="progressMode === 'determinate'"
+        />
+      </div>
+    }
     @if (statusMessage) {
       <p-message [severity]="statusSeverity" styleClass="hint">{{ statusMessage }}</p-message>
     }
@@ -40,6 +52,7 @@
 
   <p-card styleClass="upload-card">
     <p-fileupload
+      #uploader
       mode="advanced"
       name="readings"
       chooseLabel="Choose file(s)"
@@ -52,7 +65,7 @@
       [maxFileSize]="5000000"
       (uploadHandler)="onCustomUpload($event)"
     >
-      <ng-template pTemplate="empty">
+      <ng-template #empty>
         <div class="drop">
           Drag CSV/Excel here (one file to map, or several for bulk history). Max 5 MB each.
         </div>

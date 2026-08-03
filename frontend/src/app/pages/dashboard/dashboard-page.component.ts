@@ -7,8 +7,18 @@ import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
-
-export type ConfidenceLevel = 'Thin' | 'Building' | 'Solid' | 'Strong';
+import {
+  balanceBarOptions,
+  buildBalanceBarChart,
+  buildConfidenceChart,
+  buildHealthDonut,
+  buildUsageTrendChart,
+  computeHealthCounts,
+  doughnutOptions,
+  usageChartOptions,
+  type ChartData,
+  type ConfidenceLevel,
+} from '../../shared/chart-builders';
 
 interface LiveAlert {
   id: string;
@@ -67,6 +77,7 @@ export class DashboardPageComponent implements OnInit {
 
   liveAlerts = signal<LiveAlert[]>([]);
   loadError = signal('');
+  meterCount = signal(0);
 
   balance = signal<BalanceView>({
     periodLabel: 'No period yet',
@@ -79,58 +90,22 @@ export class DashboardPageComponent implements OnInit {
     hint: 'Ingest customer meters and source readings, then refresh.',
   });
 
-  balanceChartData = signal({
-    labels: [] as string[],
-    datasets: [
-      {
-        label: 'Produced (in)',
-        data: [] as number[],
-        borderColor: '#1a6b73',
-        backgroundColor: 'rgba(26, 107, 115, 0.12)',
-        tension: 0.35,
-        fill: true,
-      },
-      {
-        label: 'Billed (out)',
-        data: [] as number[],
-        borderColor: '#c45c26',
-        backgroundColor: 'transparent',
-        tension: 0.35,
-        fill: false,
-      },
-      {
-        label: 'Unaccounted',
-        data: [] as number[],
-        borderColor: '#5c6b73',
-        backgroundColor: 'transparent',
-        borderDash: [6, 4],
-        tension: 0.35,
-        fill: false,
-      },
-    ],
-  });
+  usageChartData = signal<ChartData>({ labels: [], datasets: [] });
+  usageHasBand = signal(false);
+  usageEmpty = signal(true);
 
-  readonly balanceChartOptions = {
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom' as const },
-      tooltip: {
-        callbacks: {
-          label: (ctx: { dataset: { label?: string }; parsed: { y: number | null } }) => {
-            const y = ctx.parsed.y;
-            if (y == null) return '';
-            return `${ctx.dataset.label ?? ''}: ${(y * 1_000_000).toLocaleString()} gal`;
-          },
-        },
-      },
-    },
-    scales: {
-      y: {
-        title: { display: true, text: 'Million gallons' },
-        beginAtZero: true,
-      },
-    },
-  };
+  balanceBarData = signal<ChartData>({ labels: [], datasets: [] });
+  balanceInsufficient = signal(true);
+
+  confidenceChartData = signal<ChartData>(buildConfidenceChart('Thin'));
+  healthChartData = signal<ChartData>(
+    buildHealthDonut({ normal: 0, watch: 0, actionable: 0 }),
+  );
+  showHealth = signal(false);
+
+  readonly usageChartOptions = usageChartOptions;
+  readonly balanceBarOptions = balanceBarOptions;
+  readonly doughnutOptions = doughnutOptions;
 
   ngOnInit(): void {
     void this.refreshLive();
@@ -194,6 +169,8 @@ export class DashboardPageComponent implements OnInit {
         alertsBody.confidence?.displayScore ??
           (level === 'Thin' ? 28 : level === 'Building' ? 55 : level === 'Solid' ? 82 : 94),
       );
+      this.meterCount.set(meterCount);
+
       const meterAlerts = ((alertsBody.alerts ?? []) as Array<{
         id: string;
         mode: 'Watch' | 'Actionable';
@@ -232,6 +209,11 @@ export class DashboardPageComponent implements OnInit {
       const watch = alerts.filter((a) => a.mode === 'Watch').length;
       const actionable = alerts.filter((a) => a.mode === 'Actionable').length;
 
+      const health = computeHealthCounts(meterCount, meterAlerts);
+      this.healthChartData.set(buildHealthDonut(health));
+      this.showHealth.set(meterCount > 0);
+      this.confidenceChartData.set(buildConfidenceChart(level));
+
       let balanceHint = 'Ingest customer + source readings for live In/Out.';
       let balanceKpi = '—';
       let balanceKpiHint = 'Unaccounted';
@@ -241,11 +223,15 @@ export class DashboardPageComponent implements OnInit {
         const bal = await balanceRes.json();
         const pct = bal.unaccountedPct;
         balanceStatus = (bal.status ?? 'insufficient') as BalanceView['status'];
+        const periodLabel = bal.periodLabel ?? bal.period ?? '—';
+        const producedGal = Number(bal.producedGal ?? 0);
+        const billedGal = Number(bal.billedGal ?? 0);
+        const unaccountedGal = Number(bal.unaccountedGal ?? 0);
         this.balance.set({
-          periodLabel: bal.periodLabel ?? bal.period ?? '—',
-          producedGal: Number(bal.producedGal ?? 0),
-          billedGal: Number(bal.billedGal ?? 0),
-          unaccountedGal: Number(bal.unaccountedGal ?? 0),
+          periodLabel,
+          producedGal,
+          billedGal,
+          unaccountedGal,
           unaccountedPct: pct == null ? null : Number(pct),
           status: balanceStatus,
           live: true,
@@ -263,7 +249,17 @@ export class DashboardPageComponent implements OnInit {
               : balanceStatus === 'ok'
                 ? 'Balanced'
                 : 'Insufficient data';
-        balanceHint = bal.periodLabel ?? '';
+        balanceHint = periodLabel;
+
+        const bar = buildBalanceBarChart({
+          periodLabel,
+          producedGal,
+          billedGal,
+          unaccountedGal,
+          status: balanceStatus,
+        });
+        this.balanceBarData.set(bar.data);
+        this.balanceInsufficient.set(bar.insufficient);
 
         const trend = (bal.trend ?? []) as Array<{
           periodLabel?: string;
@@ -273,43 +269,15 @@ export class DashboardPageComponent implements OnInit {
           unaccountedGal?: number;
           status?: string;
         }>;
-        if (trend.length) {
-          this.balanceChartData.set({
-            labels: trend.map((t) => shortPeriod(t.periodLabel ?? t.period ?? '')),
-            datasets: [
-              {
-                label: 'Produced (in)',
-                data: trend.map((t) => Number(t.producedGal ?? 0) / 1_000_000),
-                borderColor: '#1a6b73',
-                backgroundColor: 'rgba(26, 107, 115, 0.12)',
-                tension: 0.35,
-                fill: true,
-              },
-              {
-                label: 'Billed (out)',
-                data: trend.map((t) => Number(t.billedGal ?? 0) / 1_000_000),
-                borderColor: '#c45c26',
-                backgroundColor: 'transparent',
-                tension: 0.35,
-                fill: false,
-              },
-              {
-                label: 'Unaccounted',
-                data: trend.map((t) =>
-                  t.status === 'insufficient' ? 0 : Number(t.unaccountedGal ?? 0) / 1_000_000,
-                ),
-                borderColor: '#5c6b73',
-                backgroundColor: 'transparent',
-                borderDash: [6, 4],
-                tension: 0.35,
-                fill: false,
-              },
-            ],
-          });
-        }
+        const usage = buildUsageTrendChart(trend);
+        this.usageChartData.set(usage.data);
+        this.usageHasBand.set(usage.hasBand);
+        this.usageEmpty.set(usage.empty);
       } else {
         const balErr = await balanceRes.json().catch(() => ({}));
         balanceHint = balErr.error ?? `Balance unavailable (${balanceRes.status})`;
+        this.usageEmpty.set(true);
+        this.balanceInsufficient.set(true);
       }
 
       const balanceSignalLevel: ConfidenceLevel | '—' =
@@ -373,15 +341,4 @@ export class DashboardPageComponent implements OnInit {
         return 'success';
     }
   }
-}
-
-function shortPeriod(label: string): string {
-  const m = label.match(/^([A-Za-z]{3})/);
-  if (m) return m[1];
-  const ym = label.match(/^\d{4}-(\d{2})$/);
-  if (ym) {
-    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return names[Number(ym[1]) - 1] ?? label;
-  }
-  return label.slice(0, 3) || label;
 }

@@ -2,77 +2,314 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — Colorado Rural Water
-Generated: 2026-08-03T18:48:35.003405+00:00
+Generated: 2026-08-03T19:21:25.458933+00:00
+**Stack:** TypeScript/Angular
+**Scan roots:** `frontend/src`, `backend/src`
 
-**Summary:** 0 tracked functions | 0 with proof | 0 without proof
+**Summary:** 181 tracked functions | 161 with proof | 20 without proof
 Focus on the ones without proof for your key paths.
 
+Ship gate for Kelly/pilot remains Spec §0 + `docs/ACCEPTANCE_CHECKLIST.md` / smoke checklists — inventory count alone is not “done.”
+
+## Functions without proof (review these)
+- AI Tool / Orchestrator: bedrock.bedrockEnabled @ backend/src/shared/bedrock.ts:16
+- AI Tool / Orchestrator: bedrock.converseText @ backend/src/shared/bedrock.ts:20
+- Angular Page / Component: ShellComponent.ShellComponent @ frontend/src/app/layout/shell.component.ts:8
+- Angular Page / Component: AccountPageComponent.AccountPageComponent @ frontend/src/app/pages/account/account-page.component.ts:12
+- Angular Page / Component: AdminPageComponent.AdminPageComponent @ frontend/src/app/pages/admin/admin-page.component.ts:49
+- Angular Page / Component: AgentPageComponent.AgentPageComponent @ frontend/src/app/pages/agent/agent-page.component.ts:18
+- Angular Page / Component: BillingPageComponent.BillingPageComponent @ frontend/src/app/pages/billing/billing-page.component.ts:39
+- Angular Page / Component: CrwaRollupPageComponent.CrwaRollupPageComponent @ frontend/src/app/pages/crwa/crwa-rollup-page.component.ts:26
+- Angular Page / Component: LoginPageComponent.LoginPageComponent @ frontend/src/app/pages/login/login-page.component.ts:16
+- Angular Page / Component: MetersPageComponent.MetersPageComponent @ frontend/src/app/pages/meters/meters-page.component.ts:127
+- Angular Page / Component: SourcesPageComponent.SourcesPageComponent @ frontend/src/app/pages/sources/sources-page.component.ts:25
+- Core Service: AwsCognitoAdminClient.AwsCognitoAdminClient @ backend/src/shared/cognito-admin.ts:16
+- Core Service: DynamoMeterStore.DynamoMeterStore @ backend/src/shared/dynamo-store.ts:106
+- Core Service: dynamo-store.createAlertStatusStoreFromEnv @ backend/src/shared/dynamo-store.ts:963
+- Core Service: dynamo-store.createBalanceThresholdStoreFromEnv @ backend/src/shared/dynamo-store.ts:971
+- Core Service: dynamo-store.createConversationStoreFromEnv @ backend/src/shared/dynamo-store.ts:987
+- Core Service: dynamo-store.createMeterStoreFromEnv @ backend/src/shared/dynamo-store.ts:947
+- Core Service: dynamo-store.createSourceStoreFromEnv @ backend/src/shared/dynamo-store.ts:955
+- Core Service: dynamo-store.createTenantStoreFromEnv @ backend/src/shared/dynamo-store.ts:979
+- Core Service: DynamoReviewStore.DynamoReviewStore @ backend/src/shared/review-store.ts:36
+
+Note: Many items here are thin handlers or UI pages covered by higher-level smoke / acceptance.
+Empty proof ≠ missing feature. Use this list to decide where to add focused proof.
+
 ## Detected Packages & Major Components
-(none detected)
+- ★ @angular/animations (^22.1.0) — frontend/package.json
+- ★ @angular/build (^22.1.0) — frontend/package.json
+- ★ @angular/cdk (^22.1.0) — frontend/package.json
+- ★ @angular/cli (^22.1.0) — frontend/package.json
+- ★ @angular/common (^22.1.0) — frontend/package.json
+- ★ @angular/compiler (^22.1.0) — frontend/package.json
+- ★ @angular/compiler-cli (^22.1.0) — frontend/package.json
+- ★ @angular/core (^22.1.0) — frontend/package.json
+- ★ @angular/forms (^22.1.0) — frontend/package.json
+- ★ @angular/platform-browser (^22.1.0) — frontend/package.json
+- ★ @angular/router (^22.1.0) — frontend/package.json
+- ★ @aws-sdk/client-bedrock-runtime (^3.1101.0) — backend/package.json
+- ★ @aws-sdk/client-cognito-identity-provider (^3.1101.0) — backend/package.json
+- ★ @aws-sdk/client-dynamodb (^3.1101.0) — backend/package.json
+- ★ @aws-sdk/client-s3 (^3.1101.0) — backend/package.json
+- ★ @aws-sdk/client-ses (^3.1101.0) — backend/package.json
+- ★ @aws-sdk/lib-dynamodb (^3.1101.0) — backend/package.json
+- ★ @aws-sdk/s3-request-presigner (^3.1101.0) — backend/package.json
+- ★ @primeuix/themes (^3.0.0) — frontend/package.json
+- ★ @types/aws-lambda (^8.10.147) — backend/package.json
+- ★ chart.js (^4.5.1) — frontend/package.json
+- ★ primeng (^22.0.0) — frontend/package.json
+- @types/node (^22.13.10) — backend/package.json
+- esbuild (^0.28.1) — package.json
+- esbuild (^0.28.1) — backend/package.json
+- jsdom (^28.0.0) — frontend/package.json
+- prettier (^3.8.1) — frontend/package.json
+- primeicons (^8.0.0) — frontend/package.json
+- rxjs (~7.8.0) — frontend/package.json
+- tslib (^2.3.0) — frontend/package.json
+- tsx (^4.19.3) — backend/package.json
+- typescript (~6.0.2) — frontend/package.json
+- typescript (^5.8.2) — backend/package.json
+- vitest (^4.0.8) — frontend/package.json
+- xlsx (^0.18.5) — frontend/package.json
+- xlsx (^0.18.5) — backend/package.json
+
+## UI / Component Elements in Use (sampled)
+p-button, p-card, p-chart, p-checkbox, p-dialog, p-fileupload, p-inputotp, p-message, p-select, p-table, p-tag, primeng/button, primeng/card, primeng/chart, primeng/checkbox, primeng/config, primeng/dialog, primeng/fileupload, primeng/inputotp, primeng/inputtext, primeng/message, primeng/select, primeng/table, primeng/tag, primeng/textarea
 
 ## UI / Theme / Layout / JS Interop Surfaces
 Detected theme, layout, error UI, and JS interop touchpoints (not every CSS rule).
 
 | Kind | Path | Signal |
 |------|------|--------|
-| error-ui | `mcp/crwa-rag/node_modules/depd/index.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/send/index.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/finalhandler/index.js` | `onerror` |
-| js-interop | `mcp/crwa-rag/node_modules/debug/src/browser.js` | `window.process` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/jtd.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/2019.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/core.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/2020.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/ajv.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/runtime/validation_error.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/compile/index.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/compile/errors.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/compile/validate/index.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/compile/validate/keyword.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/vocabularies/core/ref.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/ajv/dist/vocabularies/validation/required.js` | `OnError` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/sse.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/streamableHttp.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/stdio.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/webStandardStreamableHttp.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/shared/protocol.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/shared/auth.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/sse.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/streamableHttp.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/stdio.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/websocket.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/examples/client/parallelToolCallsClient.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/examples/client/multipleClientsParallel.js` | `onerror` |
-| js-interop | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/examples/client/simpleOAuthClient.js` | `window.close` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/examples/client/streamableHttpWithSseFallbackClient.js` | `onerror` |
-| js-interop | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/examples/client/elicitationUrlExample.js` | `window.close` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/examples/client/elicitationUrlExample.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/examples/client/ssePollingClient.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/cjs/examples/client/simpleStreamableHttp.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/server/sse.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/server/streamableHttp.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/server/webStandardStreamableHttp.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/auth.js` | `onError` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/client/sse.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/client/streamableHttp.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/client/websocket.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/examples/client/parallelToolCallsClient.js` | `onerror` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/examples/client/multipleClientsParallel.js` | `onerror` |
-| js-interop | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/examples/client/simpleOAuthClient.js` | `window.close` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/examples/client/streamableHttpWithSseFallbackClient.js` | `onerror` |
-| js-interop | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/examples/client/elicitationUrlExample.js` | `window.close` |
-| error-ui | `mcp/crwa-rag/node_modules/@modelcontextprotocol/sdk/dist/esm/examples/client/elicitationUrlExample.js` | `onerror` |
-| … | … | +31 more |
+| layout | `frontend/src/app/app.routes.ts` | `ShellComponent` |
+| layout | `frontend/src/app/app.ts` | `router-outlet` |
+| theme | `frontend/src/app/app.config.ts` | `providePrimeNG` |
+| primeng | `frontend/src/app/app.config.ts` | `from 'primeng/` |
+| js-interop | `frontend/src/app/core/auth.service.ts` | `sessionStorage` |
+| js-interop | `frontend/src/app/core/auth.service.spec.ts` | `sessionStorage` |
+| layout | `frontend/src/app/layout/shell.component.ts` | `app-shell` |
+| primeng | `frontend/src/app/layout/shell.component.ts` | `from 'primeng/` |
+| js-interop | `frontend/src/app/review/review.service.ts` | `sessionStorage` |
+| js-interop | `frontend/src/app/review/review.service.spec.ts` | `sessionStorage` |
+| primeng | `frontend/src/app/review/review-panel.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/admin/admin-page.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/agent/agent-page.component.ts` | `from 'primeng/` |
+| js-interop | `frontend/src/app/pages/alerts/alerts-page.component.ts` | `document.` |
+| primeng | `frontend/src/app/pages/alerts/alerts-page.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/dashboard/dashboard-page.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/meters/meters-page.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/review/review-howto-page.component.ts` | `from 'primeng/` |
+| js-interop | `frontend/src/app/pages/review/review-howto-page.component.spec.ts` | `sessionStorage` |
+| primeng | `frontend/src/app/pages/sources/sources-page.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/crwa/crwa-rollup-page.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/account/account-page.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/login/login-page.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/billing/billing-page.component.ts` | `from 'primeng/` |
+| primeng | `frontend/src/app/pages/upload/upload-page.component.ts` | `from 'primeng/` |
+| layout | `frontend/src/app/layout/shell.component.html` | `router-outlet` |
+| error-ui | `frontend/src/app/review/review-panel.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/admin/admin-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/agent/agent-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/alerts/alerts-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/dashboard/dashboard-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/meters/meters-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/review/review-howto-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/sources/sources-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/crwa/crwa-rollup-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/account/account-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/login/login-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/billing/billing-page.component.html` | `p-message` |
+| error-ui | `frontend/src/app/pages/upload/upload-page.component.html` | `p-message` |
+| theme | `backend/src/shared/excel-parse.ts` | `material` |
 
-Theme oracle (MCP): `sf_blazor_style` with `theme="bootstrap5.3"` (or fluent2/material3/tailwind3) for documented theme switch + CSS variable guidance.
+Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` / `get_guide` for PrimeNG 22 + `@primeuix/themes` (Aura/project preset). Not Syncfusion Blazor.
 
 ## Tracked Functions (lightweight discovery)
 
 | Category | Function | Location | Proof of Function | Minimal Impl Signal |
 |----------|----------|----------|-------------------|---------------------|
+| AI Tool / Orchestrator | agent.handler | backend/src/handlers/agent.ts:24 | backend/src/shared/agent-isolation.test.ts, backend/src/hand... | has logic |
+| AI Tool / Orchestrator | agent-context.assertNoCrossTenantContext | backend/src/shared/agent-context.ts:169 | backend/src/shared/agent-isolation.test.ts | has logic |
+| AI Tool / Orchestrator | agent-context.buildAgentGuardrails | backend/src/shared/agent-context.ts:57 | backend/src/shared/agent-isolation.test.ts | has logic |
+| AI Tool / Orchestrator | agent-context.confidenceCoachingCopy | backend/src/shared/agent-context.ts:44 | backend/src/shared/agent-isolation.test.ts | small body |
+| AI Tool / Orchestrator | agent-context.detectNeedsConfirm | backend/src/shared/agent-context.ts:67 | backend/src/shared/agent-isolation.test.ts | has logic |
+| AI Tool / Orchestrator | agent-context.findCrossTenantLeaks | backend/src/shared/agent-context.ts:149 | backend/src/shared/agent-isolation.test.ts | has logic |
+| AI Tool / Orchestrator | agent-context.onboardingInventoryReply | backend/src/shared/agent-context.ts:93 | backend/src/shared/agent-isolation.test.ts | small body |
+| AI Tool / Orchestrator | agent-context.templateAgentReply | backend/src/shared/agent-context.ts:104 | backend/src/shared/agent-isolation.test.ts | has logic |
+| AI Tool / Orchestrator | bedrock.bedrockEnabled | backend/src/shared/bedrock.ts:16 | NO PROOF FOUND | has logic |
+| AI Tool / Orchestrator | bedrock.converseText | backend/src/shared/bedrock.ts:20 | NO PROOF FOUND | has logic |
+| AI Tool / Orchestrator | MemoryConversationStore.MemoryConversationStore | backend/src/shared/conversation.ts:28 | backend/src/shared/agent-isolation.test.ts | has logic |
+| AI Tool / Orchestrator | conversation.conversationSk | backend/src/shared/conversation.ts:24 | backend/src/shared/agent-isolation.test.ts | has logic |
+| API Endpoint | admin.handler | backend/src/handlers/admin.ts:59 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| API Endpoint | alerts.handler | backend/src/handlers/alerts.ts:32 | backend/src/shared/balance-alerts.test.ts, backend/src/share... | has logic |
+| API Endpoint | balance.handler | backend/src/handlers/balance.ts:22 | backend/src/shared/balance-alerts.test.ts, backend/src/share... | has logic |
+| API Endpoint | health.handler | backend/src/handlers/health.ts:3 | backend/src/handlers/upload-url.test.ts, backend/src/handler... | small body |
+| API Endpoint | ingest-sources.handler | backend/src/handlers/ingest-sources.ts:17 | backend/src/handlers/upload-url.test.ts, backend/src/handler... | has logic |
+| API Endpoint | ingest.handler | backend/src/handlers/ingest.ts:30 | backend/src/shared/excel-parse.test.ts, backend/src/shared/s... | has logic |
+| API Endpoint | me.handler | backend/src/handlers/me.ts:4 | backend/src/handlers/upload-url.test.ts, backend/src/handler... | has logic |
+| API Endpoint | meters.handler | backend/src/handlers/meters.ts:22 | backend/src/shared/billing.test.ts, backend/src/shared/agent... | has logic |
+| API Endpoint | review.createReviewHandler | backend/src/handlers/review.ts:52 | backend/src/handlers/review.test.ts | has logic |
+| API Endpoint | review.createSesMailer | backend/src/handlers/review.ts:36 | backend/src/handlers/review.test.ts | has logic |
+| API Endpoint | review.handler | backend/src/handlers/review.ts:101 | backend/src/handlers/review.test.ts | has logic |
+| API Endpoint | s3-ingest.handleS3IngestEvent | backend/src/handlers/s3-ingest.ts:51 | backend/src/handlers/s3-ingest.test.ts | has logic |
+| API Endpoint | s3-ingest.handler | backend/src/handlers/s3-ingest.ts:37 | backend/src/handlers/s3-ingest.test.ts | has logic |
+| API Endpoint | s3-ingest.processS3UploadObject | backend/src/handlers/s3-ingest.ts:95 | backend/src/handlers/s3-ingest.test.ts | has logic |
+| API Endpoint | s3-ingest.tenantFromKey | backend/src/handlers/s3-ingest.ts:200 | backend/src/handlers/s3-ingest.test.ts | small body |
+| API Endpoint | sources.handler | backend/src/handlers/sources.ts:11 | backend/src/shared/source-csv-parse.test.ts, backend/src/sha... | has logic |
+| API Endpoint | upload-url.buildUploadObjectKey | backend/src/handlers/upload-url.ts:86 | backend/src/handlers/upload-url.test.ts | has logic |
+| API Endpoint | upload-url.handler | backend/src/handlers/upload-url.ts:19 | backend/src/handlers/upload-url.test.ts | has logic |
+| API Endpoint | upload-url.sanitizeFilename | backend/src/handlers/upload-url.ts:78 | backend/src/handlers/upload-url.test.ts | has logic |
+| Angular Page / Component | ShellComponent.ShellComponent | frontend/src/app/layout/shell.component.ts:8 | NO PROOF FOUND | has logic |
+| Angular Page / Component | AccountPageComponent.AccountPageComponent | frontend/src/app/pages/account/account-page.component.ts:12 | NO PROOF FOUND | has logic |
+| Angular Page / Component | AdminPageComponent.AdminPageComponent | frontend/src/app/pages/admin/admin-page.component.ts:49 | NO PROOF FOUND | has logic |
+| Angular Page / Component | AgentPageComponent.AgentPageComponent | frontend/src/app/pages/agent/agent-page.component.ts:18 | NO PROOF FOUND | has logic |
+| Angular Page / Component | AlertsPageComponent.AlertsPageComponent | frontend/src/app/pages/alerts/alerts-page.component.ts:73 | frontend/src/app/pages/alerts/alerts-page.component.spec.ts | has logic |
+| Angular Page / Component | BillingPageComponent.BillingPageComponent | frontend/src/app/pages/billing/billing-page.component.ts:39 | NO PROOF FOUND | has logic |
+| Angular Page / Component | CrwaRollupPageComponent.CrwaRollupPageComponent | frontend/src/app/pages/crwa/crwa-rollup-page.component.ts:26 | NO PROOF FOUND | has logic |
+| Angular Page / Component | DashboardPageComponent.DashboardPageComponent | frontend/src/app/pages/dashboard/dashboard-page.component.ts:34 | frontend/src/app/pages/dashboard/dashboard-page.component.sp... | has logic |
+| Angular Page / Component | LoginPageComponent.LoginPageComponent | frontend/src/app/pages/login/login-page.component.ts:16 | NO PROOF FOUND | has logic |
+| Angular Page / Component | MetersPageComponent.MetersPageComponent | frontend/src/app/pages/meters/meters-page.component.ts:127 | NO PROOF FOUND | has logic |
+| Angular Page / Component | ReviewHowtoPageComponent.ReviewHowtoPageComponent | frontend/src/app/pages/review/review-howto-page.component.ts:10 | frontend/src/app/pages/review/review-howto-page.component.sp... | has logic |
+| Angular Page / Component | SourcesPageComponent.SourcesPageComponent | frontend/src/app/pages/sources/sources-page.component.ts:25 | NO PROOF FOUND | has logic |
+| Angular Page / Component | UploadPageComponent.UploadPageComponent | frontend/src/app/pages/upload/upload-page.component.ts:105 | frontend/src/app/pages/upload/upload-page.component.spec.ts | has logic |
+| Angular Page / Component | ReviewPanelComponent.ReviewPanelComponent | frontend/src/app/review/review-panel.component.ts:10 | frontend/src/app/review/review-panel.component.spec.ts | has logic |
+| Angular Route | routes.route:(shell root) | frontend/src/app/app.routes.ts:19 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:(shell root) | frontend/src/app/app.routes.ts:22 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/account | frontend/src/app/app.routes.ts:29 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/admin | frontend/src/app/app.routes.ts:30 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/alerts | frontend/src/app/app.routes.ts:27 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/assistant | frontend/src/app/app.routes.ts:28 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/billing | frontend/src/app/app.routes.ts:31 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/crwa | frontend/src/app/app.routes.ts:32 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/dashboard | frontend/src/app/app.routes.ts:23 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/login | frontend/src/app/app.routes.ts:17 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/meters | frontend/src/app/app.routes.ts:25 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/review | frontend/src/app/app.routes.ts:33 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/sources | frontend/src/app/app.routes.ts:26 | frontend/src/app/app.routes.spec.ts | small body |
+| Angular Route | routes.route:/upload | frontend/src/app/app.routes.ts:24 | frontend/src/app/app.routes.spec.ts | small body |
+| Core Service | alert-engine.assessTenantConfidence | backend/src/shared/alert-engine.ts:54 | backend/src/shared/alert-engine.test.ts | has logic |
+| Core Service | alert-engine.evaluateAlerts | backend/src/shared/alert-engine.ts:97 | backend/src/shared/alert-engine.test.ts | has logic |
+| Core Service | alert-explain.explainAlertTemplate | backend/src/shared/alert-explain.ts:35 | backend/src/shared/agent-isolation.test.ts | small body |
+| Core Service | alert-explain.explainAlertsBatch | backend/src/shared/alert-explain.ts:52 | backend/src/shared/agent-isolation.test.ts | small body |
+| Core Service | alert-status.isAlertStatusAction | backend/src/shared/alert-status.ts:24 | backend/src/shared/alert-status.test.ts | has logic |
+| Core Service | alert-status.sanitizeAlertId | backend/src/shared/alert-status.ts:34 | backend/src/shared/alert-status.test.ts | has logic |
+| Core Service | alert-status.statusFromAction | backend/src/shared/alert-status.ts:28 | backend/src/shared/alert-status.test.ts | has logic |
+| Core Service | auth.hasAnyRole | backend/src/shared/auth.ts:80 | backend/src/shared/auth.test.ts | has logic |
+| Core Service | auth.hasRole | backend/src/shared/auth.ts:76 | backend/src/shared/auth.test.ts | has logic |
+| Core Service | auth.isAssignableTenantRole | backend/src/shared/auth.ts:91 | backend/src/shared/auth.test.ts | has logic |
+| Core Service | auth.parseAuthFromClaims | backend/src/shared/auth.ts:50 | backend/src/shared/auth.test.ts | has logic |
+| Core Service | auth.parseCognitoGroups | backend/src/shared/auth.ts:24 | backend/src/shared/auth.test.ts | has logic |
+| Core Service | auth.requireAnyRole | backend/src/shared/auth.ts:86 | backend/src/shared/auth.test.ts | has logic |
+| Core Service | auth.requireTenantId | backend/src/shared/auth.ts:97 | backend/src/shared/auth.test.ts | small body |
+| Core Service | balance-alerts.evaluateBalanceAlerts | backend/src/shared/balance-alerts.ts:51 | backend/src/shared/balance-alerts.test.ts | has logic |
+| Core Service | balance-thresholds.mergeBalanceThresholds | backend/src/shared/balance-thresholds.ts:24 | backend/src/shared/balance-thresholds.test.ts | has logic |
+| Core Service | balance-thresholds.parseThresholdPatch | backend/src/shared/balance-thresholds.ts:58 | backend/src/shared/balance-thresholds.test.ts | has logic |
+| Core Service | billing.billEventSk | backend/src/shared/billing.ts:190 | backend/src/shared/billing.test.ts | small body |
+| Core Service | billing.billingStatusLabel | backend/src/shared/billing.ts:96 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | billing.crwaBillingView | backend/src/shared/billing.ts:183 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | billing.defaultBillingFields | backend/src/shared/billing.ts:116 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | billing.isBillingMode | backend/src/shared/billing.ts:104 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | billing.isBillingStatus | backend/src/shared/billing.ts:100 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | billing.isPaymentMethod | backend/src/shared/billing.ts:112 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | billing.isPlanCode | backend/src/shared/billing.ts:108 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | billing.planLabel | backend/src/shared/billing.ts:92 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | billing.publicBillingView | backend/src/shared/billing.ts:168 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | billing.suggestPlanCode | backend/src/shared/billing.ts:82 | backend/src/shared/billing.test.ts | has logic |
+| Core Service | AwsCognitoAdminClient.AwsCognitoAdminClient | backend/src/shared/cognito-admin.ts:16 | NO PROOF FOUND | has logic |
+| Core Service | cognito-admin.createCognitoAdminFromEnv | backend/src/shared/cognito-admin.ts:51 | backend/src/handlers/admin-isolation.test.ts | small body |
+| Core Service | crwa-rollup.buildCrwaRollupRow | backend/src/shared/crwa-rollup.ts:44 | backend/src/shared/agent-isolation.test.ts | has logic |
+| Core Service | crwa-rollup.sanitizeRollupForResponse | backend/src/shared/crwa-rollup.ts:71 | backend/src/shared/agent-isolation.test.ts | has logic |
+| Core Service | csv-parse.applyMapping | backend/src/shared/csv-parse.ts:360 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.findHeaderRowIndex | backend/src/shared/csv-parse.ts:270 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.guessColumnMapping | backend/src/shared/csv-parse.ts:335 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | small body |
+| Core Service | csv-parse.isNoiseRow | backend/src/shared/csv-parse.ts:298 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.normalizeHeader | backend/src/shared/csv-parse.ts:351 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.normalizeUnit | backend/src/shared/csv-parse.ts:547 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.parseCsvText | backend/src/shared/csv-parse.ts:200 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.parseCustomerReadingsCsv | backend/src/shared/csv-parse.ts:486 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.parseDiagnosticFlags | backend/src/shared/csv-parse.ts:564 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.parseFlexibleDate | backend/src/shared/csv-parse.ts:600 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.parseReadingNumber | backend/src/shared/csv-parse.ts:541 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.parseTableMatrix | backend/src/shared/csv-parse.ts:226 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | csv-parse.splitCsvLine | backend/src/shared/csv-parse.ts:306 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
+| Core Service | DynamoMeterStore.DynamoMeterStore | backend/src/shared/dynamo-store.ts:106 | NO PROOF FOUND | has logic |
+| Core Service | dynamo-store.createAlertStatusStoreFromEnv | backend/src/shared/dynamo-store.ts:963 | NO PROOF FOUND | has logic |
+| Core Service | dynamo-store.createBalanceThresholdStoreFromEnv | backend/src/shared/dynamo-store.ts:971 | NO PROOF FOUND | has logic |
+| Core Service | dynamo-store.createConversationStoreFromEnv | backend/src/shared/dynamo-store.ts:987 | NO PROOF FOUND | small body |
+| Core Service | dynamo-store.createMeterStoreFromEnv | backend/src/shared/dynamo-store.ts:947 | NO PROOF FOUND | has logic |
+| Core Service | dynamo-store.createSourceStoreFromEnv | backend/src/shared/dynamo-store.ts:955 | NO PROOF FOUND | has logic |
+| Core Service | dynamo-store.createTenantStoreFromEnv | backend/src/shared/dynamo-store.ts:979 | NO PROOF FOUND | has logic |
+| Core Service | excel-parse.assertExcelBufferWithinLimit | backend/src/shared/excel-parse.ts:218 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.bufferFromBase64 | backend/src/shared/excel-parse.ts:183 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.classifySheet | backend/src/shared/excel-parse.ts:63 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.findArchiveSheet | backend/src/shared/excel-parse.ts:88 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.isArchiveSheet | backend/src/shared/excel-parse.ts:54 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.isClerkNotesSheet | backend/src/shared/excel-parse.ts:50 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.isExcelFileName | backend/src/shared/excel-parse.ts:46 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.isPreferredMeterSheet | backend/src/shared/excel-parse.ts:58 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.listWorkbookSheets | backend/src/shared/excel-parse.ts:73 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.looksLikeExcelBuffer | backend/src/shared/excel-parse.ts:202 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.parseCustomerReadingsExcel | backend/src/shared/excel-parse.ts:92 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | excel-parse.preferDataSheet | backend/src/shared/excel-parse.ts:80 | backend/src/shared/excel-parse.test.ts | has logic |
+| Core Service | flagged-export.buildFlaggedMetersCsv | backend/src/shared/flagged-export.ts:41 | backend/src/shared/flagged-export.test.ts | has logic |
+| Core Service | flagged-export.csvCell | backend/src/shared/flagged-export.ts:29 | backend/src/shared/flagged-export.test.ts | has logic |
+| Core Service | flagged-export.sanitizeMeterId | backend/src/shared/flagged-export.ts:61 | backend/src/shared/flagged-export.test.ts | has logic |
+| Core Service | http.badRequest | backend/src/shared/http.ts:34 | backend/src/handlers/upload-url.test.ts, backend/src/handler... | has logic |
+| Core Service | http.csv | backend/src/shared/http.ts:20 | backend/src/shared/excel-parse.test.ts, backend/src/shared/s... | has logic |
+| Core Service | http.forbidden | backend/src/shared/http.ts:42 | backend/src/handlers/upload-url.test.ts, backend/src/handler... | small body |
+| Core Service | http.json | backend/src/shared/http.ts:2 | backend/src/handlers/upload-url.test.ts, backend/src/handler... | has logic |
+| Core Service | http.ok | backend/src/shared/http.ts:14 | backend/src/handlers/upload-url.test.ts, backend/src/handler... | has logic |
+| Core Service | http.unauthorized | backend/src/shared/http.ts:38 | backend/src/handlers/upload-url.test.ts, backend/src/handler... | small body |
+| Core Service | ingest.commitCustomerIngest | backend/src/shared/ingest.ts:31 | backend/src/shared/excel-parse.test.ts, backend/src/shared/s... | has logic |
+| Core Service | MemoryMeterStore.MemoryMeterStore | backend/src/shared/memory-store.ts:5 | backend/src/shared/excel-parse.test.ts, backend/src/shared/m... | has logic |
+| Core Service | meter-location.applyMeterLocationUpsert | backend/src/shared/meter-location.ts:304 | backend/src/shared/meter-location.test.ts | has logic |
+| Core Service | meter-location.applyMeterMetadataPatch | backend/src/shared/meter-location.ts:136 | backend/src/shared/meter-location.test.ts | has logic |
+| Core Service | meter-location.isNonEmptyAssetValue | backend/src/shared/meter-location.ts:116 | backend/src/shared/meter-location.test.ts | has logic |
+| Core Service | meter-location.locationAssetSnapshot | backend/src/shared/meter-location.ts:391 | backend/src/shared/meter-location.test.ts | small body |
+| Core Service | meter-location.mergeAssetField | backend/src/shared/meter-location.ts:124 | backend/src/shared/meter-location.test.ts | has logic |
+| Core Service | meter-location.normalizeAddressKey | backend/src/shared/meter-location.ts:377 | backend/src/shared/meter-location.test.ts | has logic |
+| Core Service | meter-location.parseMeterCreateBody | backend/src/shared/meter-location.ts:168 | backend/src/shared/meter-location.test.ts | has logic |
+| Core Service | meter-location.parseMeterMetadataPatch | backend/src/shared/meter-location.ts:261 | backend/src/shared/meter-location.test.ts | has logic |
+| Core Service | meter-location.sanitizeMeterLocationForResponse | backend/src/shared/meter-location.ts:235 | backend/src/shared/meter-location.test.ts | has logic |
+| Core Service | meter-location.toDateOnly | backend/src/shared/meter-location.ts:386 | backend/src/shared/meter-location.test.ts | has logic |
+| Core Service | DynamoReviewStore.DynamoReviewStore | backend/src/shared/review-store.ts:36 | NO PROOF FOUND | has logic |
+| Core Service | MemoryReviewStore.MemoryReviewStore | backend/src/shared/review-store.ts:186 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review-store.createReviewStoreFromEnv | backend/src/shared/review-store.ts:176 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review.buildReviewEmailBody | backend/src/shared/review.ts:142 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review.isReviewRating | backend/src/shared/review.ts:48 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review.isReviewStepId | backend/src/shared/review.ts:44 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review.isSessionExpired | backend/src/shared/review.ts:71 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review.parseStepFeedbackBody | backend/src/shared/review.ts:90 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review.ratingLabel | backend/src/shared/review.ts:75 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review.reviewSessionSk | backend/src/shared/review.ts:57 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review.reviewStepSk | backend/src/shared/review.ts:61 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | review.sessionExpiresAt | backend/src/shared/review.ts:65 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | source-csv-parse.applySourceMapping | backend/src/shared/source-csv-parse.ts:97 | backend/src/shared/source-csv-parse.test.ts | has logic |
+| Core Service | source-csv-parse.guessSourceColumnMapping | backend/src/shared/source-csv-parse.ts:79 | backend/src/shared/source-csv-parse.test.ts | has logic |
+| Core Service | source-csv-parse.parseSourceReadingsCsv | backend/src/shared/source-csv-parse.ts:180 | backend/src/shared/source-csv-parse.test.ts | has logic |
+| Core Service | source-ingest.commitSourceIngest | backend/src/shared/source-ingest.ts:19 | backend/src/shared/source-csv-parse.test.ts | has logic |
+| Core Service | source-reading.normalizeSourceReadingInput | backend/src/shared/source-reading.ts:31 | backend/src/shared/source-csv-parse.test.ts, backend/src/sha... | has logic |
+| Core Service | MemorySourceStore.MemorySourceStore | backend/src/shared/source-store.ts:19 | backend/src/shared/source-store.test.ts, backend/src/shared/... | has logic |
+| Core Service | tenant-admin.generateTemporaryPassword | backend/src/shared/tenant-admin.ts:114 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| Core Service | tenant-admin.normalizeDisplayName | backend/src/shared/tenant-admin.ts:54 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| Core Service | tenant-admin.normalizeEmail | backend/src/shared/tenant-admin.ts:62 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| Core Service | tenant-admin.normalizeMeterCountEstimate | backend/src/shared/tenant-admin.ts:99 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| Core Service | tenant-admin.normalizeOptionalEmail | backend/src/shared/tenant-admin.ts:75 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| Core Service | tenant-admin.normalizeOptionalIsoDate | backend/src/shared/tenant-admin.ts:83 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| Core Service | tenant-admin.normalizeTenantId | backend/src/shared/tenant-admin.ts:38 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| Core Service | water-balance.calculatePeriodBalance | backend/src/shared/water-balance.ts:155 | backend/src/shared/water-balance.test.ts | has logic |
+| Core Service | water-balance.calculateWaterBalance | backend/src/shared/water-balance.ts:195 | backend/src/shared/water-balance.test.ts | has logic |
+| Core Service | water-balance.periodKeyFromIso | backend/src/shared/water-balance.ts:36 | backend/src/shared/water-balance.test.ts | has logic |
+| Core Service | water-balance.periodLabel | backend/src/shared/water-balance.ts:44 | backend/src/shared/water-balance.test.ts | has logic |
+| Core Service | water-balance.sumCustomerUsage | backend/src/shared/water-balance.ts:128 | backend/src/shared/water-balance.test.ts | has logic |
+| Core Service | water-balance.sumSourceProduction | backend/src/shared/water-balance.ts:73 | backend/src/shared/water-balance.test.ts | has logic |
+| Core Service | water-source.isSourceType | backend/src/shared/water-source.ts:24 | backend/src/shared/water-source.test.ts | has logic |
+| Core Service | water-source.normalizeWaterSourceInput | backend/src/shared/water-source.ts:40 | backend/src/shared/water-source.test.ts | has logic |
+| Core Service | water-source.slugifySourceId | backend/src/shared/water-source.ts:30 | backend/src/shared/water-source.test.ts | has logic |
+| Core Service | AuthService.AuthService | frontend/src/app/core/auth.service.ts:73 | frontend/src/app/core/auth.service.spec.ts, frontend/src/app... | has logic |
+| Core Service | ReviewService.ReviewService | frontend/src/app/review/review.service.ts:27 | frontend/src/app/review/review.service.spec.ts, frontend/src... | has logic |
+| Other Public | App.App | frontend/src/app/app.ts:6 | frontend/src/app/app.spec.ts, frontend/src/app/app.routes.sp... | has logic |
 
 ## Philosophy (solo superpower)
 - Track **individual functions** so nothing falls through the cracks.
@@ -80,5 +317,6 @@ Theme oracle (MCP): `sf_blazor_style` with `theme="bootstrap5.3"` (or fluent2/ma
 - Prefer **minimal required code** that actually does the job.
 - Goal: whole project works reliably because every small piece is verified.
 - Run this before claiming done. Use it for peace of mind, not bureaucracy.
+- For Water Saver: exclude `mcp/**` and `node_modules/**`; roots are `frontend/src` + `backend/src`.
 
 Next: curate `action-items.md` with specific functions that need tests or review.

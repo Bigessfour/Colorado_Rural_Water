@@ -156,7 +156,11 @@ export class LoginPageComponent {
     result: Awaited<ReturnType<AuthService['login']>>,
   ): Promise<void> {
     if (result.status === 'signed_in') {
-      await this.router.navigateByUrl('/dashboard');
+      const email = (this.auth.email() ?? this.email).toLowerCase();
+      const reviewMode =
+        email.startsWith('kelly.review') ||
+        (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('ws_review_mode') === '1');
+      await this.router.navigateByUrl(reviewMode ? '/review' : '/dashboard');
       return;
     }
 

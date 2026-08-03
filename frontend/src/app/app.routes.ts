@@ -11,6 +11,7 @@ import { AdminPageComponent } from './pages/admin/admin-page.component';
 import { BillingPageComponent } from './pages/billing/billing-page.component';
 import { AccountPageComponent } from './pages/account/account-page.component';
 import { AgentPageComponent } from './pages/agent/agent-page.component';
+import { ReviewHowtoPageComponent } from './pages/review/review-howto-page.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -29,6 +30,7 @@ export const routes: Routes = [
       { path: 'admin', component: AdminPageComponent },
       { path: 'billing', component: BillingPageComponent },
       { path: 'crwa', component: CrwaRollupPageComponent },
+      { path: 'review', component: ReviewHowtoPageComponent },
     ],
   },
 ];

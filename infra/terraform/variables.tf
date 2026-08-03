@@ -50,3 +50,15 @@ variable "enable_storage" {
   description = "Provision S3 uploads bucket + DynamoDB data table"
   default     = true
 }
+
+variable "review_notify_to" {
+  type        = string
+  description = "F5 Kelly Review: email that receives the submitted summary (Steve)"
+  default     = ""
+}
+
+variable "review_from_email" {
+  type        = string
+  description = "F5 Kelly Review: SES From address (must be verified)"
+  default     = ""
+}

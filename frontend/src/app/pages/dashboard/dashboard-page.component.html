@@ -24,58 +24,73 @@
     }
   </div>
 
-  <p-card header="Data Confidence" styleClass="confidence">
-    <div class="confidence-head">
-      <div>
-        <div class="kpi-label">System overall</div>
-        <div class="confidence-score-row">
-          <span class="kpi-value">{{ confidence().displayScore }}</span>
-          <span class="confidence-score-suffix">/ 100 display</span>
-          <p-tag
-            [severity]="confidenceSeverity(confidence().level)"
-            [value]="confidence().level"
-          />
-        </div>
-        <p class="confidence-meaning">{{ confidence().meaning }}</p>
+  <p-card header="System usage — billed over time" styleClass="usage">
+    @if (usageEmpty()) {
+      <p class="muted">
+        No billed-usage trend yet. Ingest customer readings (and a second month when you can) so
+        spikes can show against a typical range.
+      </p>
+    } @else {
+      <div class="chart-wrap chart-wrap--hero">
+        <p-chart type="line" [data]="usageChartData()" [options]="usageChartOptions" />
       </div>
-      <div class="confidence-facts">
-        <div>
-          <div class="kpi-label">Comparable months</div>
-          <div class="balance-stat">{{ confidence().monthsComparable }}</div>
-        </div>
-        <div>
-          <div class="kpi-label">Meter coverage</div>
-          <div class="balance-stat">{{ confidence().coveragePct }}%</div>
-        </div>
-        <div>
-          <div class="kpi-label">Seasonality</div>
-          <div class="kpi-hint">{{ confidence().seasonality }}</div>
-        </div>
-      </div>
-    </div>
-
-    <p class="confidence-guidance">{{ confidence().guidance }}</p>
-    @if (confidence().improveHint) {
-      <p class="muted improve-hint">What would help: {{ confidence().improveHint }}</p>
-    }
-
-    <div class="signal-list">
-      @for (signal of confidence().signals; track signal.name) {
-        <div class="signal-row">
-          <span class="signal-name">{{ signal.name }}</span>
-          <p-tag
-            [severity]="signal.mode === 'Watch' ? 'secondary' : 'warn'"
-            [value]="signal.mode"
-          />
-          @if (signal.level !== '—') {
-            <span class="muted inline">{{ signal.level }} history</span>
-          } @else {
-            <span class="muted inline">Hardware / diag — not a thin-model guess</span>
-          }
-        </div>
+      @if (usageHasBand()) {
+        <p class="muted chart-note">
+          Shaded band = typical range from recent months (not a leak model). Points outside are
+          worth a look.
+        </p>
+      } @else {
+        <p class="muted chart-note">
+          Typical band appears after about three months of billed history. Until then, treat the
+          line as early context only.
+        </p>
       }
-    </div>
+    }
   </p-card>
+
+  <div class="instrument-row">
+    <p-card header="Data Confidence" styleClass="confidence">
+      <div class="confidence-head">
+        <div>
+          <div class="kpi-label">System overall</div>
+          <div class="confidence-score-row">
+            <span class="kpi-value">{{ confidence().level }}</span>
+            <p-tag
+              [severity]="confidenceSeverity(confidence().level)"
+              [value]="confidence().displayScore + ' / 100 display'"
+            />
+          </div>
+          <p class="confidence-meaning">{{ confidence().meaning }}</p>
+          <p class="confidence-guidance">{{ confidence().guidance }}</p>
+          @if (confidence().improveHint) {
+            <p class="muted improve-hint">What would help: {{ confidence().improveHint }}</p>
+          }
+          <div class="confidence-facts compact">
+            <span>{{ confidence().monthsComparable }} mo</span>
+            <span>·</span>
+            <span>{{ confidence().coveragePct }}% coverage</span>
+            <span>·</span>
+            <span>{{ confidence().seasonality }}</span>
+          </div>
+        </div>
+        <div class="chart-wrap chart-wrap--donut">
+          <p-chart type="doughnut" [data]="confidenceChartData()" [options]="doughnutOptions" />
+        </div>
+      </div>
+    </p-card>
+
+    @if (showHealth()) {
+      <p-card header="Meter health" styleClass="health">
+        <div class="chart-wrap chart-wrap--donut">
+          <p-chart type="doughnut" [data]="healthChartData()" [options]="doughnutOptions" />
+        </div>
+        <p class="muted chart-note">
+          Normal meters vs open Watch / Actionable flags — portfolio at a glance for
+          {{ meterCount() }} meters.
+        </p>
+      </p-card>
+    }
+  </div>
 
   <p-card header="Water balance — produced vs billed" styleClass="balance">
     <div class="balance-period-row">
@@ -121,8 +136,8 @@
         <div class="kpi-hint">Positive = loss; negative = sold more than pumped</div>
       </div>
     </div>
-    <div class="chart-wrap">
-      <p-chart type="line" [data]="balanceChartData()" [options]="balanceChartOptions" />
+    <div class="chart-wrap" [class.chart-wrap--muted]="balanceInsufficient()">
+      <p-chart type="bar" [data]="balanceBarData()" [options]="balanceBarOptions" />
     </div>
     <p class="muted">
       {{ balance().hint }}
@@ -151,6 +166,12 @@
           }
           — {{ alert.summary }}
           <div class="muted">{{ alert.confidenceNote }}</div>
+          @if (alert.kind === 'meter') {
+            <div class="muted">
+              <a routerLink="/alerts">Open Alerts → History</a> for usage stats and sparkline on this
+              meter.
+            </div>
+          }
         </div>
       </div>
     }

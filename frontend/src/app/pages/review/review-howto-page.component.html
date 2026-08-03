@@ -1,0 +1,57 @@
+<section class="page">
+  <h1>Kelly review — how to use this</h1>
+  <p class="lede">
+    This is a private, guided walkthrough of Water Saver. On each section, choose
+    <strong>Love this</strong>, <strong>Don't need this</strong>, <strong>Change this</strong>, or
+    <strong>Need something new</strong>, and add a short note if you want. When you finish, hit
+    <strong>Submit review</strong> — Steve gets one summary email. It should take about 20–30 minutes.
+  </p>
+
+  @if (!auth.isLoggedIn()) {
+    <p-message severity="warn" styleClass="hint">
+      <a routerLink="/login">Sign in</a> with the review account you were given, then return here and
+      press Start review.
+    </p-message>
+  }
+
+  @if (review.error()) {
+    <p-message severity="error" styleClass="hint">{{ review.error() }}</p-message>
+  }
+  @if (status()) {
+    <p-message severity="info" styleClass="hint">{{ status() }}</p-message>
+  }
+
+  <p-card header="What you'll do" styleClass="block">
+    <ol class="steps">
+      @for (step of steps; track step.id; let i = $index) {
+        <li>
+          <span class="n">{{ i + 1 }}.</span>
+          <div>
+            <strong>{{ step.title }}</strong>
+            <p>{{ step.lookAt }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+  </p-card>
+
+  <p-card header="Tips" styleClass="block">
+    <ul class="tips">
+      <li>A floating review panel stays on screen — you can Minimize it while you click around.</li>
+      <li>Skip is OK; comments help most on Change / Need something new.</li>
+      <li>CRWA Admin step uses the Admin and CRWA pages (provision, roll-up, billing status).</li>
+      <li>Submit once at the end. You cannot double-submit by accident.</li>
+    </ul>
+  </p-card>
+
+  <div class="cta">
+    <p-button
+      label="Start review"
+      [disabled]="!auth.isLoggedIn() || review.busy() || review.submitted()"
+      (onClick)="start()"
+    />
+    @if (review.submitted()) {
+      <p class="done-note">This session is already submitted. Thank you.</p>
+    }
+  </div>
+</section>

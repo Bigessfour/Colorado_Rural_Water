@@ -96,6 +96,21 @@ data "aws_iam_policy_document" "lambda_data" {
       "arn:aws:bedrock:${data.aws_region.current.region}::foundation-model/amazon.nova-micro-v1:0",
     ]
   }
+
+  # F5 — SES summary email on Kelly review submit (only when from/to configured).
+  dynamic "statement" {
+    for_each = var.review_from_email != "" ? [1] : []
+    content {
+      sid = "SesSendReviewEmail"
+      actions = [
+        "ses:SendEmail",
+        "ses:SendRawEmail",
+      ]
+      resources = [
+        "arn:aws:ses:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:identity/${var.review_from_email}",
+      ]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "lambda_data" {
@@ -111,6 +126,8 @@ locals {
     COGNITO_USER_POOL_ID = var.cognito_user_pool_id
     BEDROCK_MODEL_ID     = "amazon.nova-lite-v1:0"
     BEDROCK_ENABLED      = "1"
+    REVIEW_NOTIFY_TO     = var.review_notify_to
+    REVIEW_FROM_EMAIL    = var.review_from_email
   }
 }
 
@@ -273,6 +290,31 @@ resource "aws_lambda_function" "agent" {
   }
 }
 
+resource "aws_lambda_function" "review" {
+  function_name    = "${local.name_prefix}-review"
+  role             = aws_iam_role.lambda.arn
+  handler          = "review.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 30
+  memory_size      = 256
+  environment {
+    variables = local.lambda_env
+  }
+}
+
+# Optional SES identity so REVIEW_FROM_EMAIL can send (sandbox: verify To as well).
+resource "aws_ses_email_identity" "review_from" {
+  count = var.review_from_email != "" ? 1 : 0
+  email = var.review_from_email
+}
+
+resource "aws_ses_email_identity" "review_to" {
+  count = var.review_notify_to != "" && var.review_notify_to != var.review_from_email ? 1 : 0
+  email = var.review_notify_to
+}
+
 resource "aws_apigatewayv2_api" "http" {
   name          = "${local.name_prefix}-http"
   protocol_type = "HTTP"
@@ -374,6 +416,13 @@ resource "aws_apigatewayv2_integration" "agent" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "review" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.review.invoke_arn
+  payload_format_version = "2.0"
+}
+
 resource "aws_apigatewayv2_route" "health" {
   api_id    = aws_apigatewayv2_api.http.id
   route_key = "GET /health"
@@ -383,6 +432,14 @@ resource "aws_apigatewayv2_route" "health" {
 resource "aws_apigatewayv2_route" "me" {
   api_id             = aws_apigatewayv2_api.http.id
   route_key          = "GET /me"
+  target             = "integrations/${aws_apigatewayv2_integration.me.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "telemetry_client_errors" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /telemetry/client-errors"
   target             = "integrations/${aws_apigatewayv2_integration.me.id}"
   authorization_type = "JWT"
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
@@ -604,6 +661,38 @@ resource "aws_apigatewayv2_route" "agent_post" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "review_sessions_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /review/sessions"
+  target             = "integrations/${aws_apigatewayv2_integration.review.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "review_session_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /review/sessions/{sessionId}"
+  target             = "integrations/${aws_apigatewayv2_integration.review.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "review_step_put" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "PUT /review/sessions/{sessionId}/steps/{stepId}"
+  target             = "integrations/${aws_apigatewayv2_integration.review.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "review_submit_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /review/sessions/{sessionId}/submit"
+  target             = "integrations/${aws_apigatewayv2_integration.review.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
@@ -694,6 +783,14 @@ resource "aws_lambda_permission" "agent_apigw" {
   statement_id  = "AllowAPIGatewayInvokeAgent"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.agent.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "review_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeReview"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.review.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }

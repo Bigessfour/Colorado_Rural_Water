@@ -98,7 +98,7 @@ export const handler: AuthedHandler = async (event) => {
 
     const balance = calculateWaterBalance(tenantId, sourceReadings, meterReadings, {
       period: periodParam,
-      trendMonths: 5,
+      trendMonths: 12,
     });
     const thresholds = mergeBalanceThresholds(storedThresholds);
 

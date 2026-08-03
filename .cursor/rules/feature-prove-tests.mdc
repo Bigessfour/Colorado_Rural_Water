@@ -1,0 +1,34 @@
+---
+description: Big features require live Chrome DevTools prove tests (buttons, fields, data vis)
+alwaysApply: true
+---
+
+# Feature prove tests (NON-NEGOTIABLE)
+
+Unit/Vitest smokes are **not** enough for high-level product features.
+
+## When a feature is “Done”
+
+Before calling Done on any **big / operator-facing** feature (alerts actions, upload, dashboard KPIs, review walkthrough, meters CRUD, sources/balance, agent, admin):
+
+1. Run a **live prove** with MCP **Chrome DevTools** (`navigate` → `evaluate` clicks/typing → assert visible DOM/data → `screenshot`).
+2. Record pass/fail/blocked in [`docs/PROVE_FEATURES.md`](../../docs/PROVE_FEATURES.md).
+3. Prefer SPA `http://localhost:4200` + live API; real Cognito sign-in.
+
+## Must poke
+
+- Primary buttons and dialogs on the happy path
+- Text fields / notes the operator fills
+- Visible outcome: table rows, status labels, KPIs/charts, success/error messages, history timelines
+
+## Do not
+
+- Mark Done from component construction or a single “API returns 200” alone
+- Skip prove because Vitest count “looks fine”
+- Invent pass without a browser session (use `blocked` + reason instead)
+
+## Related
+
+- Matrix: `docs/PROVE_FEATURES.md`
+- Kelly smoke: `docs/SMOKE_CHECKLIST.md`
+- Ship gates: `docs/ACCEPTANCE_CHECKLIST.md`

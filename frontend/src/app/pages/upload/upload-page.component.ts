@@ -1,10 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
-import { FileUploadModule, type FileUploadHandlerEvent } from 'primeng/fileupload';
+import { FileUpload, FileUploadModule, type FileUploadHandlerEvent } from 'primeng/fileupload';
 import { MessageModule } from 'primeng/message';
+import { ProgressBarModule } from 'primeng/progressbar';
 import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import * as XLSX from 'xlsx';
@@ -111,6 +112,7 @@ interface SheetOption {
     ButtonModule,
     FileUploadModule,
     MessageModule,
+    ProgressBarModule,
     SelectModule,
     CheckboxModule,
   ],
@@ -119,6 +121,9 @@ interface SheetOption {
 })
 export class UploadPageComponent {
   readonly auth = inject(AuthService);
+
+  /** Clears PrimeNG's "Pending" badge after customUpload (it never auto-clears). */
+  @ViewChild('uploader') private uploader?: FileUpload;
 
   readonly fieldLabels = FIELD_LABELS;
   readonly fields = Object.keys(FIELD_LABELS) as CanonicalField[];
@@ -140,120 +145,167 @@ export class UploadPageComponent {
   statusSeverity: 'info' | 'success' | 'warn' | 'error' = 'info';
   busy = false;
   /** B6 — operator-facing ingest phase. */
-  ingestPhase: 'idle' | 'loaded' | 'mapped' | 'dry_run_ok' | 'committed' | 'failed' = 'idle';
+  ingestPhase: 'idle' | 'loading' | 'loaded' | 'mapped' | 'dry_run_ok' | 'committed' | 'failed' =
+    'idle';
   ingestWarnings: string[] = [];
   lastStatusFriendly = '';
   /** H2 — summary rows after multi-file bulk load. */
   queue: Array<{ name: string; status: string; ok: boolean }> = [];
+  /** 0–100 for determinate bar; ignored when progressMode is indeterminate. */
+  progressValue = 0;
+  progressMode: 'determinate' | 'indeterminate' = 'determinate';
+  progressLabel = '';
 
   onCustomUpload(event: FileUploadHandlerEvent): void {
-    const files = event.files ?? [];
+    // Copy before clear — customUpload leaves files stuck as "Pending" otherwise.
+    const files = [...(event.files ?? [])];
     if (!files.length) return;
     if (files.length > 1) {
-      void this.ingestFileQueue([...files]);
+      void this.ingestFileQueue(files);
       return;
     }
-    this.beginLoadFile(files[0]);
+    void this.beginLoadFile(files[0]!);
   }
 
-  private beginLoadFile(file: File): void {
+  private setProgress(
+    value: number,
+    label: string,
+    mode: 'determinate' | 'indeterminate' = 'determinate',
+  ): void {
+    this.progressValue = Math.max(0, Math.min(100, Math.round(value)));
+    this.progressLabel = label;
+    this.progressMode = mode;
+  }
+
+  private finishCustomUploadUi(): void {
+    // Removes the stuck Pending row from p-fileupload after custom handling.
+    this.uploader?.clear();
+  }
+
+  private beginLoadFile(file: File): Promise<boolean> {
     this.fileName = file.name;
     this.isExcel = /\.xlsx?$/i.test(file.name);
     this.statusMessage = '';
     this.mergeArchive = false;
     this.ingestWarnings = [];
-    this.ingestPhase = 'idle';
+    this.ingestPhase = 'loading';
+    this.setProgress(5, `Reading ${file.name}…`);
 
     if (file.size > MAX_UPLOAD_BYTES) {
       this.statusMessage = `File is too large (${Math.round(file.size / 1024 / 1024)} MB). Max is 5 MB for Upload — use a smaller export or the S3 drop-zone.`;
       this.statusSeverity = 'warn';
       this.ingestPhase = 'failed';
       this.lastStatusFriendly = this.statusMessage;
+      this.setProgress(0, 'Load failed');
       this.headers = [];
       this.previewRows = [];
       this.excelBase64 = '';
       this.csvText = '';
       this.sheetOptions = [];
-      return;
+      this.finishCustomUploadUi();
+      return Promise.resolve(false);
     }
 
     if (this.isExcel) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const data = reader.result;
-        if (!(data instanceof ArrayBuffer)) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onprogress = (ev) => {
+          if (ev.lengthComputable && ev.total > 0) {
+            this.setProgress((ev.loaded / ev.total) * 55, `Reading ${file.name}…`);
+          }
+        };
+        reader.onerror = () => {
           this.statusMessage = 'Could not read Excel file.';
           this.statusSeverity = 'error';
           this.ingestPhase = 'failed';
-          return;
-        }
-        const bytes = new Uint8Array(data);
-        this.excelBase64 = this.bytesToBase64(bytes);
-        this.workbook = XLSX.read(bytes, {
-          type: 'array',
-          cellDates: true,
-          sheetRows: 50_000,
-        });
-        this.sheetOptions = this.workbook.SheetNames.map((name) => ({
-          label: this.sheetLabel(name),
-          value: name,
-          dataSheet: !/clerk\s*notes|internal\s*notes/i.test(name),
-        })).filter((s) => s.dataSheet);
-        const preferred =
-          this.sheetOptions.find((s) => /meter\s*reads|july/i.test(s.value) && !/archive/i.test(s.value)) ??
-          this.sheetOptions[0] ??
-          null;
-        this.selectedSheet = preferred?.value ?? null;
-        this.csvText = '';
-        if (this.selectedSheet) {
-          this.loadSelectedSheet();
-          this.ingestPhase = 'mapped';
-          this.statusMessage = `Loaded ${file.name}. Choose a sheet, review mapping, then dry run.`;
-          this.statusSeverity = 'info';
-          this.lastStatusFriendly = this.statusMessage;
-        } else {
-          this.statusMessage = 'No meter-data sheets found (Clerk Notes alone is ignored).';
-          this.statusSeverity = 'warn';
-          this.ingestPhase = 'failed';
-          this.lastStatusFriendly = this.statusMessage;
-        }
-      };
-      reader.readAsArrayBuffer(file);
-      return;
+          this.setProgress(0, 'Load failed');
+          this.finishCustomUploadUi();
+          resolve(false);
+        };
+        reader.onload = () => {
+          const data = reader.result;
+          if (!(data instanceof ArrayBuffer)) {
+            this.statusMessage = 'Could not read Excel file.';
+            this.statusSeverity = 'error';
+            this.ingestPhase = 'failed';
+            this.setProgress(0, 'Load failed');
+            this.finishCustomUploadUi();
+            resolve(false);
+            return;
+          }
+          this.setProgress(70, 'Parsing workbook…');
+          const bytes = new Uint8Array(data);
+          this.excelBase64 = this.bytesToBase64(bytes);
+          this.workbook = XLSX.read(bytes, {
+            type: 'array',
+            cellDates: true,
+            sheetRows: 50_000,
+          });
+          this.sheetOptions = this.workbook.SheetNames.map((name) => ({
+            label: this.sheetLabel(name),
+            value: name,
+            dataSheet: !/clerk\s*notes|internal\s*notes/i.test(name),
+          })).filter((s) => s.dataSheet);
+          const preferred =
+            this.sheetOptions.find(
+              (s) => /meter\s*reads|july/i.test(s.value) && !/archive/i.test(s.value),
+            ) ??
+            this.sheetOptions[0] ??
+            null;
+          this.selectedSheet = preferred?.value ?? null;
+          this.csvText = '';
+          if (this.selectedSheet) {
+            this.loadSelectedSheet();
+            this.ingestPhase = 'mapped';
+            this.statusMessage = `Loaded ${file.name}. Choose a sheet, review mapping, then dry run.`;
+            this.statusSeverity = 'info';
+            this.lastStatusFriendly = this.statusMessage;
+            this.setProgress(100, 'Ready to map / dry run');
+          } else {
+            this.statusMessage = 'No meter-data sheets found (Clerk Notes alone is ignored).';
+            this.statusSeverity = 'warn';
+            this.ingestPhase = 'failed';
+            this.lastStatusFriendly = this.statusMessage;
+            this.setProgress(0, 'Load failed');
+          }
+          this.finishCustomUploadUi();
+          resolve(this.ingestPhase === 'mapped');
+        };
+        reader.readAsArrayBuffer(file);
+      });
     }
 
     this.excelBase64 = '';
     this.workbook = null;
     this.sheetOptions = [];
     this.selectedSheet = null;
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.csvText = String(reader.result ?? '');
-      this.preparePreview(this.csvText);
-      this.ingestPhase = this.headers.length ? 'mapped' : 'loaded';
-      this.statusMessage = 'File loaded. Review column mapping, then dry run.';
-      this.statusSeverity = 'info';
-      this.lastStatusFriendly = this.statusMessage;
-    };
-    reader.readAsText(file);
-  }
-
-  /** Wait until FileReader finishes for queue processing. */
-  private waitUntilLoaded(timeoutMs = 4000): Promise<boolean> {
-    const start = Date.now();
     return new Promise((resolve) => {
-      const tick = () => {
-        if (this.ingestPhase === 'mapped' || this.ingestPhase === 'loaded') {
-          resolve(true);
-          return;
+      const reader = new FileReader();
+      reader.onprogress = (ev) => {
+        if (ev.lengthComputable && ev.total > 0) {
+          this.setProgress((ev.loaded / ev.total) * 80, `Reading ${file.name}…`);
         }
-        if (this.ingestPhase === 'failed' || Date.now() - start > timeoutMs) {
-          resolve(false);
-          return;
-        }
-        setTimeout(tick, 40);
       };
-      tick();
+      reader.onerror = () => {
+        this.statusMessage = 'Could not read CSV file.';
+        this.statusSeverity = 'error';
+        this.ingestPhase = 'failed';
+        this.setProgress(0, 'Load failed');
+        this.finishCustomUploadUi();
+        resolve(false);
+      };
+      reader.onload = () => {
+        this.csvText = String(reader.result ?? '');
+        this.preparePreview(this.csvText);
+        this.ingestPhase = this.headers.length ? 'mapped' : 'loaded';
+        this.statusMessage = 'File loaded. Review column mapping, then dry run.';
+        this.statusSeverity = 'info';
+        this.lastStatusFriendly = this.statusMessage;
+        this.setProgress(100, 'Ready to map / dry run');
+        this.finishCustomUploadUi();
+        resolve(true);
+      };
+      reader.readAsText(file);
     });
   }
 
@@ -263,9 +315,11 @@ export class UploadPageComponent {
     this.busy = true;
     this.statusSeverity = 'info';
     this.statusMessage = `Bulk load: ${files.length} files (max 5 MB each)…`;
-    for (const file of files) {
-      this.beginLoadFile(file);
-      const loaded = await this.waitUntilLoaded();
+    this.setProgress(0, `Bulk load 0 of ${files.length}…`);
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files[i]!;
+      this.setProgress((i / files.length) * 100, `Bulk load ${i + 1} of ${files.length}: ${file.name}`);
+      const loaded = await this.beginLoadFile(file);
       if (!loaded || (!this.csvText.trim() && !this.excelBase64)) {
         this.queue.push({ name: file.name, status: this.statusMessage || 'Failed to load', ok: false });
         continue;
@@ -281,7 +335,9 @@ export class UploadPageComponent {
     this.statusMessage = `Bulk load finished — ${okCount} of ${files.length} file(s) imported.`;
     this.statusSeverity = okCount === files.length ? 'success' : 'warn';
     this.lastStatusFriendly = this.statusMessage;
+    this.setProgress(100, this.statusMessage);
     this.busy = false;
+    this.finishCustomUploadUi();
   }
 
   onSheetChange(): void {
@@ -378,6 +434,7 @@ export class UploadPageComponent {
     }
 
     this.busy = true;
+    this.setProgress(dryRun ? 55 : 65, dryRun ? 'Running dry run…' : 'Importing readings…', 'indeterminate');
     try {
       const body: Record<string, unknown> = {
         mapping: this.mapping,
@@ -407,6 +464,7 @@ export class UploadPageComponent {
           payload.status?.friendly ?? payload.error ?? `Ingest failed (${res.status})`;
         this.lastStatusFriendly = this.statusMessage;
         this.statusSeverity = 'error';
+        this.setProgress(0, 'Import failed');
         return;
       }
       this.ingestWarnings = Array.isArray(payload.warnings) ? payload.warnings : [];
@@ -419,6 +477,7 @@ export class UploadPageComponent {
         this.statusMessage =
           payload.status?.friendly ??
           `Dry run OK — ${payload.rowCount} rows would import${sheetNote}.`;
+        this.setProgress(85, 'Dry run OK — ready to import');
       } else {
         this.ingestPhase = 'committed';
         this.statusMessage =
@@ -427,6 +486,7 @@ export class UploadPageComponent {
             (payload.addressConflicts?.length
               ? ` ${payload.addressConflicts.length} address conflict(s) kept on existing location.`
               : '');
+        this.setProgress(100, 'Import complete');
       }
       this.lastStatusFriendly = this.statusMessage;
       this.statusSeverity = 'success';
@@ -435,6 +495,7 @@ export class UploadPageComponent {
       this.statusMessage = err instanceof Error ? err.message : 'Network error';
       this.lastStatusFriendly = this.statusMessage;
       this.statusSeverity = 'error';
+      this.setProgress(0, 'Import failed');
     } finally {
       this.busy = false;
     }

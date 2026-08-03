@@ -53,3 +53,15 @@ variable "cognito_user_pool_arn" {
   type        = string
   description = "Cognito user pool ARN for AdminCreateUser / group APIs (D2/D3)"
 }
+
+variable "review_notify_to" {
+  type        = string
+  description = "F5: email that receives Kelly review summary (Steve). Empty = store-only submit."
+  default     = ""
+}
+
+variable "review_from_email" {
+  type        = string
+  description = "F5: SES From address for review summary. Empty = store-only submit."
+  default     = ""
+}

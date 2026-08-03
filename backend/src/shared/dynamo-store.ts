@@ -5,8 +5,14 @@ import {
   GetCommand,
   PutCommand,
   QueryCommand,
+  TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
-import type { AlertStatusRecord, AlertStatusStore } from './alert-status.js';
+import type {
+  AlertActivityEvent,
+  AlertStatusRecord,
+  AlertStatusStore,
+} from './alert-status.js';
+import { alertActivitySk, meterKeyForActivity } from './alert-status.js';
 import type {
   BalanceThresholdConfig,
   BalanceThresholdStore,
@@ -432,6 +438,9 @@ export class DynamoMeterStore
           actorUserId: record.actorUserId,
           actorEmail: record.actorEmail,
           updatedAt: record.updatedAt,
+          note: record.note,
+          meterId: record.meterId,
+          summary: record.summary,
         },
       }),
     );
@@ -462,6 +471,112 @@ export class DynamoMeterStore
     return (res.Items ?? [])
       .map(itemToAlertStatus)
       .filter((r): r is AlertStatusRecord => r !== null);
+  }
+
+  async putAlertActivity(event: AlertActivityEvent): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(event.tenantId),
+          sk: alertActivitySk({
+            meterId: event.meterId,
+            createdAt: event.createdAt,
+            alertId: event.alertId,
+          }),
+          entityType: 'alert_activity',
+          tenantId: event.tenantId,
+          eventId: event.eventId,
+          alertId: event.alertId,
+          meterId: event.meterId,
+          action: event.action,
+          status: event.status,
+          actorUserId: event.actorUserId,
+          actorEmail: event.actorEmail,
+          note: event.note,
+          summary: event.summary,
+          createdAt: event.createdAt,
+        },
+      }),
+    );
+  }
+
+  async putAlertStatusAndActivity(
+    record: AlertStatusRecord,
+    activity: AlertActivityEvent | null,
+  ): Promise<void> {
+    const statusItem = {
+      pk: pk(record.tenantId),
+      sk: alertStatusSk(record.alertId),
+      entityType: 'alert_status',
+      tenantId: record.tenantId,
+      alertId: record.alertId,
+      status: record.status,
+      actorUserId: record.actorUserId,
+      actorEmail: record.actorEmail,
+      updatedAt: record.updatedAt,
+      note: record.note,
+      meterId: record.meterId,
+      summary: record.summary,
+    };
+
+    if (!activity) {
+      await this.putAlertStatus(record);
+      return;
+    }
+
+    await client.send(
+      new TransactWriteCommand({
+        TransactItems: [
+          { Put: { TableName: this.tableName, Item: statusItem } },
+          {
+            Put: {
+              TableName: this.tableName,
+              Item: {
+                pk: pk(activity.tenantId),
+                sk: alertActivitySk({
+                  meterId: activity.meterId,
+                  createdAt: activity.createdAt,
+                  alertId: activity.alertId,
+                }),
+                entityType: 'alert_activity',
+                tenantId: activity.tenantId,
+                eventId: activity.eventId,
+                alertId: activity.alertId,
+                meterId: activity.meterId,
+                action: activity.action,
+                status: activity.status,
+                actorUserId: activity.actorUserId,
+                actorEmail: activity.actorEmail,
+                note: activity.note,
+                summary: activity.summary,
+                createdAt: activity.createdAt,
+              },
+            },
+          },
+        ],
+      }),
+    );
+  }
+
+  async listAlertActivityForMeter(
+    tenantId: string,
+    meterId: string,
+  ): Promise<AlertActivityEvent[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':sk': `ALERT#EVT#${meterKeyForActivity(meterId)}#`,
+        },
+      }),
+    );
+    return (res.Items ?? [])
+      .map(itemToAlertActivity)
+      .filter((e): e is AlertActivityEvent => e !== null)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async getBalanceThresholds(tenantId: string): Promise<BalanceThresholdConfig | null> {
@@ -780,7 +895,7 @@ function itemToSourceReading(item: Record<string, unknown>): SourceReading | nul
 
 function itemToAlertStatus(item: Record<string, unknown>): AlertStatusRecord | null {
   const status = item.status;
-  if (status !== 'acknowledged' && status !== 'resolved') return null;
+  if (status !== 'acknowledged' && status !== 'dispatched' && status !== 'resolved') return null;
   return {
     tenantId: String(item.tenantId),
     alertId: String(item.alertId),
@@ -788,6 +903,36 @@ function itemToAlertStatus(item: Record<string, unknown>): AlertStatusRecord | n
     actorUserId: String(item.actorUserId ?? ''),
     actorEmail: String(item.actorEmail ?? ''),
     updatedAt: String(item.updatedAt ?? new Date().toISOString()),
+    note: typeof item.note === 'string' ? item.note : null,
+    meterId: typeof item.meterId === 'string' ? item.meterId : null,
+    summary: typeof item.summary === 'string' ? item.summary : null,
+  };
+}
+
+function itemToAlertActivity(item: Record<string, unknown>): AlertActivityEvent | null {
+  const action = item.action;
+  const status = item.status;
+  if (
+    action !== 'acknowledge' &&
+    action !== 'accept' &&
+    action !== 'dispatch' &&
+    action !== 'resolve'
+  ) {
+    return null;
+  }
+  if (status !== 'acknowledged' && status !== 'dispatched' && status !== 'resolved') return null;
+  return {
+    tenantId: String(item.tenantId),
+    eventId: String(item.eventId ?? item.sk ?? ''),
+    alertId: String(item.alertId),
+    meterId: typeof item.meterId === 'string' ? item.meterId : null,
+    action,
+    status,
+    actorUserId: String(item.actorUserId ?? ''),
+    actorEmail: String(item.actorEmail ?? ''),
+    note: typeof item.note === 'string' ? item.note : null,
+    summary: typeof item.summary === 'string' ? item.summary : null,
+    createdAt: String(item.createdAt ?? new Date().toISOString()),
   };
 }
 

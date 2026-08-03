@@ -4,108 +4,146 @@
 **Visual tree:** [function-tree.md](./function-tree.md)
 
 **Update rule:** After adding or changing public handlers, pages, or shared exports:
-1. Run `python3 ~/.cursor/skills/function-inventory/scripts/update-function-inventory.py --output docs/function-inventory.generated.md`
-2. Check this overlay — stock scanner is C#/Blazor-oriented (0 TS functions auto-tracked). Keep this file honest.
-3. Record proof (test file or manual smoke) and whether impl is minimal.
+1. Run `npm run inventory` (or `python3 ~/.cursor/skills/function-inventory/scripts/update-function-inventory.py --root . --output docs/function-inventory.generated.md`)
+2. Check this overlay against the regenerated table — keep verification notes honest.
+3. Record proof (test file, smoke script, or acceptance checklist item) and whether impl is minimal.
 4. Update [function-tree.md](./function-tree.md) when high-level structure changes.
 
-**Scanner note (2026-08-03):** `function-inventory.generated.md` reports **0 tracked functions** because discovery is C#-only. This overlay is the authoritative Water Saver surface until a TS pass exists. Ignore `mcp/crwa-rag/node_modules` noise in the generated UI table.
+**Scanner diagnosis → fix (2026-08-03):**
 
-**Backend proof baseline:** `cd backend && npm test` → **115 pass** (2026-08-03; includes meter inventory C7).
+| Item         | Was (broken)                                                               | Now (Water Saver)                                             |
+| ------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Scanner      | `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py` | Same script; dual-stack                                       |
+| Language     | C# / Blazor only                                                           | TypeScript forced via `.function-inventory.json`              |
+| Roots        | Whole repo                                                                 | `frontend/src`, `backend/src`                                 |
+| Excludes     | Weak → scanned `mcp/crwa-rag/node_modules`                                 | `node_modules`, `mcp`, `dist`, `.angular`, `infra`, …         |
+| Theme oracle | `sf_blazor_style` (TIKR)                                                   | **`primeng`** MCP (not Syncfusion Blazor)                     |
+| Result       | **0 tracked**, noise UI table                                              | **181 tracked** \| **161 with proof** \| **20 without proof** |
+
+**Without proof is not “missing feature.”** Remaining gaps are Wave 3 deferred AWS wrappers + non-Kelly pages — see below.
+
+**Proof baselines (2026-08-03):**
+- Backend: `cd backend && npm test` → **129 pass** (includes F5 review + upload-url + s3-ingest event path)
+- Frontend: `cd frontend && npm test -- --watch=false` → **19 pass** (Auth/Review services, routes, Kelly page smokes)
+- Live F5: `POST/GET/PUT/submit /review/sessions*` against `14jxov7h72` → `emailSent: true`, Dynamo `TENANT#_review` completed; Cognito `kelly.review@watersaver.local`
+
+---
+
+## Inventory proof waves
+
+| Wave  | Status   | What                                                                                                                                                                                                           |
+| ----- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | done     | `ReviewService`, `AuthService`, `app.routes` smoke, s3-ingest synthetic event → memory commit                                                                                                                  |
+| **2** | done     | Vitest smokes: ReviewHowto, ReviewPanel, Dashboard, Upload, Alerts                                                                                                                                             |
+| **3** | deferred | Bedrock live, Dynamo `create*FromEnv` / `DynamoMeterStore` / `DynamoReviewStore`, `AwsCognitoAdminClient`, remaining SPA pages (Login/Meters/Sources/Admin/Billing/CRWA/Agent/Account/Shell) — manual smoke OK |
 
 ---
 
 ## Priorities
 
 - [x] Bootstrap inventory docs + tree for Water Saver (Angular/TS + Lambda)
-- [ ] Add TypeScript discovery to function-inventory scanner (handlers `export const handler`, `export function`) — vNext
-- [ ] Handler-level integration proofs for routes that only have shared-unit or auth smoke today
-- [ ] Frontend page proofs beyond `app.spec.ts` (Kelly smoke / DEMO_WALKTHROUGH)
-- [ ] Full S3 event → parse → Dynamo proof (today: `tenantFromKey` only)
+- [x] TypeScript discovery in function-inventory scanner (handlers, exports, Angular routes/components)
+- [x] Wave 1 inventory proofs (services + routes + s3-ingest event)
+- [x] Wave 2 Kelly page smokes (Review / Dashboard / Upload / Alerts)
+- [x] Handler-level proof for `POST /uploads/presign` (`upload-url.test.ts`)
+- [x] F5 deploy (SES vars, review Lambda, Cognito Kelly user, live API smoke + SES)
+- [ ] Full live Kelly F2 smoke end-to-end (product walkthrough — separate from F5 API smoke)
+- [ ] Admin invite happy path against live Cognito (manual)
+- [ ] Send Kelly the `/review` invite (ops; not code)
 
 ---
 
 ## API Endpoints — Status & Verification
 
-| Route                                           | Handler                                | Proof                                                                           | Minimal? | Status                             |
-| ----------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------- | -------- | ---------------------------------- |
-| `GET /health`                                   | `handlers/health.ts` `handler`         | Manual / smoke                                                                  | Yes      | OK                                 |
-| `GET /me`                                       | `handlers/me.ts` `handler`             | Manual smoke (`SMOKE_CHECKLIST`); auth helpers proven                           | Yes      | OK                                 |
-| `POST /uploads/presign`                         | `handlers/upload-url.ts` `handler`     | Manual smoke (upload flow)                                                      | Yes      | Needs handler test                 |
-| `POST /ingest`                                  | `handlers/ingest.ts` `handler`         | Shared: `csv-parse.test.ts`, `excel-parse.test.ts`, `meter-location.test.ts`    | Yes      | Shared proven; handler thin        |
-| `POST /ingest/sources`                          | `handlers/ingest-sources.ts` `handler` | `balance-auth.test.ts` (401/403); `source-csv-parse.test.ts`                    | Yes      | Auth proven                        |
-| S3 event ingest                                 | `handlers/s3-ingest.ts` `handler`      | `s3-ingest.test.ts` (`tenantFromKey` only)                                      | Yes      | Partial — needs event path         |
-| `GET/POST /alerts`                              | `handlers/alerts.ts` `handler`         | `alert-engine`, `alert-status`, `flagged-export`, `balance-alerts` tests        | Yes      | Shared proven                      |
-| `POST /alerts/explain`                          | `handlers/alerts.ts` `handler`         | `agent-isolation.test.ts` → `explainAlertTemplate` (C6)                         | Yes      | Template proven                    |
-| `GET/POST /sources`, `PUT/DELETE /sources/{id}` | `handlers/sources.ts` `handler`        | `source-store.test.ts`, `water-source.test.ts`                                  | Yes      | Shared proven                      |
-| `GET /balance`, `PUT /balance/thresholds`       | `handlers/balance.ts` `handler`        | `balance-auth.test.ts`; `water-balance`, `balance-thresholds`, `balance-alerts` | Yes      | Auth + calc proven                 |
-| `GET/POST /meters`, `GET/PUT/DELETE /meters/{id}` | `handlers/meters.ts` `handler`       | `meter-inventory.test.ts`, `meter-history.test.ts`, `meter-location.test.ts`    | Yes      | OK                                 |
-| `GET/POST /admin/tenants`                       | `handlers/admin.ts` `handler`          | `admin-isolation.test.ts`; `auth.test.ts`; `billing.test.ts`                    | Yes      | Isolation + billing fields         |
-| `GET /admin/tenants/{id}/billing`               | `handlers/admin.ts`                    | `admin-isolation.test.ts` (ledger isolation); `billing.test.ts`                 | Yes      | Isolation proven                   |
-| `POST /admin/tenants/{id}/billing/{action}`     | `handlers/admin.ts`                    | `admin-isolation.test.ts` + `billing.test.ts`                                   | Yes      | Isolation proven                   |
-| `GET /billing`                                  | `handlers/admin.ts`                    | `admin-isolation.test.ts` (municipality view shape)                             | Yes      | Auth proven                        |
-| `GET /admin/users`, `POST /admin/users/invite`  | `handlers/admin.ts`                    | `admin-isolation.test.ts`; `auth.test.ts`                                       | Yes      | Isolation proven                   |
-| `GET /admin/rollup`                             | `handlers/admin.ts`                    | `agent-isolation.test.ts` → `crwa-rollup` sanitize (D4/G6/H5)                   | Yes      | Sanitize proven                    |
-| `GET/POST /agent`                               | `handlers/agent.ts` `handler`          | `agent-isolation.test.ts` (E4/E5/E6 guardrails + store)                         | Yes      | Isolation proven; Bedrock optional |
+| Route                                             | Handler                                | Proof                                                                           | Minimal? | Status                             |
+| ------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------- | -------- | ---------------------------------- |
+| `GET /health`                                     | `handlers/health.ts` `handler`         | Manual / smoke                                                                  | Yes      | OK                                 |
+| `GET /me`                                         | `handlers/me.ts` `handler`             | Manual smoke (`SMOKE_CHECKLIST`); auth helpers proven                           | Yes      | OK                                 |
+| `POST /uploads/presign`                           | `handlers/upload-url.ts` `handler`     | `upload-url.test.ts` (auth + key sanitize)                                      | Yes      | OK                                 |
+| `POST /ingest`                                    | `handlers/ingest.ts` `handler`         | Shared: `csv-parse.test.ts`, `excel-parse.test.ts`, `meter-location.test.ts`    | Yes      | Shared proven; handler thin        |
+| `POST /ingest/sources`                            | `handlers/ingest-sources.ts` `handler` | `balance-auth.test.ts` (401/403); `source-csv-parse.test.ts`                    | Yes      | Auth proven                        |
+| S3 event ingest                                   | `handlers/s3-ingest.ts` `handler`      | `s3-ingest.test.ts` (`tenantFromKey` + `handleS3IngestEvent` memory commit)     | Yes      | OK                                 |
+| `GET/POST /alerts`                                | `handlers/alerts.ts` `handler`         | `alert-engine`, `alert-status`, `flagged-export`, `balance-alerts` tests        | Yes      | Shared proven                      |
+| `POST /alerts/explain`                            | `handlers/alerts.ts` `handler`         | `agent-isolation.test.ts` → `explainAlertTemplate` (C6)                         | Yes      | Template proven                    |
+| `GET/POST /sources`, `PUT/DELETE /sources/{id}`   | `handlers/sources.ts` `handler`        | `source-store.test.ts`, `water-source.test.ts`                                  | Yes      | Shared proven                      |
+| `GET /balance`, `PUT /balance/thresholds`         | `handlers/balance.ts` `handler`        | `balance-auth.test.ts`; `water-balance`, `balance-thresholds`, `balance-alerts` | Yes      | Auth + calc proven                 |
+| `GET/POST /meters`, `GET/PUT/DELETE /meters/{id}` | `handlers/meters.ts` `handler`         | `meter-inventory.test.ts`, `meter-history.test.ts`, `meter-location.test.ts`    | Yes      | OK                                 |
+| `GET/POST /admin/tenants`                         | `handlers/admin.ts` `handler`          | `admin-isolation.test.ts`; `auth.test.ts`; `billing.test.ts`                    | Yes      | Isolation + billing fields         |
+| `GET /admin/tenants/{id}/billing`                 | `handlers/admin.ts`                    | `admin-isolation.test.ts` (ledger isolation); `billing.test.ts`                 | Yes      | Isolation proven                   |
+| `POST /admin/tenants/{id}/billing/{action}`       | `handlers/admin.ts`                    | `admin-isolation.test.ts` + `billing.test.ts`                                   | Yes      | Isolation proven                   |
+| `GET /billing`                                    | `handlers/admin.ts`                    | `admin-isolation.test.ts` (municipality view shape)                             | Yes      | Auth proven                        |
+| `GET /admin/users`, `POST /admin/users/invite`    | `handlers/admin.ts`                    | `admin-isolation.test.ts`; `auth.test.ts`                                       | Yes      | Isolation proven                   |
+| `GET /admin/rollup`                               | `handlers/admin.ts`                    | `agent-isolation.test.ts` → `crwa-rollup` sanitize (D4/G6/H5)                   | Yes      | Sanitize proven                    |
+| `GET/POST /agent`                                 | `handlers/agent.ts` `handler`          | `agent-isolation.test.ts` (E4/E5/E6 guardrails + store)                         | Yes      | Isolation proven; Bedrock optional |
+| `POST /review/sessions` (+ get/step/submit)       | `handlers/review.ts` `handler`         | `review.test.ts` + live smoke (SES `emailSent`, Dynamo completed)               | Yes      | OK (F5 live)                       |
 
 **Verification commands:**
 
 ```bash
 cd backend && npm test
+cd frontend && npm test -- --watch=false
+npm run inventory
 # Live smoke: docs/SMOKE_CHECKLIST.md + Bearer curls against $API
+# Kelly review: docs/KELLY_REVIEW.md
 ```
 
 ---
 
 ## Pages & Major Components
 
-| Page / route  | Component                 | Proof                                        | Status          |
-| ------------- | ------------------------- | -------------------------------------------- | --------------- |
-| `/login`      | `LoginPageComponent`      | Manual F2 #6 + D5 MFA challenge              | Needs automated |
-| `/account`    | `AccountPageComponent`    | Manual D5 smoke (SMOKE)                      | Needs automated |
-| `/dashboard`  | `DashboardPageComponent`  | Manual F2 #2                                 | Needs automated |
-| `/upload`     | `UploadPageComponent`     | Manual F2 #1 (CSV + Excel)                   | Needs automated |
-| `/sources`    | `SourcesPageComponent`    | Manual F2 #3                                 | Needs automated |
-| `/meters`     | `MetersPageComponent`     | Manual C7 inventory CRUD                     | Needs automated |
-| `/alerts`     | `AlertsPageComponent`     | Manual F2 / C3–C4 (+ explain)                | Needs automated |
-| `/assistant`  | `AgentPageComponent`      | Manual Epic E smoke                          | Needs automated |
-| `/billing`    | `BillingPageComponent`    | Manual I2 smoke (system admin)               | Needs automated |
-| `/admin`      | `AdminPageComponent`      | Manual (system/CRWA admin + billing actions) | Needs automated |
-| `/crwa`       | `CrwaRollupPageComponent` | Roll-up via `/admin/rollup`                  | Needs automated |
-| Shell         | `ShellComponent`          | Manual nav                                   | OK for Kelly    |
-| App bootstrap | `app.ts`                  | `frontend/src/app/app.spec.ts`               | Thin proof      |
+| Page / route  | Component                                           | Proof                                                            | Status          |
+| ------------- | --------------------------------------------------- | ---------------------------------------------------------------- | --------------- |
+| `/login`      | `LoginPageComponent`                                | Manual F2 #6 + D5 MFA; `AuthService` unit tests                  | Needs page test |
+| `/account`    | `AccountPageComponent`                              | Manual D5 smoke (SMOKE)                                          | Deferred W3     |
+| `/dashboard`  | `DashboardPageComponent`                            | `dashboard-page.component.spec.ts`                               | OK              |
+| `/upload`     | `UploadPageComponent`                               | `upload-page.component.spec.ts`                                  | OK              |
+| `/sources`    | `SourcesPageComponent`                              | Manual F2 #3                                                     | Deferred W3     |
+| `/meters`     | `MetersPageComponent`                               | Manual C7 inventory CRUD                                         | Deferred W3     |
+| `/alerts`     | `AlertsPageComponent`                               | `alerts-page.component.spec.ts`                                  | OK              |
+| `/assistant`  | `AgentPageComponent`                                | Manual Epic E smoke                                              | Deferred W3     |
+| `/billing`    | `BillingPageComponent`                              | Manual I2 smoke (system admin)                                   | Deferred W3     |
+| `/admin`      | `AdminPageComponent`                                | Manual (system/CRWA admin + billing actions)                     | Deferred W3     |
+| `/crwa`       | `CrwaRollupPageComponent`                           | Roll-up via `/admin/rollup`                                      | Deferred W3     |
+| `/review`     | `ReviewHowtoPageComponent` + `ReviewPanelComponent` | `review-howto-page` + `review-panel` specs; `ReviewService` spec | OK              |
+| Shell         | `ShellComponent`                                    | Manual nav                                                       | Deferred W3     |
+| App bootstrap | `app.ts` (hosts review panel)                       | `frontend/src/app/app.spec.ts`                                   | Thin proof      |
+| Routes table  | `app.routes.ts`                                     | `app.routes.spec.ts`                                             | OK              |
 
 ---
 
 ## Core Services & Public Methods
 
-| Function / surface                              | Location                       | Proof                                              | Minimal?           |
-| ----------------------------------------------- | ------------------------------ | -------------------------------------------------- | ------------------ |
-| `parseAuthFromClaims`, `requireTenantId`, roles | `shared/auth.ts`               | `auth.test.ts`                                     | Yes                |
-| `normalizeTenantId` / email / password          | `shared/tenant-admin.ts`       | `auth.test.ts`                                     | Yes                |
-| CSV customer parse + mapping                    | `shared/csv-parse.ts`          | `csv-parse.test.ts`                                | Yes                |
-| Excel → CSV path                                | `shared/excel-parse.ts`        | `excel-parse.test.ts` (Steve fixture + DoS guards) | Yes                |
-| Source CSV parse                                | `shared/source-csv-parse.ts`   | `source-csv-parse.test.ts`                         | Yes                |
-| Meter location upsert / metadata patch          | `shared/meter-location.ts`     | `meter-location.test.ts`                           | Yes                |
-| Water balance calc                              | `shared/water-balance.ts`      | `water-balance.test.ts`                            | Yes                |
-| Alert engine + confidence                       | `shared/alert-engine.ts`       | `alert-engine.test.ts`                             | Yes                |
-| Balance alerts                                  | `shared/balance-alerts.ts`     | `balance-alerts.test.ts`                           | Yes                |
-| Alert status apply                              | `shared/alert-status.ts`       | `alert-status.test.ts`                             | Yes                |
-| Alert explain template                          | `shared/alert-explain.ts`      | `agent-isolation.test.ts` (C6)                     | Yes                |
-| Threshold merge/patch                           | `shared/balance-thresholds.ts` | `balance-thresholds.test.ts`                       | Yes                |
-| Flagged CSV export                              | `shared/flagged-export.ts`     | `flagged-export.test.ts`                           | Yes                |
-| Source normalize / slug                         | `shared/water-source.ts`       | `water-source.test.ts`                             | Yes                |
-| Billing plans/status/events                     | `shared/billing.ts`            | `billing.test.ts`                                  | Yes                |
-| CRWA roll-up sanitize                           | `shared/crwa-rollup.ts`        | `agent-isolation.test.ts`                          | Yes                |
-| Agent context / confirm / isolation             | `shared/agent-context.ts`      | `agent-isolation.test.ts`                          | Yes                |
-| Conversation store                              | `shared/conversation.ts`       | `agent-isolation.test.ts` (memory)                 | Yes                |
-| Bedrock invoke wrapper                          | `shared/bedrock.ts`            | Indirect / live only                               | Thin OK            |
-| Memory/source store isolation                   | `shared/*-store` / dynamo      | `source-store.test.ts`, meter-history              | Yes                |
-| Dynamo factories                                | `shared/dynamo-store.ts`       | Indirect via stores                                | Thin env wiring OK |
-| Cognito admin client                            | `shared/cognito-admin.ts`      | `admin-isolation.test.ts` (mock)                   | Yes                |
-| `tenantFromKey`                                 | `handlers/s3-ingest.ts`        | `s3-ingest.test.ts`                                | Yes                |
-| HTTP helpers (`ok`/`csv`/…)                     | `shared/http.ts`               | Indirect via handlers                              | Yes                |
-| `AuthService` (login, MFA, password, `/me`)     | `frontend/.../auth.service.ts` | Manual D5 + F2 login smoke                         | Needs unit test    |
+| Function / surface                              | Location                         | Proof                                               | Minimal?           |
+| ----------------------------------------------- | -------------------------------- | --------------------------------------------------- | ------------------ |
+| `parseAuthFromClaims`, `requireTenantId`, roles | `shared/auth.ts`                 | `auth.test.ts`                                      | Yes                |
+| `parseStepFeedbackBody`, `buildReviewEmailBody` | `shared/review.ts`               | `handlers/review.test.ts`                           | Yes                |
+| Review store (`TENANT#_review`)                 | `shared/review-store.ts`         | `handlers/review.test.ts` (MemoryReviewStore)       | Yes                |
+| `DynamoReviewStore`                             | `shared/review-store.ts`         | Deferred W3 (no Dynamo in CI)                       | Env wiring         |
+| `normalizeTenantId` / email / password          | `shared/tenant-admin.ts`         | `auth.test.ts`                                      | Yes                |
+| CSV customer parse + mapping                    | `shared/csv-parse.ts`            | `csv-parse.test.ts`                                 | Yes                |
+| Excel → CSV path                                | `shared/excel-parse.ts`          | `excel-parse.test.ts` (Steve fixture + DoS guards)  | Yes                |
+| Source CSV parse                                | `shared/source-csv-parse.ts`     | `source-csv-parse.test.ts`                          | Yes                |
+| Meter location upsert / metadata patch          | `shared/meter-location.ts`       | `meter-location.test.ts`                            | Yes                |
+| Water balance calc                              | `shared/water-balance.ts`        | `water-balance.test.ts`                             | Yes                |
+| Alert engine + confidence                       | `shared/alert-engine.ts`         | `alert-engine.test.ts`                              | Yes                |
+| Balance alerts                                  | `shared/balance-alerts.ts`       | `balance-alerts.test.ts`                            | Yes                |
+| Alert status apply                              | `shared/alert-status.ts`         | `alert-status.test.ts`                              | Yes                |
+| Alert explain template                          | `shared/alert-explain.ts`        | `agent-isolation.test.ts` (C6)                      | Yes                |
+| Threshold merge/patch                           | `shared/balance-thresholds.ts`   | `balance-thresholds.test.ts`                        | Yes                |
+| Flagged CSV export                              | `shared/flagged-export.ts`       | `flagged-export.test.ts`                            | Yes                |
+| Source normalize / slug                         | `shared/water-source.ts`         | `water-source.test.ts`                              | Yes                |
+| Billing plans/status/events                     | `shared/billing.ts`              | `billing.test.ts`                                   | Yes                |
+| CRWA roll-up sanitize                           | `shared/crwa-rollup.ts`          | `agent-isolation.test.ts`                           | Yes                |
+| Agent context / confirm / isolation             | `shared/agent-context.ts`        | `agent-isolation.test.ts`                           | Yes                |
+| Conversation store                              | `shared/conversation.ts`         | `agent-isolation.test.ts` (memory)                  | Yes                |
+| Bedrock invoke wrapper                          | `shared/bedrock.ts`              | Deferred W3 — templates proven in agent tests       | Thin OK            |
+| Memory/source store isolation                   | `shared/*-store` / dynamo        | `source-store.test.ts`, meter-history               | Yes                |
+| Dynamo factories / `DynamoMeterStore`           | `shared/dynamo-store.ts`         | Deferred W3                                         | Thin env wiring OK |
+| Cognito admin client                            | `shared/cognito-admin.ts`        | `admin-isolation.test.ts` (mock); real SDK deferred | Yes                |
+| `tenantFromKey` + `handleS3IngestEvent`         | `handlers/s3-ingest.ts`          | `s3-ingest.test.ts`                                 | Yes                |
+| HTTP helpers (`ok`/`csv`/…)                     | `shared/http.ts`                 | Indirect via handlers                               | Yes                |
+| `AuthService` (login, MFA, password, `/me`)     | `frontend/.../auth.service.ts`   | `auth.service.spec.ts`                              | Yes                |
+| `ReviewService`                                 | `frontend/.../review.service.ts` | `review.service.spec.ts`                            | Yes                |
 
 ---
 
@@ -121,20 +159,26 @@ cd backend && npm test
 
 - [x] **Auth → tenant isolation** — JWT claims → `parseAuthFromClaims` / `requireTenantId`; proven in `auth.test.ts`, `balance-auth.test.ts`, `admin-isolation.test.ts`, `source-store.test.ts`
 - [x] **Customer CSV/Excel ingest path** — parse + location upsert; `csv-parse.test.ts`, `excel-parse.test.ts`, `meter-location.test.ts`
+- [x] **S3 → s3-ingest → memory commit** — `handleS3IngestEvent` with memory stores (`s3-ingest.test.ts`)
 - [x] **Source CRUD + source ingest → balance** — `water-source`, `source-store`, `source-csv-parse`, `water-balance` tests
-- [x] **Alerts (usage + balance + status + CSV + explain)** — engine / status / flagged-export / balance-alerts / alert-explain
+- [x] **Alerts (usage + balance + status + CSV + explain)** — engine / status / flagged-export / balance-alerts / alert-explain; accept/dispatch/resolve + meter `ALERT#EVT#` timeline (C3)
+- [ ] **Browser prove (Chrome DevTools)** — [PROVE_FEATURES.md](./PROVE_FEATURES.md): Dashboard DataViz + Meter History sparkline + Meter Stats viz **pass** 2026-08-03; remaining rows still open
 - [x] **Billing ledger + municipality view** — `billing.test.ts`, `admin-isolation.test.ts`
 - [x] **Agent isolation + confirm** — `agent-isolation.test.ts` (E4/E5/E6)
 - [x] **CRWA roll-up sanitize** — no PII / cross-tenant leakage in roll-up rows
+- [x] **Kelly Review API + SPA services/pages** — `review.test.ts` + frontend Review/Auth/panel/howto specs
+- [x] **F5 live deploy** — Terraform apply + SES + Cognito Kelly user; API smoke submit emailed Steve
 - [ ] **Kelly F2 smoke end-to-end** — [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md) boxes still open for live env
-- [ ] **S3 → s3-ingest → Dynamo** — `tenantFromKey` proven; full event handler not yet
 - [ ] **Admin invite happy path against Cognito** — isolation rules unit-tested; live invite is manual
+- [ ] **Send Kelly F5 invite** — share `/review` + creds from local secrets (ops)
 
 ---
 
 ## Meta
 
-- Re-run scanner after structural changes; treat this overlay as source of truth for TS until scanner learns handlers.
+- Re-run `npm run inventory` after structural changes (handlers, routes, shared exports).
+- Config: [`.function-inventory.json`](../.function-inventory.json) (stack + roots + excludes).
+- Ship gate: Spec §0 + [ACCEPTANCE_CHECKLIST.md](./ACCEPTANCE_CHECKLIST.md) — inventory is engineering hygiene, not the only “done” signal.
 - Spec layers: [SPEC.md](./SPEC.md) §0; isolation: [TENANT_ISOLATION.md](./TENANT_ISOLATION.md).
 - Do not hand-edit `function-inventory.generated.md`.
 

@@ -1,6 +1,6 @@
 # Water Saver Function Tree (Visual Overview)
 
-**Auto-generated raw data:** [function-inventory.generated.md](./function-inventory.generated.md) (C# scanner — currently empty for this repo)
+**Auto-generated raw data:** [function-inventory.generated.md](./function-inventory.generated.md) (TS scanner — `frontend/src` + `backend/src`; run `npm run inventory`)
 **Status overlay:** [action-items.md](./action-items.md)
 
 ```mermaid
@@ -19,6 +19,7 @@ flowchart TB
         Billing["/billing\nMunicipality membership"]
         Admin["/admin\nTenants + invite + billing"]
         Crwa["/crwa\nSanitized roll-up"]
+        Review["/review\nKelly guided feedback"]
     end
 
     subgraph Api["HTTP API JWT"]
@@ -32,6 +33,7 @@ flowchart TB
         AlertsApi["GET/POST /alerts\nPOST /alerts/explain"]
         Meters["GET/POST /meters\nGET/PUT/DELETE /meters/{id}"]
         AgentApi["GET/POST /agent"]
+        ReviewApi["/review/sessions\nsteps + submit + SES"]
         BillingApi["GET /billing"]
         AdminApi["/admin/*\ntenants users billing rollup"]
     end
@@ -68,6 +70,7 @@ flowchart TB
     Billing --> BillingApi
     Admin --> AdminApi
     Crwa --> AdminApi
+    Review --> ReviewApi
 
     Ingest --> Csv --> Loc --> Store
     IngestSrc --> Csv --> Store
@@ -76,6 +79,7 @@ flowchart TB
     AlertsApi --> AE
     AlertsApi --> Store
     AgentApi --> AgCtx --> Store
+    ReviewApi --> Store
     AdminApi --> Auth
     AdminApi --> Bill
     AdminApi --> Rollup

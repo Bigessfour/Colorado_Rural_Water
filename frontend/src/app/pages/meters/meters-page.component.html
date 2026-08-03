@@ -36,7 +36,7 @@
 
   <p-card styleClass="table-card">
     <p-table [value]="meters()" [tableStyle]="{ 'min-width': '44rem' }">
-      <ng-template pTemplate="header">
+      <ng-template #header>
         <tr>
           <th>Meter ID</th>
           <th>Service address</th>
@@ -47,7 +47,7 @@
           <th></th>
         </tr>
       </ng-template>
-      <ng-template pTemplate="body" let-row>
+      <ng-template #body let-row>
         <tr>
           <td class="mono">{{ row.meterId }}</td>
           <td>{{ row.serviceAddress }}</td>
@@ -56,6 +56,13 @@
           <td>{{ row.route || '—' }}</td>
           <td>{{ row.readingCount ?? 0 }}</td>
           <td class="row-actions">
+            <p-button
+              label="Stats"
+              size="small"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="openStats(row)"
+            />
             <p-button
               label="History"
               size="small"
@@ -67,7 +74,7 @@
           </td>
         </tr>
       </ng-template>
-      <ng-template pTemplate="emptymessage">
+      <ng-template #emptymessage>
         <tr>
           <td colspan="7">
             No meters yet — add one here, or upload a customer readings file to create them from
@@ -405,8 +412,13 @@
           <div class="history-value">{{ h.serviceAddress }}</div>
         </div>
       </div>
+      <app-meter-usage-viz
+        [meterId]="h.meterId"
+        [installDate]="h.installDate"
+        [readings]="h.readings"
+      />
       <p-table [value]="h.readings" [tableStyle]="{ 'min-width': '28rem' }">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
             <th>Read date</th>
             <th>Cumulative</th>
@@ -415,7 +427,7 @@
             <th>Occupant at read</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-row>
+        <ng-template #body let-row>
           <tr>
             <td>{{ row.timestamp }}</td>
             <td>{{ row.cumulativeReading }}</td>
@@ -424,12 +436,45 @@
             <td>{{ row.occupantNameAtRead || '—' }}</td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="5">No readings stored for this meter yet.</td>
           </tr>
         </ng-template>
       </p-table>
+    }
+  </p-dialog>
+
+  <p-dialog
+    header="Meter usage"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: 'min(40rem, 96vw)' }"
+    [visible]="statsVisible()"
+    (visibleChange)="onStatsVisibleChange($event)"
+  >
+    @if (statsBusy()) {
+      <p class="muted">Loading meter usage…</p>
+    }
+    @if (statsError()) {
+      <p-message severity="error" styleClass="hint">{{ statsError() }}</p-message>
+    }
+    @if (stats(); as s) {
+      <div class="history-meta">
+        <div>
+          <div class="kpi-label">Meter</div>
+          <div class="history-value">{{ s.meterId }}</div>
+        </div>
+        <div>
+          <div class="kpi-label">Service address</div>
+          <div class="history-value">{{ s.serviceAddress }}</div>
+        </div>
+      </div>
+      <app-meter-usage-viz
+        [meterId]="s.meterId"
+        [installDate]="s.installDate"
+        [readings]="s.readings"
+      />
     }
   </p-dialog>
 </section>

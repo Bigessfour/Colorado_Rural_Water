@@ -199,7 +199,7 @@ export function calculateWaterBalance(
   meterReadings: MeterReading[],
   options?: { period?: string; trendMonths?: number },
 ): WaterBalanceResult {
-  const trendMonths = options?.trendMonths ?? 5;
+  const trendMonths = options?.trendMonths ?? 12;
   const periods = collectPeriods(sourceReadings, meterReadings);
   let period = options?.period?.trim() || '';
   if (!period || !/^\d{4}-\d{2}$/.test(period)) {

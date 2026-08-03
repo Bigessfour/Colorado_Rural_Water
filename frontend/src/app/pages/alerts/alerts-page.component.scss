@@ -150,3 +150,24 @@
   justify-content: flex-start;
   margin-top: 0.25rem;
 }
+
+.action-note {
+  display: grid;
+  gap: 0.35rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: #4a6368;
+  margin-bottom: 1rem;
+}
+
+.action-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.sparkline-wrap {
+  height: 110px;
+  margin-bottom: 0.75rem;
+}

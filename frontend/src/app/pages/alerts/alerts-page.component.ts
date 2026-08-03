@@ -11,6 +11,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
+import { MeterUsageVizComponent } from '../../shared/meter-usage-viz.component';
 
 interface AlertRow {
   id: string;
@@ -25,7 +26,21 @@ interface AlertRow {
   plainLanguage?: string;
   acknowledgedBy: string | null;
   acknowledgedAt: string | null;
+  actionNote: string | null;
 }
+
+interface AlertActivityRow {
+  eventId: string;
+  alertId: string;
+  action: string;
+  status: string;
+  actorEmail: string;
+  note: string | null;
+  summary: string | null;
+  createdAt: string;
+}
+
+type AlertAction = 'accept' | 'dispatch' | 'resolve';
 
 interface MeterHistoryReading {
   timestamp: string;
@@ -68,6 +83,7 @@ interface MeterHistoryView {
   lastTestedAt: string | null;
   notes: string | null;
   readings: MeterHistoryReading[];
+  alertActivity: AlertActivityRow[];
 }
 
 @Component({
@@ -83,6 +99,7 @@ interface MeterHistoryView {
     DialogModule,
     InputTextModule,
     TextareaModule,
+    MeterUsageVizComponent,
   ],
   templateUrl: './alerts-page.component.html',
   styleUrl: './alerts-page.component.scss',
@@ -106,6 +123,11 @@ export class AlertsPageComponent implements OnInit {
   historyNotice = signal('');
   saveBusy = signal(false);
   metaForm = signal<MeterMetadataForm>(emptyMetaForm());
+
+  actionVisible = signal(false);
+  actionAlert = signal<AlertRow | null>(null);
+  actionNote = signal('');
+  actionBusy = signal(false);
 
   ngOnInit(): void {
     void this.refresh();
@@ -144,6 +166,7 @@ export class AlertsPageComponent implements OnInit {
           status?: string;
           acknowledgedBy?: string | null;
           acknowledgedAt?: string | null;
+          actionNote?: string | null;
         }) => ({
           id: a.id,
           mode: a.mode,
@@ -157,6 +180,7 @@ export class AlertsPageComponent implements OnInit {
           status: a.status ?? 'open',
           acknowledgedBy: a.acknowledgedBy ?? null,
           acknowledgedAt: a.acknowledgedAt ?? null,
+          actionNote: a.actionNote ?? null,
         }),
       );
       const balanceRows: AlertRow[] = (body.balanceAlerts ?? []).map(
@@ -169,6 +193,7 @@ export class AlertsPageComponent implements OnInit {
           status?: string;
           acknowledgedBy?: string | null;
           acknowledgedAt?: string | null;
+          actionNote?: string | null;
         }) => ({
           id: a.id,
           mode: a.mode ?? 'Watch',
@@ -181,6 +206,7 @@ export class AlertsPageComponent implements OnInit {
           status: a.status ?? 'open',
           acknowledgedBy: a.acknowledgedBy ?? null,
           acknowledgedAt: a.acknowledgedAt ?? null,
+          actionNote: a.actionNote ?? null,
         }),
       );
       this.alerts.set([...balanceRows, ...meterRows]);
@@ -251,6 +277,7 @@ export class AlertsPageComponent implements OnInit {
         this.historyError.set(body.error ?? `Failed (${res.status})`);
         return;
       }
+      const readings = (body.readings ?? []) as MeterHistoryReading[];
       const view: MeterHistoryView = {
         meterId: body.meterId,
         serviceAddress: body.serviceAddress,
@@ -267,7 +294,8 @@ export class AlertsPageComponent implements OnInit {
         radioId: body.radioId ?? null,
         lastTestedAt: body.lastTestedAt ?? null,
         notes: body.notes ?? null,
-        readings: (body.readings ?? []) as MeterHistoryReading[],
+        readings,
+        alertActivity: (body.alertActivity ?? []) as AlertActivityRow[],
       };
       this.history.set(view);
       this.metaForm.set(formFromHistory(view));
@@ -361,12 +389,38 @@ export class AlertsPageComponent implements OnInit {
     }
   }
 
-  async acknowledge(alert: AlertRow): Promise<void> {
-    await this.updateStatus(alert, 'acknowledge');
+  openAction(alert: AlertRow): void {
+    this.actionAlert.set(alert);
+    this.actionNote.set(alert.actionNote ?? '');
+    this.actionVisible.set(true);
+    this.error.set('');
+    this.notice.set('');
   }
 
-  async resolve(alert: AlertRow): Promise<void> {
-    await this.updateStatus(alert, 'resolve');
+  onActionVisibleChange(visible: boolean): void {
+    this.actionVisible.set(visible);
+    if (!visible) {
+      this.actionAlert.set(null);
+      this.actionNote.set('');
+    }
+  }
+
+  async submitAction(action: AlertAction): Promise<void> {
+    const alert = this.actionAlert();
+    if (!alert) return;
+    await this.updateStatus(alert, action, this.actionNote());
+    if (!this.error()) {
+      this.actionVisible.set(false);
+      this.actionAlert.set(null);
+      this.actionNote.set('');
+    }
+  }
+
+  activityLabel(action: string): string {
+    if (action === 'accept' || action === 'acknowledge') return 'Accepted';
+    if (action === 'dispatch') return 'Dispatched';
+    if (action === 'resolve') return 'Resolved';
+    return action;
   }
 
   async explain(alert: AlertRow): Promise<void> {
@@ -412,16 +466,24 @@ export class AlertsPageComponent implements OnInit {
   }
 
   statusLabel(alert: AlertRow): string {
+    const when = alert.acknowledgedAt ? ` · ${formatShortWhen(alert.acknowledgedAt)}` : '';
+    const note = alert.actionNote ? ` — ${alert.actionNote}` : '';
     if (alert.status === 'acknowledged' && alert.acknowledgedBy) {
-      const when = alert.acknowledgedAt ? ` · ${formatShortWhen(alert.acknowledgedAt)}` : '';
-      return `acknowledged by ${alert.acknowledgedBy}${when}`;
+      return `accepted by ${alert.acknowledgedBy}${when}${note}`;
+    }
+    if (alert.status === 'dispatched' && alert.acknowledgedBy) {
+      return `dispatched by ${alert.acknowledgedBy}${when}${note}`;
+    }
+    if (alert.status === 'resolved' && alert.acknowledgedBy) {
+      return `resolved by ${alert.acknowledgedBy}${when}${note}`;
     }
     return alert.status;
   }
 
   private async updateStatus(
     alert: AlertRow,
-    action: 'acknowledge' | 'resolve',
+    action: AlertAction,
+    note = '',
   ): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) {
@@ -429,6 +491,7 @@ export class AlertsPageComponent implements OnInit {
       return;
     }
     this.actionBusyId.set(alert.id);
+    this.actionBusy.set(true);
     this.error.set('');
     this.notice.set('');
     try {
@@ -438,23 +501,40 @@ export class AlertsPageComponent implements OnInit {
           authorization: `Bearer ${token}`,
           'content-type': 'application/json',
         },
-        body: JSON.stringify({ action, alertId: alert.id }),
+        body: JSON.stringify({
+          action,
+          alertId: alert.id,
+          note: note.trim() || undefined,
+          meterId: alert.kind === 'meter' ? alert.meterId : undefined,
+          summary: alert.summary,
+        }),
       });
       const body = await res.json();
       if (!res.ok) {
         this.error.set(body.error ?? `Failed (${res.status})`);
         return;
       }
-      this.notice.set(
-        action === 'resolve'
-          ? 'Alert resolved and saved for your system.'
-          : 'Alert acknowledged and saved for your system.',
-      );
+      const labels: Record<AlertAction, string> = {
+        accept:
+          alert.kind === 'meter'
+            ? 'Alert accepted and saved for your system.'
+            : 'Balance alert accepted and saved for your system.',
+        dispatch:
+          alert.kind === 'meter'
+            ? 'Crew / follow-up dispatched — saved on this meter’s history.'
+            : 'Balance alert marked dispatched and saved for your system.',
+        resolve:
+          alert.kind === 'meter'
+            ? 'Alert marked resolved with action taken — saved on meter history.'
+            : 'Balance alert marked resolved and saved for your system.',
+      };
+      this.notice.set(labels[action]);
       await this.refresh();
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Network error');
     } finally {
       this.actionBusyId.set(null);
+      this.actionBusy.set(false);
     }
   }
 }

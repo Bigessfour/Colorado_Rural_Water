@@ -1,0 +1,97 @@
+<aside class="review-panel" [class.collapsed]="collapsed()" aria-label="Kelly review panel">
+  <header class="head">
+    <div>
+      <p class="eyebrow">Kelly review</p>
+      <p class="progress">{{ review.progressLabel() }}</p>
+    </div>
+    <button type="button" class="collapse-btn" (click)="toggleCollapse()">
+      {{ collapsed() ? 'Expand' : 'Minimize' }}
+    </button>
+  </header>
+
+  @if (!collapsed()) {
+    @if (review.submitted()) {
+      <p class="done">This review is submitted. You can keep browsing — no need to submit again.</p>
+    } @else {
+      <h2 class="title">{{ review.currentStep().title }}</h2>
+      <p class="look">{{ review.currentStep().lookAt }}</p>
+
+      <fieldset class="ratings">
+        <legend>How do you feel about this?</legend>
+        <div class="rating-row">
+          @for (opt of ratingOptions; track opt.value) {
+            <button
+              type="button"
+              class="rating-btn"
+              [class.selected]="rating === opt.value"
+              (click)="selectRating(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          }
+        </div>
+      </fieldset>
+
+      <label class="clarity">
+        Clarity / usefulness (optional)
+        <select [(ngModel)]="clarity" name="clarity">
+          <option [ngValue]="null">—</option>
+          <option [ngValue]="1">1</option>
+          <option [ngValue]="2">2</option>
+          <option [ngValue]="3">3</option>
+          <option [ngValue]="4">4</option>
+          <option [ngValue]="5">5</option>
+        </select>
+      </label>
+
+      <label class="comment">
+        Notes (required for Change / Need something new)
+        <textarea
+          pTextarea
+          rows="3"
+          [(ngModel)]="comment"
+          name="comment"
+          placeholder="Short note if useful"
+        ></textarea>
+      </label>
+
+      @if (review.error()) {
+        <p-message severity="error" styleClass="hint">{{ review.error() }}</p-message>
+      }
+      @if (statusNote()) {
+        <p-message severity="success" styleClass="hint">{{ statusNote() }}</p-message>
+      }
+
+      <div class="actions">
+        <p-button
+          label="Back"
+          [outlined]="true"
+          severity="secondary"
+          [disabled]="review.stepIndex() === 0 || review.busy()"
+          (onClick)="back()"
+        />
+        <p-button
+          label="Skip"
+          [text]="true"
+          severity="secondary"
+          [disabled]="review.busy()"
+          (onClick)="skip()"
+        />
+        @if (review.stepIndex() < review.totalSteps - 1) {
+          <p-button
+            label="Save & next"
+            [disabled]="review.busy()"
+            (onClick)="saveAndNext()"
+          />
+        } @else {
+          <p-button
+            label="Submit review"
+            severity="success"
+            [disabled]="review.busy()"
+            (onClick)="submitReview()"
+          />
+        }
+      </div>
+    }
+  }
+</aside>

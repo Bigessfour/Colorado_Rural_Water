@@ -72,6 +72,24 @@ npm run rag:status
 npm run rag:index
 npm run rag:index:incremental
 npm run rag:query -- "tenant isolation alerts"
+npm run inventory   # regenerate docs/function-inventory.generated.md (TS/Angular + Lambda)
 cd frontend && npm start
 cd backend && npm test
 ```
+
+## 6a. Feature prove tests (browser — NON-NEGOTIABLE)
+
+High-level / big features are **not Done** until proven live in the SPA:
+
+1. MCP **Chrome DevTools** — navigate, poke buttons, fill fields, assert visible data/KPI changes, screenshot.
+2. Record results in [`docs/PROVE_FEATURES.md`](docs/PROVE_FEATURES.md).
+3. Vitest/backend unit tests remain required for logic; they do **not** replace prove.
+
+## 7. Function inventory (this repo)
+
+- **Stack:** Angular 22 + TypeScript Lambda handlers — **not** C# / Syncfusion Blazor.
+- Config: `.function-inventory.json` (`stack: typescript`, roots `frontend/src` + `backend/src`).
+- Always exclude `mcp/**`, `node_modules/**`, build artifacts. Theme oracle is **PrimeNG MCP**, not `sf_blazor_style`.
+- After public API / route / handler changes: `npm run inventory`, then update `docs/action-items.md` proofs.
+- **Done / ship gate** for Kelly or pilot = Spec §0 + `docs/ACCEPTANCE_CHECKLIST.md` / smoke — **not** inventory count alone.
+- Overlays: `docs/function-tree.md` (visual), `docs/action-items.md` (proof status).

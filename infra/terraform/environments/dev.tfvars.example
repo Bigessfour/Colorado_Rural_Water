@@ -6,3 +6,7 @@ project_name   = "water-saver"
 enable_cognito = true
 enable_api     = true
 enable_storage = true
+
+# F5 Kelly Review SES (optional; empty = store-only submit)
+# review_notify_to  = "you@example.com"
+# review_from_email = "you@example.com"

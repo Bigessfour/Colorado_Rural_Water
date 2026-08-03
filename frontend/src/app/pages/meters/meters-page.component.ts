@@ -10,6 +10,7 @@ import { TableModule } from 'primeng/table';
 import { TextareaModule } from 'primeng/textarea';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
+import { MeterUsageVizComponent } from '../../shared/meter-usage-viz.component';
 
 interface MeterRow {
   meterId: string;
@@ -63,6 +64,7 @@ interface AddMeterForm extends MeterMetadataForm {
 interface MeterHistoryView {
   meterId: string;
   serviceAddress: string;
+  installDate: string | null;
   readings: MeterHistoryReading[];
 }
 
@@ -136,6 +138,7 @@ function metaPayload(form: MeterMetadataForm): Record<string, string> {
     DialogModule,
     InputTextModule,
     TextareaModule,
+    MeterUsageVizComponent,
   ],
   templateUrl: './meters-page.component.html',
   styleUrl: './meters-page.component.scss',
@@ -155,6 +158,11 @@ export class MetersPageComponent implements OnInit {
   historyBusy = signal(false);
   history = signal<MeterHistoryView | null>(null);
   historyError = signal('');
+
+  statsVisible = signal(false);
+  statsBusy = signal(false);
+  stats = signal<MeterHistoryView | null>(null);
+  statsError = signal('');
 
   editingId = signal<string | null>(null);
   editingAddress = signal('');
@@ -346,20 +354,12 @@ export class MetersPageComponent implements OnInit {
     this.historyError.set('');
     this.history.set(null);
     try {
-      const res = await fetch(
-        `${environment.apiBaseUrl}/meters/${encodeURIComponent(row.meterId)}`,
-        { headers: { authorization: `Bearer ${token}` } },
-      );
-      const body = await res.json();
-      if (!res.ok) {
-        this.historyError.set(body.error ?? `Failed (${res.status})`);
+      const detail = await this.fetchMeterDetail(token, row.meterId);
+      if (!detail.ok) {
+        this.historyError.set(detail.error);
         return;
       }
-      this.history.set({
-        meterId: body.meterId,
-        serviceAddress: body.serviceAddress,
-        readings: (body.readings ?? []) as MeterHistoryReading[],
-      });
+      this.history.set(detail.view);
     } catch (err) {
       this.historyError.set(err instanceof Error ? err.message : 'Network error');
     } finally {
@@ -373,5 +373,59 @@ export class MetersPageComponent implements OnInit {
       this.history.set(null);
       this.historyError.set('');
     }
+  }
+
+  async openStats(row: MeterRow): Promise<void> {
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.error.set('Sign in to view meter usage.');
+      return;
+    }
+    this.statsVisible.set(true);
+    this.statsBusy.set(true);
+    this.statsError.set('');
+    this.stats.set(null);
+    try {
+      const detail = await this.fetchMeterDetail(token, row.meterId);
+      if (!detail.ok) {
+        this.statsError.set(detail.error);
+        return;
+      }
+      this.stats.set(detail.view);
+    } catch (err) {
+      this.statsError.set(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      this.statsBusy.set(false);
+    }
+  }
+
+  onStatsVisibleChange(visible: boolean): void {
+    this.statsVisible.set(visible);
+    if (!visible) {
+      this.stats.set(null);
+      this.statsError.set('');
+    }
+  }
+
+  private async fetchMeterDetail(
+    token: string,
+    meterId: string,
+  ): Promise<{ ok: true; view: MeterHistoryView } | { ok: false; error: string }> {
+    const res = await fetch(`${environment.apiBaseUrl}/meters/${encodeURIComponent(meterId)}`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      return { ok: false, error: body.error ?? `Failed (${res.status})` };
+    }
+    return {
+      ok: true,
+      view: {
+        meterId: body.meterId,
+        serviceAddress: body.serviceAddress,
+        installDate: body.installDate ?? null,
+        readings: (body.readings ?? []) as MeterHistoryReading[],
+      },
+    };
   }
 }

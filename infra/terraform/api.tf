@@ -21,6 +21,8 @@ module "api" {
   uploads_bucket_arn          = module.storage[0].uploads_bucket_arn
   data_table_name             = module.storage[0].data_table_name
   data_table_arn              = module.storage[0].data_table_arn
+  review_notify_to            = var.review_notify_to
+  review_from_email           = var.review_from_email
 }
 
 output "api_endpoint" {
@@ -86,6 +88,11 @@ output "api_admin_rollup_url" {
 output "api_agent_url" {
   value       = try(module.api[0].agent_url, null)
   description = "GET/POST /agent (JWT, Epic E)"
+}
+
+output "api_review_sessions_url" {
+  value       = try(module.api[0].review_sessions_url, null)
+  description = "POST /review/sessions (JWT, F5 Kelly Review)"
 }
 
 output "uploads_bucket" {

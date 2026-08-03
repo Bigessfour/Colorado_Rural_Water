@@ -26,7 +26,7 @@
 
   <p-card styleClass="table-card">
     <p-table [value]="rows()" [tableStyle]="{ 'min-width': '52rem' }">
-      <ng-template pTemplate="header">
+      <ng-template #header>
         <tr>
           <th>System</th>
           <th>Meters</th>
@@ -38,7 +38,7 @@
           <th>CRWA note</th>
         </tr>
       </ng-template>
-      <ng-template pTemplate="body" let-row>
+      <ng-template #body let-row>
         <tr>
           <td>{{ row.system }}</td>
           <td>{{ row.meterCount }}</td>
@@ -55,7 +55,7 @@
           <td>{{ row.note }}</td>
         </tr>
       </ng-template>
-      <ng-template pTemplate="emptymessage">
+      <ng-template #emptymessage>
         <tr>
           <td colspan="8">
             @if (busy()) {

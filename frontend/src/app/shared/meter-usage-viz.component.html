@@ -1,0 +1,71 @@
+<section class="meter-viz" [attr.aria-label]="'Usage for meter ' + (meterId() || '')">
+  <div class="kpi-strip">
+    <div>
+      <div class="kpi-label">Age</div>
+      <div class="kpi-value">{{ stats().ageLabel ?? '—' }}</div>
+      <div class="kpi-hint">Install date or first read</div>
+    </div>
+    <div>
+      <div class="kpi-label">Latest cycle</div>
+      <div class="kpi-value">
+        @if (stats().cycleGal != null) {
+          {{ stats().cycleGal | number }} gal
+        } @else {
+          —
+        }
+      </div>
+      <div class="kpi-hint">{{ stats().cycleLabel }}</div>
+    </div>
+    <div>
+      <div class="kpi-label">{{ stats().asOfYear }} YTD</div>
+      <div class="kpi-value">
+        @if (stats().ytdGal != null) {
+          {{ stats().ytdGal | number }} gal
+        } @else {
+          —
+        }
+      </div>
+      <div class="kpi-hint">Sum of period usage this year</div>
+    </div>
+    <div>
+      <div class="kpi-label">Lifetime (stored)</div>
+      <div class="kpi-value">
+        @if (stats().lifetimeGal != null) {
+          {{ stats().lifetimeGal | number }} gal
+        } @else {
+          —
+        }
+      </div>
+      <div class="kpi-hint">From stored reads — not a rolled register claim</div>
+    </div>
+  </div>
+
+  @if (stats().sparse) {
+    <p-message severity="info" styleClass="hint">
+      Need at least two readings to chart period usage for this meter.
+    </p-message>
+  } @else {
+    <h3 class="section-title">Period usage</h3>
+    <p class="muted">
+      Between reads — a flat line often means stuck; a spike means unusual use.
+    </p>
+    <div class="chart-wrap chart-wrap--spark">
+      <p-chart type="line" [data]="sparkline().data" [options]="sparklineOptions" />
+    </div>
+
+    <h3 class="section-title">Year over year</h3>
+    @if (yoy().empty) {
+      <p-message severity="info" styleClass="hint">{{ yoy().hint }}</p-message>
+      @if (yoy().data.datasets.length) {
+        <div class="chart-wrap chart-wrap--yoy">
+          <p-chart type="line" [data]="yoy().data" [options]="yoyOptions" />
+        </div>
+      }
+    } @else {
+      <p class="muted">{{ yoy().hint }}</p>
+      <div class="chart-wrap chart-wrap--yoy">
+        <p-chart type="line" [data]="yoy().data" [options]="yoyOptions" />
+      </div>
+    }
+  }
+</section>

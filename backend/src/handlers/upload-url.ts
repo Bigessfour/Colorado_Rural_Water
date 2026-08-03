@@ -6,6 +6,8 @@ import { badRequest, forbidden, ok, unauthorized } from '../shared/http.js';
 
 const s3 = new S3Client({});
 
+export type PresignKind = 'customer' | 'source';
+
 /**
  * POST /uploads/presign — mint a tenant-scoped S3 PutObject URL.
  *
@@ -34,7 +36,7 @@ export const handler: AuthedHandler = async (event) => {
 
   let filename = 'upload.csv';
   let contentType = 'text/csv';
-  let kind: 'customer' | 'source' = 'customer';
+  let kind: PresignKind = 'customer';
   if (event.body) {
     try {
       const parsed = JSON.parse(event.body) as {
@@ -55,10 +57,7 @@ export const handler: AuthedHandler = async (event) => {
     }
   }
 
-  const key =
-    kind === 'source'
-      ? `tenants/${tenantId}/uploads/sources/${Date.now()}-${filename}`
-      : `tenants/${tenantId}/uploads/${Date.now()}-${filename}`;
+  const key = buildUploadObjectKey({ tenantId, kind, filename, nowMs: Date.now() });
   const expiresInSeconds = 900;
   const command = new PutObjectCommand({
     Bucket: bucket,
@@ -77,8 +76,21 @@ export const handler: AuthedHandler = async (event) => {
   });
 };
 
-function sanitizeFilename(name: string): string {
+export function sanitizeFilename(name: string): string {
   const base = name.replace(/\\/g, '/').split('/').pop() ?? 'upload.csv';
   const cleaned = base.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120);
   return cleaned || 'upload.csv';
+}
+
+/** Pure key builder — proven in unit tests (tenant isolation of S3 prefix). */
+export function buildUploadObjectKey(input: {
+  tenantId: string;
+  kind: PresignKind;
+  filename: string;
+  nowMs: number;
+}): string {
+  const safe = sanitizeFilename(input.filename);
+  return input.kind === 'source'
+    ? `tenants/${input.tenantId}/uploads/sources/${input.nowMs}-${safe}`
+    : `tenants/${input.tenantId}/uploads/${input.nowMs}-${safe}`;
 }

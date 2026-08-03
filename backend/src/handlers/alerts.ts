@@ -4,9 +4,14 @@ import { explainAlertTemplate, explainAlertsBatch } from '../shared/alert-explai
 import {
   applyAlertStatuses,
   isAlertStatusAction,
+  resolveAlertActionTarget,
+  sanitizeActionNote,
   sanitizeAlertId,
   statusFromAction,
+  type AlertActivityEvent,
+  type AlertStatusRecord,
 } from '../shared/alert-status.js';
+import { randomUUID } from 'node:crypto';
 import { evaluateBalanceAlerts } from '../shared/balance-alerts.js';
 import { mergeBalanceThresholds } from '../shared/balance-thresholds.js';
 import { converseText } from '../shared/bedrock.js';
@@ -18,7 +23,7 @@ import {
   createMeterStoreFromEnv,
   createSourceStoreFromEnv,
 } from '../shared/dynamo-store.js';
-import { badRequest, csv, forbidden, ok, unauthorized } from '../shared/http.js';
+import { badRequest, csv, forbidden, json, ok, unauthorized } from '../shared/http.js';
 import { calculateWaterBalance } from '../shared/water-balance.js';
 
 /**
@@ -26,7 +31,7 @@ import { calculateWaterBalance } from '../shared/water-balance.js';
  * merged with persisted acknowledge/resolve status (C3).
  * GET /alerts?format=csv — flagged meters only (C4), includes confidenceNote on Watch rows.
  * GET /alerts?explain=1 — attach plainLanguage explanations (C6 templates; Bedrock optional).
- * POST /alerts — acknowledge / resolve with audit who/when under TENANT#.
+ * POST /alerts — accept / acknowledge / dispatch / resolve with note + audit (C3).
  * POST /alerts/explain — explain one alertId with optional Bedrock polish.
  */
 export const handler: AuthedHandler = async (event) => {
@@ -51,41 +56,103 @@ export const handler: AuthedHandler = async (event) => {
     if (!event.body) {
       return badRequest('Body must be JSON with action and alertId');
     }
-    let body: { action?: string; alertId?: string };
+    let body: {
+      action?: string;
+      alertId?: string;
+      note?: unknown;
+      summary?: unknown;
+    };
     try {
-      body = JSON.parse(event.body) as { action?: string; alertId?: string };
+      body = JSON.parse(event.body) as typeof body;
     } catch {
       return badRequest('Body must be JSON');
     }
 
     if (!isAlertStatusAction(body.action)) {
-      return badRequest('action must be acknowledge or resolve');
+      return badRequest('action must be accept, acknowledge, dispatch, or resolve');
     }
     if (typeof body.alertId !== 'string') {
       return badRequest('alertId is required');
     }
 
     let alertId: string;
+    let note: string | null;
     try {
       alertId = sanitizeAlertId(body.alertId);
+      note = sanitizeActionNote(body.note);
     } catch (err) {
-      return badRequest(err instanceof Error ? err.message : 'Invalid alertId');
+      return badRequest(err instanceof Error ? err.message : 'Invalid alert fields');
     }
+
+    // Resolve meter/summary from live evaluation — never trust client meterId.
+    let target: ReturnType<typeof resolveAlertActionTarget>;
+    try {
+      const meterStore = createMeterStoreFromEnv();
+      const sourceStore = createSourceStoreFromEnv();
+      const thresholdStore = createBalanceThresholdStoreFromEnv();
+      const [locations, readings, sourceReadings, storedThresholds] = await Promise.all([
+        meterStore.listLocations(tenantId),
+        meterStore.listReadings(tenantId),
+        sourceStore.listSourceReadings(tenantId),
+        thresholdStore.getBalanceThresholds(tenantId),
+      ]);
+      const { alerts } = evaluateAlerts(locations, readings);
+      const balance = calculateWaterBalance(tenantId, sourceReadings, readings);
+      const thresholds = mergeBalanceThresholds(storedThresholds);
+      const balanceAlerts = evaluateBalanceAlerts(balance, {
+        mode: 'Watch',
+        thresholds,
+      });
+      target = resolveAlertActionTarget(alertId, alerts, balanceAlerts);
+    } catch (err) {
+      return badRequest(err instanceof Error ? err.message : 'Failed to resolve alert');
+    }
+
+    if (!target) {
+      return json(404, {
+        error: 'Alert not found for this system (it may have cleared after new readings)',
+      });
+    }
+
+    const clientSummary =
+      typeof body.summary === 'string' ? body.summary.trim().slice(0, 500) || null : null;
+    const summary = target.summary.slice(0, 500) || clientSummary;
+    const meterId = target.meterId;
 
     const status = statusFromAction(body.action);
     const updatedAt = new Date().toISOString();
-    const record = {
+    const record: AlertStatusRecord = {
       tenantId,
       alertId,
       status,
       actorUserId: auth.userId,
       actorEmail: auth.email,
       updatedAt,
+      note,
+      meterId,
+      summary,
     };
+
+    const activity: AlertActivityEvent | null =
+      meterId == null
+        ? null
+        : {
+            tenantId,
+            eventId: randomUUID(),
+            alertId,
+            meterId,
+            action: body.action,
+            status,
+            actorUserId: auth.userId,
+            actorEmail: auth.email,
+            note,
+            summary,
+            createdAt: updatedAt,
+          };
 
     try {
       const store = createAlertStatusStoreFromEnv();
-      await store.putAlertStatus(record);
+      await store.putAlertStatusAndActivity(record, activity);
     } catch (err) {
       return badRequest(err instanceof Error ? err.message : 'Failed to persist alert status');
     }
@@ -95,6 +162,8 @@ export const handler: AuthedHandler = async (event) => {
       action: body.action,
       alertId,
       status,
+      note,
+      meterId,
       actorUserId: auth.userId,
       actorEmail: auth.email,
       updatedAt,

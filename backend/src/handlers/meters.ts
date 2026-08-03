@@ -1,6 +1,6 @@
 import type { AuthedHandler } from '../shared/apigw.js';
 import { parseAuthFromClaims, requireTenantId } from '../shared/auth.js';
-import { createMeterStoreFromEnv } from '../shared/dynamo-store.js';
+import { createAlertStatusStoreFromEnv, createMeterStoreFromEnv } from '../shared/dynamo-store.js';
 import { sanitizeMeterId } from '../shared/flagged-export.js';
 import { badRequest, forbidden, json, ok, unauthorized } from '../shared/http.js';
 import {
@@ -113,6 +113,8 @@ export const handler: AuthedHandler = async (event) => {
 
     if (method === 'GET') {
       const readings = await store.listReadingsForMeter(tenantId, meterId);
+      const statusStore = createAlertStatusStoreFromEnv();
+      const alertActivity = await statusStore.listAlertActivityForMeter(tenantId, meterId);
       return ok({
         tenantId,
         ...sanitizeMeterLocationForResponse(location),
@@ -125,6 +127,16 @@ export const handler: AuthedHandler = async (event) => {
           occupantNameAtRead: r.occupantName,
         })),
         readingCount: readings.length,
+        alertActivity: alertActivity.map((e) => ({
+          eventId: e.eventId,
+          alertId: e.alertId,
+          action: e.action,
+          status: e.status,
+          actorEmail: e.actorEmail,
+          note: e.note,
+          summary: e.summary,
+          createdAt: e.createdAt,
+        })),
       });
     }
 

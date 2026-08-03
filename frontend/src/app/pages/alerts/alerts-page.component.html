@@ -2,9 +2,9 @@
   <h1>Alerts</h1>
   <p class="lede">
     Prioritized issues from your meter readings. Watch means thin history — look when you can;
-    Actionable means worth a field check now. Acknowledge or resolve to keep a durable record for
-    your system. Export flagged meters for field lists; open History for address and current
-    occupant.
+    Actionable means worth a field check now. Accept, dispatch a follow-up, or mark resolved with
+    what you did — each action is saved on the meter’s alert history. Export flagged meters for field
+    lists; open History for readings and past alert activity.
   </p>
 
   <p-message severity="info" styleClass="hint">{{ confidenceNote() }}</p-message>
@@ -32,7 +32,7 @@
 
   <p-card styleClass="table-card">
     <p-table [value]="alerts()" [tableStyle]="{ 'min-width': '44rem' }">
-      <ng-template pTemplate="header">
+      <ng-template #header>
         <tr>
           <th>Mode</th>
           <th>Subject</th>
@@ -42,7 +42,7 @@
           <th></th>
         </tr>
       </ng-template>
-      <ng-template pTemplate="body" let-alert>
+      <ng-template #body let-alert>
         <tr>
           <td>
             <p-tag
@@ -91,29 +91,19 @@
                 (onClick)="explain(alert)"
               />
             }
-            @if (alert.status === 'open' || alert.status === 'acknowledged') {
-              @if (alert.status === 'open') {
-                <p-button
-                  label="Acknowledge"
-                  size="small"
-                  [loading]="actionBusyId() === alert.id"
-                  [disabled]="actionBusyId() !== null && actionBusyId() !== alert.id"
-                  (onClick)="acknowledge(alert)"
-                />
-              }
+            @if (alert.status !== 'resolved') {
               <p-button
-                label="Resolve"
+                label="Act on alert"
                 size="small"
-                severity="secondary"
                 [loading]="actionBusyId() === alert.id"
                 [disabled]="actionBusyId() !== null && actionBusyId() !== alert.id"
-                (onClick)="resolve(alert)"
+                (onClick)="openAction(alert)"
               />
             }
           </td>
         </tr>
       </ng-template>
-      <ng-template pTemplate="emptymessage">
+      <ng-template #emptymessage>
         <tr>
           <td colspan="6">No open alerts — ingest readings, then refresh.</td>
         </tr>
@@ -304,9 +294,46 @@
         </form>
       }
 
+      <h2 class="history-section">Alert activity</h2>
+      <p class="muted meta-lede">
+        Past accept / dispatch / resolve actions for this meter — useful for troublesome accounts.
+      </p>
+      <p-table [value]="h.alertActivity" [tableStyle]="{ 'min-width': '28rem' }">
+        <ng-template #header>
+          <tr>
+            <th>When</th>
+            <th>Action</th>
+            <th>By</th>
+            <th>Note</th>
+            <th>Alert</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-evt>
+          <tr>
+            <td>{{ evt.createdAt }}</td>
+            <td>{{ activityLabel(evt.action) }}</td>
+            <td>{{ evt.actorEmail }}</td>
+            <td>{{ evt.note || '—' }}</td>
+            <td>{{ evt.summary || evt.alertId }}</td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="5">No alert actions recorded for this meter yet.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <h2 class="history-section">Usage</h2>
+      <app-meter-usage-viz
+        [meterId]="h.meterId"
+        [installDate]="h.installDate"
+        [readings]="h.readings"
+      />
+
       <h2 class="history-section">Readings</h2>
       <p-table [value]="h.readings" [tableStyle]="{ 'min-width': '28rem' }">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
             <th>Read date</th>
             <th>Cumulative</th>
@@ -315,7 +342,7 @@
             <th>Occupant at read</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-row>
+        <ng-template #body let-row>
           <tr>
             <td>{{ row.timestamp }}</td>
             <td>{{ row.cumulativeReading }}</td>
@@ -324,12 +351,61 @@
             <td>{{ row.occupantNameAtRead || '—' }}</td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="5">No readings stored for this meter yet.</td>
           </tr>
         </ng-template>
       </p-table>
+    }
+  </p-dialog>
+
+  <p-dialog
+    header="Act on alert"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: 'min(28rem, 96vw)' }"
+    [visible]="actionVisible()"
+    (visibleChange)="onActionVisibleChange($event)"
+  >
+    @if (actionAlert(); as alert) {
+      <p class="muted meta-lede">
+        {{ alert.kind === 'meter' ? 'Meter ' + alert.meterId : 'Water balance' }} —
+        {{ alert.summary }}
+      </p>
+      <label class="action-note">
+        Action taken / note (optional)
+        <textarea
+          pTextarea
+          rows="3"
+          [ngModel]="actionNote()"
+          (ngModelChange)="actionNote.set($event)"
+          [disabled]="actionBusy()"
+          fluid
+        ></textarea>
+      </label>
+      <div class="action-footer">
+        <p-button
+          label="Accept"
+          severity="secondary"
+          [loading]="actionBusy()"
+          [disabled]="actionBusy()"
+          (onClick)="submitAction('accept')"
+        />
+        <p-button
+          label="Dispatch"
+          severity="secondary"
+          [loading]="actionBusy()"
+          [disabled]="actionBusy()"
+          (onClick)="submitAction('dispatch')"
+        />
+        <p-button
+          label="Mark resolved"
+          [loading]="actionBusy()"
+          [disabled]="actionBusy()"
+          (onClick)="submitAction('resolve')"
+        />
+      </div>
     }
   </p-dialog>
 </section>

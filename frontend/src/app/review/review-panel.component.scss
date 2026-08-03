@@ -1,0 +1,143 @@
+:host {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  width: min(24rem, calc(100vw - 2rem));
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+}
+
+.review-panel {
+  background: rgba(255, 252, 248, 0.97);
+  border: 1px solid rgba(15, 61, 66, 0.18);
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 40px rgba(15, 61, 66, 0.14);
+  padding: 0.9rem 1rem 1rem;
+  color: #1a2b2e;
+}
+
+.review-panel.collapsed {
+  padding-bottom: 0.75rem;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4a6368;
+}
+
+.progress {
+  margin: 0.15rem 0 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1rem;
+  color: #0f3d42;
+}
+
+.collapse-btn {
+  border: 0;
+  background: transparent;
+  color: #4a6368;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.title {
+  margin: 0.25rem 0 0.35rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0f3d42;
+}
+
+.look {
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #3a5257;
+}
+
+.ratings {
+  border: 0;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.ratings legend {
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+  color: #4a6368;
+}
+
+.rating-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.rating-btn {
+  border: 1px solid rgba(15, 61, 66, 0.22);
+  background: #fff;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.5rem;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: #1a2b2e;
+  text-align: left;
+}
+
+.rating-btn.selected {
+  border-color: #0f3d42;
+  background: #e7f2f3;
+  font-weight: 600;
+}
+
+.clarity,
+.comment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.85rem;
+  color: #4a6368;
+}
+
+.clarity select {
+  max-width: 5rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(15, 61, 66, 0.25);
+  font: inherit;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.done {
+  margin: 0.25rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #3a5257;
+}
+
+:host ::ng-deep .hint {
+  margin: 0.4rem 0;
+  width: 100%;
+}

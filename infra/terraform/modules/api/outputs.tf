@@ -77,3 +77,8 @@ output "agent_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/agent"
   description = "GET/POST /agent conversational AI (JWT, Epic E)"
 }
+
+output "review_sessions_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/review/sessions"
+  description = "POST /review/sessions and related Kelly Review routes (JWT, F5)"
+}

@@ -1,0 +1,20 @@
+{
+  "stack": "typescript",
+  "scan_roots": [
+    "frontend/src",
+    "backend/src"
+  ],
+  "exclude_dirs": [
+    "node_modules",
+    "mcp",
+    "dist",
+    "coverage",
+    ".angular",
+    "infra",
+    "rag",
+    ".git",
+    "__pycache__",
+    ".terraform"
+  ],
+  "notes": "Water Saver / Colorado Rural Water — Angular 22 + PrimeNG 22 SPA and TS Lambda handlers. Do not use C# / Syncfusion Blazor theme oracles."
+}
