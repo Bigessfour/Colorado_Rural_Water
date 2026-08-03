@@ -55,7 +55,7 @@ describe('applyMeterLocationUpsert', () => {
     assert.equal(location.accountNumber, 'A-2201');
   });
 
-  it('flags address conflict and does not relocate the meter', () => {
+  it('flags address conflict, keeps address, still updates occupant', () => {
     const { location, addressConflict } = applyMeterLocationUpsert(base, {
       tenantId: 'town-wiley',
       meterId: '1042',
@@ -64,6 +64,6 @@ describe('applyMeterLocationUpsert', () => {
     });
     assert.equal(addressConflict, true);
     assert.equal(location.serviceAddress, base.serviceAddress);
-    assert.equal(location.occupantName, 'J Smith');
+    assert.equal(location.occupantName, 'Someone Else');
   });
 });

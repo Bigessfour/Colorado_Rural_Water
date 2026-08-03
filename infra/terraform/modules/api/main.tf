@@ -42,13 +42,21 @@ data "aws_iam_policy_document" "lambda_data" {
       "s3:PutObject",
       "s3:GetObject",
     ]
-    resources = ["${var.uploads_bucket_arn}/*"]
+    # Force tenant drop-zone prefix; app still scopes to tenants/{tenantId}/uploads/.
+    resources = ["${var.uploads_bucket_arn}/tenants/*"]
   }
 
   statement {
     sid       = "DynamoDataAccess"
     actions   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query", "dynamodb:UpdateItem"]
     resources = [var.data_table_arn]
+
+    # Require partition keys under TENANT#… (app isolation still required for cross-tenant).
+    condition {
+      test     = "ForAllValues:StringLike"
+      variable = "dynamodb:LeadingKeys"
+      values   = ["TENANT#*"]
+    }
   }
 }
 

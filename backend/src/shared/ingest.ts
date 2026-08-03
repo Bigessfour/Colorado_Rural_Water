@@ -78,17 +78,17 @@ async function upsertFromRow(
       incomingAddress: row.serviceAddress,
     });
     summary.warnings.push(
-      `Meter ${row.meterId}: address in file ("${row.serviceAddress}") does not match saved address ("${existing.serviceAddress}"). We kept the saved address and did not move the meter.`,
+      `Meter ${row.meterId}: address in file ("${row.serviceAddress}") does not match saved address ("${existing.serviceAddress}"). We kept the saved address and did not move the meter; occupant/account updates still applied.`,
     );
-  } else {
-    await store.putLocation(location);
-    summary.locationsUpserted += 1;
   }
+
+  await store.putLocation(location);
+  summary.locationsUpserted += 1;
 
   const reading: MeterReading = {
     tenantId,
     meterId: row.meterId,
-    serviceAddress: addressConflict && existing ? existing.serviceAddress : row.serviceAddress,
+    serviceAddress: location.serviceAddress,
     occupantName: row.occupantName,
     timestamp: row.timestamp,
     cumulativeReading: row.cumulativeReading,

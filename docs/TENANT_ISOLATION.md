@@ -36,6 +36,15 @@ Aurora was considered for A4; DynamoDB is the MVP default for serverless cost an
 3. `requireTenantId(auth)` (or CRWA selected-tenant) before data access.
 4. Repository layer accepts `tenantId` as a required parameter — no global list endpoints for member data.
 
+## IAM notes (shared Lambda role)
+
+MVP Lambdas share one execution role. Hardening in place:
+
+- S3 object access limited to `tenants/*` keys (not the whole bucket).
+- DynamoDB access conditioned on `dynamodb:LeadingKeys` matching `TENANT#*`.
+
+True per-tenant IAM (unable to touch another `TENANT#…` even if app bugs) needs session tags / ABAC or per-tenant roles — track as a hardening ticket before production multi-municipality scale.
+
 ## AI
 
 Prompts and retrieval context are built only from the caller's tenant. Automated tests (ticket E5) must fail the build if another tenant's ids or readings appear in agent context.

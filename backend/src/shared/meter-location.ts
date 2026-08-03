@@ -76,14 +76,12 @@ export function applyMeterLocationUpsert(
   const addressConflict =
     normalizeAddressKey(existing.serviceAddress) !== normalizeAddressKey(normalizedAddress);
 
-  if (addressConflict) {
-    return { location: existing, addressConflict: true };
-  }
-
+  // Keep the saved address on conflict, but still apply mutable attributes (name, account, route).
   return {
-    addressConflict: false,
+    addressConflict,
     location: {
       ...existing,
+      serviceAddress: existing.serviceAddress,
       occupantName:
         input.occupantName !== undefined ? input.occupantName : existing.occupantName,
       accountNumber:

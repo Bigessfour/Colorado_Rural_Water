@@ -54,6 +54,6 @@ describe('parseCustomerReadingsCsv', () => {
     assert.equal(summary.addressConflicts.length, 1);
     const loc = await store.getLocation('t1', '1042');
     assert.equal(loc?.serviceAddress, '112 N Main');
-    assert.equal(loc?.occupantName, 'J Smith');
+    assert.equal(loc?.occupantName, 'A Rivera');
   });
 });

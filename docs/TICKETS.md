@@ -8,13 +8,14 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 ## Epic A — Foundation
 
-| ID  | Title                                         | Priority | Status | Notes                                                       |
-| --- | --------------------------------------------- | -------- | ------ | ----------------------------------------------------------- |
-| A1  | Repo bootstrap & README                       | P0       | done   | Monorepo layout, Spec Kit, this backlog                     |
-| A2  | Terraform skeleton (accounts, naming, tags)   | P0       | done   | Account 570912405222 / profile townofwiley; provider ~> 6.0 |
-| A3  | Cognito user pool + app client (MFA optional) | P0       | done   | Live pool us-east-2_oHpsTZZAN; MFA/groups IAM workarounds   |
-| A4  | Tenant model + isolation strategy doc         | P0       | done   | DynamoDB single-table + S3 uploads; see TENANT_ISOLATION.md |
-| A5  | API Gateway + Lambda stub (health + me)       | P0       | done   | Live API 14jxov7h72; /health 200, /me JWT 401 without token |
+| ID  | Title                                         | Priority | Status | Notes                                                                                           |
+| --- | --------------------------------------------- | -------- | ------ | ----------------------------------------------------------------------------------------------- |
+| A1  | Repo bootstrap & README                       | P0       | done   | Monorepo layout, Spec Kit, this backlog                                                         |
+| A2  | Terraform skeleton (accounts, naming, tags)   | P0       | done   | Account 570912405222 / profile townofwiley; provider ~> 6.0                                     |
+| A3  | Cognito user pool + app client (MFA optional) | P0       | done   | Live pool us-east-2_oHpsTZZAN; MFA/groups IAM workarounds                                       |
+| A4  | Tenant model + isolation strategy doc         | P0       | done   | DynamoDB single-table + S3 uploads; see TENANT_ISOLATION.md                                     |
+| A5  | API Gateway + Lambda stub (health + me)       | P0       | done   | Live API 14jxov7h72; /health 200, /me JWT 401 without token                                     |
+| A6  | Per-tenant IAM ABAC / session tags            | P1       | todo   | Shared role hardened to tenants/* + LeadingKeys TENANT#*; true cross-tenant IAM deny still open |
 
 ## Epic B — Ingestion (critical path)
 
@@ -30,24 +31,24 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 ## Epic C — Alerts & Dashboard
 
-| ID  | Title                                                       | Priority | Status | Notes                                                                                          |
-| --- | ----------------------------------------------------------- | -------- | ------ | ---------------------------------------------------------------------------------------------- |
+| ID  | Title                                                       | Priority | Status | Notes                                                                                               |
+| --- | ----------------------------------------------------------- | -------- | ------ | --------------------------------------------------------------------------------------------------- |
 | C1  | Alert engine v1 (high usage, stuck, drops, flags, outliers) | P0       | todo   | Deterministic rules first; no custom ML; include water-balance rules (see G4); Confidence gate (H6) |
-| C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | todo   | Angular + PrimeNG; include water-balance panel (G5) + Confidence card (H4)                     |
-| C3  | Acknowledge / resolve alerts                                | P0       | todo   | Audit who/when                                                                                 |
-| C4  | Export flagged meters                                       | P1       | todo   | CSV download; include Confidence note on Watch rows                                            |
-| C5  | Basic meter history view                                    | P1       | todo   | Drill-down shows service address + current occupant name                                       |
-| C6  | AI plain-language alert explanations                        | P1       | todo   | Bedrock; tenant-scoped context only; explain loss/gain + Confidence in plain language          |
+| C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | todo   | Angular + PrimeNG; include water-balance panel (G5) + Confidence card (H4)                          |
+| C3  | Acknowledge / resolve alerts                                | P0       | todo   | Audit who/when                                                                                      |
+| C4  | Export flagged meters                                       | P1       | todo   | CSV download; include Confidence note on Watch rows                                                 |
+| C5  | Basic meter history view                                    | P1       | todo   | Drill-down shows service address + current occupant name                                            |
+| C6  | AI plain-language alert explanations                        | P1       | todo   | Bedrock; tenant-scoped context only; explain loss/gain + Confidence in plain language               |
 
 ## Epic D — Auth, roles & CRWA roll-up
 
-| ID  | Title                                       | Priority | Status | Notes                                                        |
-| --- | ------------------------------------------- | -------- | ------ | ------------------------------------------------------------ |
-| D1  | Roles: Operator / System Admin / CRWA Admin | P0       | todo   | Cognito groups or custom claims                              |
-| D2  | System Admin: invite users within tenant    | P1       | todo   |                                                              |
-| D3  | CRWA Admin: provision tenant + initial user | P0       | todo   | Onboarding entry point                                       |
+| ID  | Title                                       | Priority | Status | Notes                                                                          |
+| --- | ------------------------------------------- | -------- | ------ | ------------------------------------------------------------------------------ |
+| D1  | Roles: Operator / System Admin / CRWA Admin | P0       | todo   | Cognito groups or custom claims                                                |
+| D2  | System Admin: invite users within tenant    | P1       | todo   |                                                                                |
+| D3  | CRWA Admin: provision tenant + initial user | P0       | todo   | Onboarding entry point                                                         |
 | D4  | CRWA enterprise roll-up (sanitized)         | P1       | todo   | No cross-tenant PII leakage; include water-balance KPIs (G6) + Confidence (H5) |
-| D5  | Self-service password + MFA UX              | P1       | todo   | Cognito hosted or custom                                     |
+| D5  | Self-service password + MFA UX              | P1       | todo   | Cognito hosted or custom                                                       |
 
 ## Epic G — Water balance (production in vs billed out)
 
@@ -65,14 +66,14 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 
 ## Epic E — Conversational AI
 
-| ID  | Title                                              | Priority | Status | Notes                                                                    |
-| --- | -------------------------------------------------- | -------- | ------ | ------------------------------------------------------------------------ |
-| E1  | Agent shell + conversation history (tenant-scoped) | P1       | todo   | Bedrock                                                                  |
-| E2  | Onboarding interview flow                          | P1       | todo   | Per Spec §5; include data-inventory questions (extend with H1)           |
-| E3  | Mapping assistance + config help                   | P1       | todo   |                                                                          |
-| E4  | Cost-transparency + confirmation guardrails        | P0       | todo   | Cheapest option first; no delete without multi-step confirm              |
-| E5  | Tenant isolation tests for AI context              | P0       | todo   | Hard safety rule                                                         |
-| E6  | Confidence coaching copy in agent                  | P1       | todo   | Watch vs Actionable; never overclaim; Spec §5 / §7b (same as H6)         |
+| ID  | Title                                              | Priority | Status | Notes                                                            |
+| --- | -------------------------------------------------- | -------- | ------ | ---------------------------------------------------------------- |
+| E1  | Agent shell + conversation history (tenant-scoped) | P1       | todo   | Bedrock                                                          |
+| E2  | Onboarding interview flow                          | P1       | todo   | Per Spec §5; include data-inventory questions (extend with H1)   |
+| E3  | Mapping assistance + config help                   | P1       | todo   |                                                                  |
+| E4  | Cost-transparency + confirmation guardrails        | P0       | todo   | Cheapest option first; no delete without multi-step confirm      |
+| E5  | Tenant isolation tests for AI context              | P0       | todo   | Hard safety rule                                                 |
+| E6  | Confidence coaching copy in agent                  | P1       | todo   | Watch vs Actionable; never overclaim; Spec §5 / §7b (same as H6) |
 
 ## Epic F — Polish for Kelly Stone demo
 
@@ -87,16 +88,16 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 
 Work with any amount of history (none → years); never treat thin-data flags as dig-now alarms. Spec §5 paths + §7b. Heuristics only in MVP (no custom ML). Tracking: [GH #10](https://github.com/Bigessfour/Colorado_Rural_Water/issues/10).
 
-| ID  | Title                                                              | Priority | Status | Notes                                                                                          |
-| --- | ------------------------------------------------------------------ | -------- | ------ | ---------------------------------------------------------------------------------------------- |
-| H1  | Onboarding data-inventory interview                                | P0       | todo   | Extend E2: ask what history they have; set Confidence expectations; paths A–D                  |
-| H2  | Historical bulk ingest UX                                          | P0       | todo   | Multi-file / multi-year load on top of Epic B; post-load “what we loaded” summary              |
-| H3  | Confidence calculator (tenant + per-signal; optional per-meter)    | P0       | todo   | Months + coverage % + seasonality heuristics; store on tenant; thresholds = open decisions     |
-| H4  | Operator dashboard Confidence card                                 | P0       | todo   | Level + plain-language meaning + “what improves it”; stub on member dashboard                  |
-| H5  | CRWA roll-up Confidence column / card                              | P1       | todo   | Sanitized per-municipality; wire with D4 / G6; stub on `/crwa`                                 |
-| H6  | Alert UX gating: Watch vs Actionable by Confidence                 | P0       | todo   | Gate statistical alerts; keep deterministic stuck/diag Actionable with clear why; extends C1   |
-| H7  | Agent Confidence copy + never-overclaim guardrails                 | P1       | todo   | Same intent as E6; ship with Epic E                                                            |
-| H8  | Kelly review: Confidence threshold defaults                       | P1       | todo   | Lock open decisions in Spec §7b / §12 after pilot feedback                                     |
+| ID  | Title                                                           | Priority | Status | Notes                                                                                        |
+| --- | --------------------------------------------------------------- | -------- | ------ | -------------------------------------------------------------------------------------------- |
+| H1  | Onboarding data-inventory interview                             | P0       | todo   | Extend E2: ask what history they have; set Confidence expectations; paths A–D                |
+| H2  | Historical bulk ingest UX                                       | P0       | todo   | Multi-file / multi-year load on top of Epic B; post-load “what we loaded” summary            |
+| H3  | Confidence calculator (tenant + per-signal; optional per-meter) | P0       | todo   | Months + coverage % + seasonality heuristics; store on tenant; thresholds = open decisions   |
+| H4  | Operator dashboard Confidence card                              | P0       | todo   | Level + plain-language meaning + “what improves it”; stub on member dashboard                |
+| H5  | CRWA roll-up Confidence column / card                           | P1       | todo   | Sanitized per-municipality; wire with D4 / G6; stub on `/crwa`                               |
+| H6  | Alert UX gating: Watch vs Actionable by Confidence              | P0       | todo   | Gate statistical alerts; keep deterministic stuck/diag Actionable with clear why; extends C1 |
+| H7  | Agent Confidence copy + never-overclaim guardrails              | P1       | todo   | Same intent as E6; ship with Epic E                                                          |
+| H8  | Kelly review: Confidence threshold defaults                     | P1       | todo   | Lock open decisions in Spec §7b / §12 after pilot feedback                                   |
 
 ---
 
