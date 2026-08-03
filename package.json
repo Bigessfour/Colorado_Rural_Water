@@ -8,6 +8,7 @@
     "frontend:build": "npm --prefix frontend run build",
     "backend:build": "npm --prefix backend run build",
     "backend:test": "npm --prefix backend test",
+    "backend:bundle": "node scripts/build-lambda-zip.mjs",
     "test:auth": "npm --prefix backend test",
     "rag:setup": "node scripts/rag-setup.mjs",
     "rag:index": "node scripts/rag-run.mjs index",
@@ -15,5 +16,8 @@
     "rag:query": "node scripts/rag-run.mjs query",
     "rag:status": "node scripts/rag-run.mjs status",
     "mcp:primeng:install": "npm --prefix mcp/primeng install @primeng/mcp@22"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
   }
 }

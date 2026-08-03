@@ -41,6 +41,12 @@ variable "enable_cognito" {
 
 variable "enable_api" {
   type        = bool
-  description = "Provision HTTP API + health/me Lambdas"
+  description = "Provision HTTP API + Lambdas"
+  default     = true
+}
+
+variable "enable_storage" {
+  type        = bool
+  description = "Provision S3 uploads bucket + DynamoDB data table"
   default     = true
 }

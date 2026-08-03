@@ -16,8 +16,8 @@ export function ok(body: unknown): APIGatewayProxyResult {
   return json(200, body);
 }
 
-export function badRequest(message: string): APIGatewayProxyResult {
-  return json(400, { error: message });
+export function badRequest(message: string, extra?: Record<string, unknown>): APIGatewayProxyResult {
+  return json(400, { error: message, ...extra });
 }
 
 export function unauthorized(message = 'Unauthorized'): APIGatewayProxyResult {

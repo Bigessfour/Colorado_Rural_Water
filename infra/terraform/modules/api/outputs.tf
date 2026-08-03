@@ -12,3 +12,13 @@ output "me_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/me"
   description = "Authenticated /me URL"
 }
+
+output "ingest_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/ingest"
+  description = "POST /ingest (JWT)"
+}
+
+output "presign_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/uploads/presign"
+  description = "POST /uploads/presign (JWT)"
+}

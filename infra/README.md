@@ -5,30 +5,35 @@ Multi-tenant AWS serverless foundation.
 **Account (locked):** `570912405222` · profile `townofwiley` · region `us-east-2`
 Details: [docs/AWS_ACCOUNT.md](../docs/AWS_ACCOUNT.md)
 
-## Modules (planned)
+## Modules
 
-| Module          | Purpose                                                               |
-| --------------- | --------------------------------------------------------------------- |
-| `cognito`       | User pool, app client, groups, optional MFA                           |
-| `api`           | HTTP API Gateway + JWT authorizer + Lambda routes                     |
-| `storage`       | Per-env upload bucket, drop prefixes `tenants/{id}/uploads/`          |
-| `data`          | Tenant-scoped reading/alert store (DynamoDB or Aurora — decide in A4) |
-| `ai`            | Bedrock access + least-privilege IAM for agent Lambdas                |
-| `observability` | Log groups, alarms, basic dashboards                                  |
+| Module    | Purpose                                                                   |
+| --------- | ------------------------------------------------------------------------- |
+| `cognito` | User pool, SPA client, groups, optional MFA                               |
+| `storage` | Private uploads bucket + DynamoDB single-table (`LOC#` / `RDG#` / `MAP#`) |
+| `api`     | HTTP API + JWT authorizer + health/me/presign/ingest + S3→ingest          |
 
-## Environments
+## Live dev outputs (typical)
+
+| Resource   | Name / URL                                               |
+| ---------- | -------------------------------------------------------- |
+| API        | `https://14jxov7h72.execute-api.us-east-2.amazonaws.com` |
+| Uploads    | `water-saver-dev-uploads-570912405222`                   |
+| Data table | `water-saver-dev-data`                                   |
+| Ingest     | `POST /ingest` (JWT)                                     |
+| Presign    | `POST /uploads/presign` (JWT)                            |
+
+## Apply flow
 
 ```bash
+# from repo root — rebuild Lambda zip first
+npm run backend:bundle
+
 cd infra/terraform
-cp environments/dev.tfvars.example environments/dev.tfvars
-
 aws sts get-caller-identity --profile townofwiley
-# expect Account: 570912405222
-
 terraform init
 terraform plan -var-file=environments/dev.tfvars
+terraform apply -var-file=environments/dev.tfvars
 ```
-
-Do **not** apply until Cognito + naming + tags are reviewed (tickets A3+). Plan is safe.
 
 Guards: `allowed_account_ids` on the provider + `check "expected_account"` in `checks.tf`.

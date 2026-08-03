@@ -1,10 +1,13 @@
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { AuthedHandler } from '../shared/apigw.js';
 import { parseAuthFromClaims, requireTenantId } from '../shared/auth.js';
 import { badRequest, forbidden, ok, unauthorized } from '../shared/http.js';
 
+const s3 = new S3Client({});
+
 /**
- * Stub: returns a placeholder presigned upload contract.
- * Real implementation will mint S3 PutObject URLs under tenants/{tenantId}/uploads/.
+ * POST /uploads/presign — mint a tenant-scoped S3 PutObject URL.
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
@@ -19,23 +22,43 @@ export const handler: AuthedHandler = async (event) => {
     return forbidden(err instanceof Error ? err.message : 'Forbidden');
   }
 
+  const bucket = process.env.UPLOAD_BUCKET;
+  if (!bucket) {
+    return badRequest('UPLOAD_BUCKET is not configured on this environment');
+  }
+
   let filename = 'upload.csv';
+  let contentType = 'text/csv';
   if (event.body) {
     try {
-      const parsed = JSON.parse(event.body) as { filename?: string };
-      if (parsed.filename) filename = parsed.filename;
+      const parsed = JSON.parse(event.body) as { filename?: string; contentType?: string };
+      if (parsed.filename) filename = sanitizeFilename(parsed.filename);
+      if (parsed.contentType) contentType = parsed.contentType;
     } catch {
       return badRequest('Body must be JSON with optional filename');
     }
   }
 
   const key = `tenants/${tenantId}/uploads/${Date.now()}-${filename}`;
+  const expiresInSeconds = 900;
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ContentType: contentType,
+  });
+  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
 
   return ok({
-    stub: true,
-    message: 'Presign not wired yet — Terraform + S3 module required',
-    bucket: process.env.UPLOAD_BUCKET ?? 'water-saver-uploads-pending',
+    bucket,
     key,
-    expiresInSeconds: 900,
+    uploadUrl,
+    expiresInSeconds,
+    headers: { 'Content-Type': contentType },
   });
 };
+
+function sanitizeFilename(name: string): string {
+  const base = name.replace(/\\/g, '/').split('/').pop() ?? 'upload.csv';
+  const cleaned = base.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120);
+  return cleaned || 'upload.csv';
+}

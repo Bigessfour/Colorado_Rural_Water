@@ -6,10 +6,11 @@ import { TableModule } from 'primeng/table';
 
 interface AlertRow {
   id: string;
-  priority: 'high' | 'medium' | 'low';
+  mode: 'Watch' | 'Actionable';
   meterId: string;
   summary: string;
   status: string;
+  confidenceNote: string;
 }
 
 @Component({
@@ -20,20 +21,23 @@ interface AlertRow {
   styleUrl: './alerts-page.component.scss',
 })
 export class AlertsPageComponent {
+  /** Demo: thin history → Watch for statistical; Actionable for stuck. Spec §7b / H6. */
   alerts: AlertRow[] = [
     {
       id: 'demo-alert-1',
-      priority: 'high',
+      mode: 'Watch',
       meterId: 'M-1042',
-      summary: 'Usage ~3× typical — possible leak or irrigation change',
+      summary: 'Usage ~3× peers this cycle — possible leak or irrigation change',
       status: 'open',
+      confidenceNote: 'Thin history (~2 mo) — Watch only',
     },
     {
       id: 'demo-alert-2',
-      priority: 'medium',
+      mode: 'Actionable',
       meterId: 'M-1045',
       summary: 'Non-registering / stuck reading (0 across cycles)',
       status: 'open',
+      confidenceNote: 'Deterministic meter signal',
     },
   ];
 

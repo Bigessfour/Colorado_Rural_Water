@@ -15,6 +15,60 @@
     }
   </div>
 
+  <p-card header="Data Confidence" styleClass="confidence">
+    <div class="confidence-head">
+      <div>
+        <div class="kpi-label">System overall</div>
+        <div class="confidence-score-row">
+          <span class="kpi-value">{{ confidence.displayScore }}</span>
+          <span class="confidence-score-suffix">/ 100 display</span>
+          <p-tag
+            [severity]="confidenceSeverity(confidence.level)"
+            [value]="confidence.level"
+          />
+        </div>
+        <p class="confidence-meaning">{{ confidence.meaning }}</p>
+      </div>
+      <div class="confidence-facts">
+        <div>
+          <div class="kpi-label">Comparable months</div>
+          <div class="balance-stat">{{ confidence.monthsComparable }}</div>
+        </div>
+        <div>
+          <div class="kpi-label">Meter coverage</div>
+          <div class="balance-stat">{{ confidence.coveragePct }}%</div>
+        </div>
+        <div>
+          <div class="kpi-label">Seasonality</div>
+          <div class="kpi-hint">{{ confidence.seasonality }}</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="confidence-guidance">{{ confidence.guidance }}</p>
+
+    <div class="signal-list">
+      @for (signal of confidence.signals; track signal.name) {
+        <div class="signal-row">
+          <span class="signal-name">{{ signal.name }}</span>
+          <p-tag
+            [severity]="signal.mode === 'Watch' ? 'secondary' : 'warn'"
+            [value]="signal.mode"
+          />
+          @if (signal.level !== '—') {
+            <span class="muted inline">{{ signal.level }} history</span>
+          } @else {
+            <span class="muted inline">Hardware / diag — not a thin-model guess</span>
+          }
+        </div>
+      }
+    </div>
+    <p class="muted">
+      Demo stub — Confidence calculator wires in ticket H3; card polish in H4. This is not a leak
+      detector accuracy score.
+    </p>
+  </p-card>
+
   <p-card header="Water balance — produced vs billed" styleClass="balance">
     <p class="balance-period">{{ balance.periodLabel }}</p>
     <div class="balance-stats">
@@ -44,19 +98,27 @@
 
   <p-card header="Priority alert feed" styleClass="feed">
     <div class="alert-row">
-      <p-tag severity="warn" value="Loss" />
+      <p-tag severity="secondary" value="Watch" />
       <div>
-        <strong>System water balance</strong> — unaccounted volume ~8.4% this period. Check for
-        distribution leaks or meter timing gaps.
-        <div class="muted">Water-balance alerts land in ticket G4.</div>
+        <strong>System water balance</strong> — unaccounted volume ~8.4% this period. With Thin
+        Confidence, treat as a watch item (timing gaps or early baseline), not a dig-now alarm.
+        <div class="muted">Water-balance alerts + Confidence gating: G4 / H6.</div>
       </div>
     </div>
     <div class="alert-row">
-      <p-tag severity="danger" value="High" />
+      <p-tag severity="secondary" value="Watch" />
       <div>
-        <strong>Meter M-1042</strong> · 112 N Main St Wiley CO — usage ~3× typical for this route.
-        Current occupant: A Rivera (name may change; address stays with the meter).
-        <div class="muted">AI explanations wire up in ticket C6.</div>
+        <strong>Meter M-1042</strong> · 112 N Main St Wiley CO — usage ~3× peers this cycle. Only
+        ~2 months of history — Watch, not Actionable yet.
+        <div class="muted">AI explanations + Confidence coaching: C6 / H7.</div>
+      </div>
+    </div>
+    <div class="alert-row">
+      <p-tag severity="danger" value="Actionable" />
+      <div>
+        <strong>Meter M-1045</strong> · stuck / non-registering (0 across cycles). Deterministic
+        hardware signal — Actionable even while statistical Confidence is Thin.
+        <div class="muted">Alert engine v1: C1.</div>
       </div>
     </div>
   </p-card>

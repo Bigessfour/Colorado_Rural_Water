@@ -30,3 +30,78 @@
   color: #4a6368;
   font-family: 'Source Sans 3', system-ui, sans-serif;
 }
+
+.map-card {
+  margin-top: 1rem;
+}
+
+.map-lede {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #4a6368;
+  margin: 0 0 1rem;
+}
+
+.map-grid {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.map-row {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #0f3d42;
+}
+
+.map-row select,
+.token textarea {
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(15, 61, 66, 0.2);
+  border-radius: 4px;
+  background: #fff;
+  color: #0f3d42;
+}
+
+.preview {
+  overflow-x: auto;
+  margin: 1rem 0;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-size: 0.85rem;
+}
+
+.preview-title {
+  font-weight: 600;
+  color: #0f3d42;
+  margin-bottom: 0.35rem;
+}
+
+.preview table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.preview th,
+.preview td {
+  border: 1px solid rgba(15, 61, 66, 0.12);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.token {
+  display: grid;
+  gap: 0.35rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #0f3d42;
+  margin-bottom: 1rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}

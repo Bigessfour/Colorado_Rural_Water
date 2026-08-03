@@ -4,6 +4,9 @@ import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TagModule } from 'primeng/tag';
 
+/** Demo Confidence stub — wires to H3/H4; not a leak-accuracy %. */
+export type ConfidenceLevel = 'Thin' | 'Building' | 'Solid' | 'Strong';
+
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
@@ -14,10 +17,31 @@ import { TagModule } from 'primeng/tag';
 export class DashboardPageComponent {
   readonly kpis = [
     { label: 'Meters monitored', value: '—', hint: 'After first upload' },
-    { label: 'Open alerts', value: '2', hint: 'Demo stub' },
+    { label: 'Open alerts', value: '2', hint: '1 Watch · 1 Actionable (demo)' },
     { label: 'Water balance', value: '8.4%', hint: 'Unaccounted (demo)' },
     { label: 'Meter health', value: '—', hint: 'Stuck / non-registering' },
   ];
+
+  /**
+   * Demo: thin history (≈2 months). Score = history/coverage heuristic,
+   * not “probability of a leak.” Spec §7b / ticket H4.
+   */
+  readonly confidence = {
+    level: 'Thin' as ConfidenceLevel,
+    displayScore: 28,
+    monthsComparable: 2,
+    coveragePct: 62,
+    seasonality: 'Incomplete (no winter cycle yet)',
+    meaning:
+      'Confidence measures how much comparable history and meter coverage we have — not how sure we are of a leak.',
+    guidance:
+      'About 4 more similar monthly cycles to reach Solid (proposed >90% display default). Statistical high-usage flags stay Watch until then.',
+    signals: [
+      { name: 'Customer usage outliers', level: 'Thin' as ConfidenceLevel, mode: 'Watch' },
+      { name: 'Water balance', level: 'Thin' as ConfidenceLevel, mode: 'Watch' },
+      { name: 'Stuck / diagnostic meters', level: '—', mode: 'Actionable' },
+    ],
+  };
 
   /** Demo stub — wires to G3/G5 once source + customer readings exist. */
   readonly balance = {
@@ -72,4 +96,17 @@ export class DashboardPageComponent {
       },
     },
   };
+
+  confidenceSeverity(level: ConfidenceLevel): 'secondary' | 'info' | 'success' | 'warn' {
+    switch (level) {
+      case 'Thin':
+        return 'secondary';
+      case 'Building':
+        return 'warn';
+      case 'Solid':
+        return 'info';
+      case 'Strong':
+        return 'success';
+    }
+  }
 }

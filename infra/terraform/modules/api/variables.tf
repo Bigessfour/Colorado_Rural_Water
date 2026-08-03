@@ -18,10 +18,26 @@ variable "cognito_user_pool_client_id" {
 
 variable "lambda_zip_path" {
   type        = string
-  description = "Path to zip containing health/me Lambda bundles"
+  description = "Path to zip containing Lambda handler bundles"
 }
 
 variable "cors_allow_origins" {
   type    = list(string)
   default = ["http://localhost:4200"]
+}
+
+variable "uploads_bucket_name" {
+  type = string
+}
+
+variable "uploads_bucket_arn" {
+  type = string
+}
+
+variable "data_table_name" {
+  type = string
+}
+
+variable "data_table_arn" {
+  type = string
 }

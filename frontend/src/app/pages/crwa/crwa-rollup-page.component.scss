@@ -1,0 +1,36 @@
+.page h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #0f3d42;
+  margin: 0 0 0.35rem;
+}
+
+.lede {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #4a6368;
+  max-width: 42rem;
+  margin: 0 0 1.5rem;
+}
+
+:host ::ng-deep .intro,
+:host ::ng-deep .table-card {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 61, 66, 0.08);
+  box-shadow: none;
+  margin-bottom: 1.25rem;
+}
+
+:host ::ng-deep .intro p {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #4a6368;
+  line-height: 1.45;
+  margin: 0 0 0.65rem;
+  max-width: 44rem;
+}
+
+.muted {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: #6b8287;
+}

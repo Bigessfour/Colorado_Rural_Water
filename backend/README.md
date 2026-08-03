@@ -6,23 +6,32 @@ TypeScript Lambda handlers for API, ingestion, alerts, and AI.
 
 ```
 src/
-  shared/           tenant context, auth claims, responses
+  shared/           auth, CSV parse, ingest commit, Dynamo/memory stores
   handlers/
     health.ts       GET /health
-    me.ts           GET /me (authenticated)
-    upload-url.ts   POST /uploads/presign (stub)
-    ingest.ts       S3 event / process upload (stub)
+    me.ts           GET /me (JWT)
+    upload-url.ts   POST /uploads/presign (JWT) → S3 PutObject URL
+    ingest.ts       POST /ingest (JWT) → parse CSV → DynamoDB
+    s3-ingest.ts    S3 ObjectCreated under tenants/{tenantId}/uploads/
     alerts.ts       list / acknowledge alerts (stub)
     agent.ts        conversational AI (stub)
-  services/         business logic stubs
 ```
 
-Isolation: every handler must resolve `tenant_id` from the JWT and never accept a client-supplied tenant override for data access.
+Isolation: every handler resolves `tenant_id` from the JWT (or S3 key prefix) and never trusts a client-supplied tenant override for authorization.
 
 ## Scripts
 
 ```bash
 npm install
-npm run build
 npm test
+npm run typecheck
+# from repo root:
+npm run backend:bundle   # → infra/terraform/build/api-handlers.zip
 ```
+
+## Env (Lambda)
+
+| Variable        | Purpose               |
+| --------------- | --------------------- |
+| `UPLOAD_BUCKET` | Tenant uploads bucket |
+| `DATA_TABLE`    | DynamoDB single table |

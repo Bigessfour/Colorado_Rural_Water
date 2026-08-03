@@ -2,15 +2,17 @@
   <h1>Alerts</h1>
   <p class="lede">
     Prioritized issues that help catch leaks early and protect customers from surprise high bills.
+    Watch means thin history — look when you can; Actionable means worth a field check now.
   </p>
 
   <p-card styleClass="table-card">
-    <p-table [value]="alerts" [tableStyle]="{ 'min-width': '40rem' }">
+    <p-table [value]="alerts" [tableStyle]="{ 'min-width': '44rem' }">
       <ng-template pTemplate="header">
         <tr>
-          <th>Priority</th>
+          <th>Mode</th>
           <th>Meter</th>
           <th>Summary</th>
+          <th>Confidence</th>
           <th>Status</th>
           <th></th>
         </tr>
@@ -19,12 +21,13 @@
         <tr>
           <td>
             <p-tag
-              [severity]="alert.priority === 'high' ? 'danger' : 'warn'"
-              [value]="alert.priority"
+              [severity]="alert.mode === 'Actionable' ? 'danger' : 'secondary'"
+              [value]="alert.mode"
             />
           </td>
           <td>{{ alert.meterId }}</td>
           <td>{{ alert.summary }}</td>
+          <td>{{ alert.confidenceNote }}</td>
           <td>{{ alert.status }}</td>
           <td>
             @if (alert.status === 'open') {

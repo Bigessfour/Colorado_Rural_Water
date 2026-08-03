@@ -3,6 +3,7 @@ import { ShellComponent } from './layout/shell.component';
 import { DashboardPageComponent } from './pages/dashboard/dashboard-page.component';
 import { UploadPageComponent } from './pages/upload/upload-page.component';
 import { AlertsPageComponent } from './pages/alerts/alerts-page.component';
+import { CrwaRollupPageComponent } from './pages/crwa/crwa-rollup-page.component';
 
 export const routes: Routes = [
   {
@@ -13,6 +14,7 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardPageComponent },
       { path: 'upload', component: UploadPageComponent },
       { path: 'alerts', component: AlertsPageComponent },
+      { path: 'crwa', component: CrwaRollupPageComponent },
     ],
   },
 ];

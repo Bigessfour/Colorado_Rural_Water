@@ -5,3 +5,4 @@ environment    = "dev"
 project_name   = "water-saver"
 enable_cognito = true
 enable_api     = true
+enable_storage = true

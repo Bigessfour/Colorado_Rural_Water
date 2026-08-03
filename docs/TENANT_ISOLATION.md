@@ -17,12 +17,17 @@ CRWA admins operate with an explicit selected-tenant context for any tenant-scop
 
 ## Storage conventions
 
-| Store                      | Keying                                                                    |
-| -------------------------- | ------------------------------------------------------------------------- |
-| S3 uploads                 | `tenants/{tenant_id}/uploads/...`                                         |
-| Readings / meters / alerts | Partition or row attribute includes `tenant_id`; all queries filter on it |
-| Meter locations            | Unique per tenant on `meter_id` (+ service address as display/location); occupant name is mutable attribute |
-| Conversation history       | Partitioned by `tenant_id` + user                                         |
+| Store                 | Keying / design                                                                               |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| **S3 uploads**        | Bucket per env; keys `tenants/{tenant_id}/uploads/...` only                                   |
+| **DynamoDB (chosen)** | Single-table `water-saver-{env}-data`; `pk=TENANT#{tenantId}`, `sk=LOC#…` / `RDG#…` / `MAP#…` |
+| Meter locations       | `sk=LOC#{meterId}`; **service address stable**; occupant name mutable                         |
+| Readings              | `sk=RDG#{meterId}#{isoTimestamp}`; denormalized address for alert visibility                  |
+| Column mappings       | `sk=MAP#customer_readings` remembered per tenant                                              |
+| Conversation history  | Partitioned by `tenant_id` + user (Epic E)                                                    |
+
+Aurora was considered for A4; DynamoDB is the MVP default for serverless cost and tenant keying. Revisit if reporting needs heavy SQL.
+
 
 ## API enforcement
 
