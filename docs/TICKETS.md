@@ -6,6 +6,8 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 **Scope authority:** [docs/SPEC.md](SPEC.md) **§0** (Kelly vs Pilot vs vNext). Prefer §0 over older “everything is MVP” wording.
 
+**Engineering closeout (2026-08-03):** [CLOSEOUT.md](CLOSEOUT.md) — shippable Kelly + finishable Pilot on `main`. Remaining open work is **ops** (Kelly invite / F2 smoke), **H8** (blocked on Kelly submit), **E2/E3** polish, and **I3+** payment (external).
+
 ---
 
 ## Kelly critical path (closed)

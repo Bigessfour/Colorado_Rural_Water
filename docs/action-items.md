@@ -22,10 +22,11 @@
 
 **Without proof is not “missing feature.”** Remaining gaps are Wave 3 deferred AWS wrappers + non-Kelly pages — see below.
 
-**Proof baselines (2026-08-03):**
-- Backend: `cd backend && npm test` → **129 pass** (includes F5 review + upload-url + s3-ingest event path)
-- Frontend: `cd frontend && npm test -- --watch=false` → **19 pass** (Auth/Review services, routes, Kelly page smokes)
-- Live F5: `POST/GET/PUT/submit /review/sessions*` against `14jxov7h72` → `emailSent: true`, Dynamo `TENANT#_review` completed; Cognito `kelly.review@watersaver.local`
+**Proof baselines (2026-08-03 closeout):**
+- Backend: `cd backend && npm test` → **133 pass**
+- Frontend: Vitest smokes + chart/meter-usage specs (~38)
+- Live F5: `POST/GET/PUT/submit /review/sessions*` → `emailSent: true`; Cognito `kelly.review@watersaver.local`
+- Engineering closeout: [CLOSEOUT.md](./CLOSEOUT.md) — code Done; ops = Kelly invite + F2 smoke
 
 ---
 
@@ -47,9 +48,9 @@
 - [x] Wave 2 Kelly page smokes (Review / Dashboard / Upload / Alerts)
 - [x] Handler-level proof for `POST /uploads/presign` (`upload-url.test.ts`)
 - [x] F5 deploy (SES vars, review Lambda, Cognito Kelly user, live API smoke + SES)
-- [ ] Full live Kelly F2 smoke end-to-end (product walkthrough — separate from F5 API smoke)
-- [ ] Admin invite happy path against live Cognito (manual)
-- [ ] Send Kelly the `/review` invite (ops; not code)
+- [ ] Full live Kelly F2 smoke end-to-end (product walkthrough — separate from F5 API smoke) — **ops**
+- [ ] Admin invite happy path against live Cognito (manual) — **ops**
+- [ ] Send Kelly the `/review` invite (ops; not code) — **next human step**
 
 ---
 
