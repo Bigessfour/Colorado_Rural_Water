@@ -1,5 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
+  DeleteCommand,
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
@@ -7,6 +8,9 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import type { MeterLocation, MeterReading } from './meter-location.js';
 import type { MeterStore } from './ingest.js';
+import type { SourceStore } from './source-store.js';
+import type { SourceType, WaterSource } from './water-source.js';
+import { isSourceType } from './water-source.js';
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}), {
   marshallOptions: { removeUndefinedValues: true },
@@ -28,7 +32,11 @@ function mapSk(kind: string): string {
   return `MAP#${kind}`;
 }
 
-export class DynamoMeterStore implements MeterStore {
+function srcSk(sourceId: string): string {
+  return `SRC#${sourceId}`;
+}
+
+export class DynamoMeterStore implements MeterStore, SourceStore {
   constructor(private readonly tableName: string) {}
 
   async getLocation(tenantId: string, meterId: string): Promise<MeterLocation | null> {
@@ -146,6 +154,67 @@ export class DynamoMeterStore implements MeterStore {
     );
     return (res.Items ?? []).map(itemToReading);
   }
+
+  async listSources(tenantId: string): Promise<WaterSource[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':sk': 'SRC#',
+        },
+      }),
+    );
+    return (res.Items ?? [])
+      .map(itemToSource)
+      .filter((s): s is WaterSource => s !== null)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getSource(tenantId: string, sourceId: string): Promise<WaterSource | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: srcSk(sourceId) },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToSource(res.Item);
+  }
+
+  async putSource(source: WaterSource): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(source.tenantId),
+          sk: srcSk(source.sourceId),
+          entityType: 'water_source',
+          tenantId: source.tenantId,
+          sourceId: source.sourceId,
+          name: source.name,
+          type: source.type,
+          unit: source.unit,
+          notes: source.notes,
+          createdAt: source.createdAt,
+          updatedAt: source.updatedAt,
+        },
+      }),
+    );
+  }
+
+  async deleteSource(tenantId: string, sourceId: string): Promise<boolean> {
+    const existing = await this.getSource(tenantId, sourceId);
+    if (!existing) return false;
+    await client.send(
+      new DeleteCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: srcSk(sourceId) },
+      }),
+    );
+    return true;
+  }
 }
 
 function itemToLocation(item: Record<string, unknown>): MeterLocation {
@@ -176,7 +245,30 @@ function itemToReading(item: Record<string, unknown>): MeterReading {
   };
 }
 
+function itemToSource(item: Record<string, unknown>): WaterSource | null {
+  const type = item.type;
+  if (!isSourceType(type)) return null;
+  return {
+    tenantId: String(item.tenantId),
+    sourceId: String(item.sourceId),
+    name: String(item.name),
+    type: type as SourceType,
+    unit: String(item.unit ?? 'gal'),
+    notes: (item.notes as string | null) ?? null,
+    createdAt: String(item.createdAt ?? new Date().toISOString()),
+    updatedAt: String(item.updatedAt ?? new Date().toISOString()),
+  };
+}
+
 export function createMeterStoreFromEnv(): MeterStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error('DATA_TABLE env is not configured');
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createSourceStoreFromEnv(): SourceStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
     throw new Error('DATA_TABLE env is not configured');

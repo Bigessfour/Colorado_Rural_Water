@@ -47,8 +47,14 @@ data "aws_iam_policy_document" "lambda_data" {
   }
 
   statement {
-    sid       = "DynamoDataAccess"
-    actions   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query", "dynamodb:UpdateItem"]
+    sid = "DynamoDataAccess"
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:Query",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+    ]
     resources = [var.data_table_arn]
 
     # Require partition keys under TENANT#… (app isolation still required for cross-tenant).
@@ -148,13 +154,27 @@ resource "aws_lambda_function" "alerts" {
   }
 }
 
+resource "aws_lambda_function" "sources" {
+  function_name    = "${local.name_prefix}-sources"
+  role             = aws_iam_role.lambda.arn
+  handler          = "sources.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 20
+  memory_size      = 256
+  environment {
+    variables = local.lambda_env
+  }
+}
+
 resource "aws_apigatewayv2_api" "http" {
   name          = "${local.name_prefix}-http"
   protocol_type = "HTTP"
 
   cors_configuration {
     allow_headers = ["authorization", "content-type"]
-    allow_methods = ["GET", "OPTIONS", "POST", "PUT"]
+    allow_methods = ["DELETE", "GET", "OPTIONS", "POST", "PUT"]
     allow_origins = var.cors_allow_origins
     max_age       = 300
   }
@@ -207,6 +227,13 @@ resource "aws_apigatewayv2_integration" "alerts" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "sources" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.sources.invoke_arn
+  payload_format_version = "2.0"
+}
+
 resource "aws_apigatewayv2_route" "health" {
   api_id    = aws_apigatewayv2_api.http.id
   route_key = "GET /health"
@@ -253,6 +280,38 @@ resource "aws_apigatewayv2_route" "alerts_post" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "sources_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /sources"
+  target             = "integrations/${aws_apigatewayv2_integration.sources.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "sources_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /sources"
+  target             = "integrations/${aws_apigatewayv2_integration.sources.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "sources_put" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "PUT /sources/{sourceId}"
+  target             = "integrations/${aws_apigatewayv2_integration.sources.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "sources_delete" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "DELETE /sources/{sourceId}"
+  target             = "integrations/${aws_apigatewayv2_integration.sources.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
@@ -295,6 +354,14 @@ resource "aws_lambda_permission" "alerts_apigw" {
   statement_id  = "AllowAPIGatewayInvokeAlerts"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.alerts.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "sources_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeSources"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.sources.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }

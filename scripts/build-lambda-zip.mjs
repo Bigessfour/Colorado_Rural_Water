@@ -20,6 +20,7 @@ const entryPoints = {
   ingest: join(backend, 'src/handlers/ingest.ts'),
   's3-ingest': join(backend, 'src/handlers/s3-ingest.ts'),
   alerts: join(backend, 'src/handlers/alerts.ts'),
+  sources: join(backend, 'src/handlers/sources.ts'),
   agent: join(backend, 'src/handlers/agent.ts'),
 };
 

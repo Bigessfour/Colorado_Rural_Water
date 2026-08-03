@@ -13,7 +13,7 @@ This file (`AGENTS.md`) and `agent.md` are equivalent. Cursor rules under `.curs
 1. **RAG first** — Call MCP `crwa-rag` → `search_codebase` with a query that captures the full task context (and `rag_status` if the index looks stale). Prefer RAG over broad speculative greps.
 2. **Package MCP docs** — Before changing Angular, PrimeNG, Terraform, or AWS configuration/APIs, query the matching package MCP for **current** docs (do not rely on training memory alone):
    - Angular → `angular-cli` MCP
-   - PrimeNG → `primeng` MCP
+   - PrimeNG / PrimeUI → `primeng` MCP (`@primeng/mcp`) — **mandatory** for every component/directive/theme/provider change (see §3)
    - Terraform / providers → `terraform` MCP (HashiCorp registry)
    - AWS services / IAM / Bedrock / Cognito → `aws` MCP (and AWS knowledge tools when relevant)
 3. Only then implement.
@@ -40,6 +40,14 @@ Skipping RAG start/end or package-MCP doc checks is a process failure for this r
 - PrimeNG **22** with `@primeuix/themes` (Aura or project preset).
 - Rural-operator UX: calm, clear, low stress — see Spec §1.
 
+### PrimeNG / PrimeUI — MCP required (NON-NEGOTIABLE)
+
+When implementing or changing any PrimeNG/PrimeUI element (component, directive, module import, `providePrimeNG`, theme/preset, or Pro candidate):
+
+1. Query MCP **`primeng`** first — use `search` / `get_component` / `get_example` / `get_guide` / `get_setup` / `validate_usage` as appropriate for the change.
+2. Apply the MCP-suggested configuration **fully** (imports, providers, props, theming, templates) — do **not** invent API or setup from memory.
+3. There is no separate “PrimeUI Pro MCP”; Pro and core docs both come from the same `primeng` MCP.
+
 ## 4. Infra conventions
 
 - Terraform under `infra/terraform`. No secrets in git (`.tfvars`, `.env`, state).
@@ -51,7 +59,7 @@ Skipping RAG start/end or package-MCP doc checks is a process failure for this r
 | ------------- | ----------------------------------------------------------------------- |
 | `crwa-rag`    | Project codebase RAG (`search_codebase`, `rag_status`, `refresh_index`) |
 | `angular-cli` | Latest Angular CLI / framework guidance                                 |
-| `primeng`     | Latest PrimeNG configuration docs                                       |
+| `primeng`     | PrimeNG/PrimeUI docs via `@primeng/mcp` (`search`, `get_component`, …)  |
 | `terraform`   | Terraform Registry / provider docs                                      |
 | `aws`         | AWS MCP (global) — live AWS + service guidance                          |
 

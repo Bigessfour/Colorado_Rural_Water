@@ -27,3 +27,8 @@ output "alerts_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/alerts"
   description = "GET/POST /alerts (JWT)"
 }
+
+output "sources_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/sources"
+  description = "GET/POST /sources and PUT/DELETE /sources/{sourceId} (JWT)"
+}

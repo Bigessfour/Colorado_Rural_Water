@@ -42,6 +42,11 @@ output "api_ingest_url" {
   description = "POST /ingest (JWT)"
 }
 
+output "api_sources_url" {
+  value       = try(module.api[0].sources_url, null)
+  description = "GET/POST /sources (JWT)"
+}
+
 output "uploads_bucket" {
   value       = try(module.storage[0].uploads_bucket_name, null)
   description = "S3 uploads bucket"

@@ -5,6 +5,7 @@ import { UploadPageComponent } from './pages/upload/upload-page.component';
 import { AlertsPageComponent } from './pages/alerts/alerts-page.component';
 import { CrwaRollupPageComponent } from './pages/crwa/crwa-rollup-page.component';
 import { LoginPageComponent } from './pages/login/login-page.component';
+import { SourcesPageComponent } from './pages/sources/sources-page.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -15,6 +16,7 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardPageComponent },
       { path: 'upload', component: UploadPageComponent },
+      { path: 'sources', component: SourcesPageComponent },
       { path: 'alerts', component: AlertsPageComponent },
       { path: 'crwa', component: CrwaRollupPageComponent },
     ],

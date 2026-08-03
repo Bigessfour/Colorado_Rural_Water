@@ -14,6 +14,14 @@ Full text: [`AGENTS.md`](../../AGENTS.md) / [`agent.md`](../../agent.md).
    - `angular-cli` · `primeng` · `terraform` · `aws`
 3. Do not invent package configuration from memory when an MCP exists.
 
+## PrimeNG / PrimeUI — MCP required (NON-NEGOTIABLE)
+
+When implementing or changing any PrimeNG/PrimeUI element (component, directive, import, `providePrimeNG`, theme/preset):
+
+1. Query MCP **`primeng`** (`@primeng/mcp`) first — `search` / `get_component` / `get_example` / `get_guide` / `get_setup` / `validate_usage` as appropriate.
+2. Use the MCP-suggested configuration **fully** (imports, providers, props, theming) — do not invent from memory.
+3. No separate PrimeUI Pro MCP exists; use the same `primeng` server.
+
 ## Every turn — end
 
 4. MCP **`crwa-rag`** → **`refresh_index`** (incremental). CLI: `npm run rag:index:incremental`.
