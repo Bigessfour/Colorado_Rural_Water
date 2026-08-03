@@ -1,20 +1,29 @@
 /**
  * Water balance calculator — Spec §7a / ticket G3.
  * In (source production) − Out (customer billed usage) = unaccounted.
+ *
+ * Period keying (MVP): calendar UTC YYYY-MM from reading timestamps.
+ * Per Spec §7a, periods should eventually align with each utility’s
+ * billing/reading cycle (configurable; G4/G5). Do not treat YYYY-MM as
+ * the final product model — it is the pilot default only.
  */
 
 import type { MeterReading } from './meter-location.js';
 import type { SourceReading } from './source-reading.js';
 
 export interface WaterBalancePeriod {
-  /** YYYY-MM */
+  /** YYYY-MM (UTC calendar month — pilot default; see file header). */
   period: string;
   periodLabel: string;
   producedGal: number;
   billedGal: number;
   unaccountedGal: number;
-  /** null when In is 0 (cannot divide). */
+  /** null when In is 0 (cannot divide) or status is insufficient. */
   unaccountedPct: number | null;
+  /**
+   * insufficient = missing In and/or Out for the period (one-sided or empty).
+   * Never surface loss/gain from thin one-sided data — operators must not dig now.
+   */
   status: 'loss' | 'gain' | 'ok' | 'insufficient';
   sourceReadingCount: number;
   meterDeltaCount: number;
@@ -54,7 +63,13 @@ export function periodLabel(period: string): string {
   return `${monthNames[idx] ?? m[2]} ${m[1]}`;
 }
 
-/** Sum source production for a YYYY-MM period (period volumes + cumulative deltas). */
+/**
+ * Sum source production for a YYYY-MM period (period volumes + cumulative deltas).
+ *
+ * Period-mode: one contribution per sourceId — latest timestamp wins.
+ * Re-ingest of the same (sourceId, period) replaces rather than sums duplicates.
+ * Cumulative-mode: deltas between successive cumulative readings (unchanged).
+ */
 export function sumSourceProduction(readings: SourceReading[], period: string): {
   gallons: number;
   count: number;
@@ -70,12 +85,22 @@ export function sumSourceProduction(readings: SourceReading[], period: string): 
     bySource.set(r.sourceId, list);
   }
 
+  // Period volumes: latest reading per source in this calendar month.
+  const periodLatest = new Map<string, SourceReading>();
   for (const r of inPeriod) {
-    if (r.volumeMode === 'period') {
-      gallons += r.value;
-      count += 1;
-      continue;
+    if (r.volumeMode !== 'period') continue;
+    const prev = periodLatest.get(r.sourceId);
+    if (!prev || r.timestamp >= prev.timestamp) {
+      periodLatest.set(r.sourceId, r);
     }
+  }
+  for (const r of periodLatest.values()) {
+    gallons += r.value;
+    count += 1;
+  }
+
+  for (const r of inPeriod) {
+    if (r.volumeMode !== 'cumulative') continue;
     // Cumulative: usage for this reading = delta from previous cumulative for same source.
     const series = (bySource.get(r.sourceId) ?? [])
       .filter((x) => x.volumeMode === 'cumulative')
@@ -131,11 +156,16 @@ export function calculatePeriodBalance(
   const produced = sumSourceProduction(sourceReadings, period);
   const billed = sumCustomerUsage(meterReadings, period);
   const unaccountedGal = produced.gallons - billed.gallons;
+
+  // One-sided or empty: never label as loss/gain (would look like ~±100% dig-now).
+  const thin = produced.count === 0 || billed.deltaCount === 0;
   const unaccountedPct =
-    produced.gallons > 0 ? round1((unaccountedGal / produced.gallons) * 100) : null;
+    thin || produced.gallons <= 0
+      ? null
+      : round1((unaccountedGal / produced.gallons) * 100);
 
   let status: WaterBalancePeriod['status'] = 'insufficient';
-  if (produced.count === 0 && billed.deltaCount === 0) {
+  if (thin) {
     status = 'insufficient';
   } else if (unaccountedGal > 0) {
     status = 'loss';

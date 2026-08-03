@@ -111,4 +111,48 @@ describe('water balance calculator', () => {
     assert.ok(result.trend.length >= 2);
     assert.equal(sumCustomerUsage(meters, '2026-06').gallons, 40);
   });
+
+  it('treats one-sided data as insufficient (not loss/gain)', () => {
+    const sourcesOnly = [
+      src({ sourceId: 'w1', timestamp: '2026-07-31T00:00:00.000Z', value: 500_000 }),
+    ];
+    const sourcesOnlyBal = calculatePeriodBalance(sourcesOnly, [], '2026-07');
+    assert.equal(sourcesOnlyBal.sourceReadingCount, 1);
+    assert.equal(sourcesOnlyBal.meterDeltaCount, 0);
+    assert.equal(sourcesOnlyBal.status, 'insufficient');
+    assert.equal(sourcesOnlyBal.unaccountedPct, null);
+
+    const metersOnly = [
+      meter('1', '2026-06-01T00:00:00.000Z', 0),
+      meter('1', '2026-07-01T00:00:00.000Z', 10_000),
+    ];
+    const metersOnlyBal = calculatePeriodBalance([], metersOnly, '2026-07');
+    assert.equal(metersOnlyBal.sourceReadingCount, 0);
+    assert.equal(metersOnlyBal.meterDeltaCount, 1);
+    assert.equal(metersOnlyBal.status, 'insufficient');
+    assert.equal(metersOnlyBal.unaccountedPct, null);
+
+    const empty = calculatePeriodBalance([], [], '2026-07');
+    assert.equal(empty.status, 'insufficient');
+  });
+
+  it('dedupes period-mode re-ingest for same sourceId + period (latest wins)', () => {
+    const sources = [
+      src({ sourceId: 'w1', timestamp: '2026-07-15T00:00:00.000Z', value: 100_000 }),
+      src({ sourceId: 'w1', timestamp: '2026-07-31T00:00:00.000Z', value: 105_000 }),
+      src({ sourceId: 'w2', timestamp: '2026-07-31T00:00:00.000Z', value: 50_000 }),
+    ];
+    const { gallons, count } = sumSourceProduction(sources, '2026-07');
+    assert.equal(gallons, 155_000);
+    assert.equal(count, 2);
+
+    const meters = [
+      meter('1', '2026-06-01T00:00:00.000Z', 0),
+      meter('1', '2026-07-01T00:00:00.000Z', 40_000),
+    ];
+    const bal = calculatePeriodBalance(sources, meters, '2026-07');
+    assert.equal(bal.producedGal, 155_000);
+    assert.equal(bal.billedGal, 40_000);
+    assert.equal(bal.status, 'loss');
+  });
 });

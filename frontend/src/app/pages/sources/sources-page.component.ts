@@ -180,7 +180,7 @@ export class SourcesPageComponent implements OnInit {
   async remove(row: WaterSourceRow): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) return;
-    if (!confirm(`Remove “${row.name}”? Existing source readings stay until cleaned up.`)) {
+    if (!confirm(`Remove “${row.name}”? Its source readings will also be deleted.`)) {
       return;
     }
     this.busy.set(true);

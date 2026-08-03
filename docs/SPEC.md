@@ -196,6 +196,8 @@ Reality is never perfect (flushing, leaks, meter error, theft, timing mismatches
 
 Periods should align with the utility’s typical billing/reading cycle (configurable; default monthly).
 
+**MVP period keying (pilot):** balance uses **UTC calendar months (`YYYY-MM`)** derived from reading timestamps. Configurable reading cycles (e.g. mid-month to mid-month) are deferred to G4/G5 — do not treat calendar-month as the final product model.
+
 ### Operator experience
 
 1. Configure named sources (Well 1, Well 2, …) once per system.

@@ -4,11 +4,15 @@ import { parseSourceReadingsCsv, type SourceColumnMapping } from '../shared/sour
 import { createSourceStoreFromEnv } from '../shared/dynamo-store.js';
 import { commitSourceIngest } from '../shared/source-ingest.js';
 import { normalizeSourceReadingInput } from '../shared/source-reading.js';
+import { normalizeWaterSourceInput } from '../shared/water-source.js';
 import { badRequest, forbidden, ok, unauthorized } from '../shared/http.js';
 
 /**
  * POST /ingest/sources — CSV or single manual source reading (G2).
- * Body: { csvText, mapping?, dryRun? } | { reading: { sourceId|sourceName, timestamp, periodVolume|cumulativeReading, notes? } }
+ * Body:
+ *   { csvText, mapping?, dryRun? } — CSV auto-creates missing named sources
+ *   { reading, dryRun?, createSources? } — manual requires an existing source by default;
+ *     pass createSources=true (+ sourceName) to create on the fly (aligned with CSV)
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
@@ -31,6 +35,7 @@ export const handler: AuthedHandler = async (event) => {
     csvText?: string;
     mapping?: SourceColumnMapping;
     dryRun?: boolean;
+    createSources?: boolean;
     reading?: Record<string, unknown>;
   };
   try {
@@ -43,7 +48,13 @@ export const handler: AuthedHandler = async (event) => {
   const store = createSourceStoreFromEnv();
 
   if (body.reading && typeof body.reading === 'object') {
-    return handleManualReading(store, tenantId, body.reading, dryRun);
+    return handleManualReading(
+      store,
+      tenantId,
+      body.reading,
+      dryRun,
+      Boolean(body.createSources),
+    );
   }
 
   if (!body.csvText?.trim()) {
@@ -88,6 +99,7 @@ async function handleManualReading(
   tenantId: string,
   raw: Record<string, unknown>,
   dryRun: boolean,
+  createSources: boolean,
 ) {
   const sourceId =
     typeof raw.sourceId === 'string' && raw.sourceId.trim() ? raw.sourceId.trim() : null;
@@ -102,9 +114,24 @@ async function handleManualReading(
       all.find((s) => s.sourceId === sourceId) ??
       null;
   }
+  let sourcesCreated = 0;
+  if (!source && createSources && sourceName) {
+    const created = normalizeWaterSourceInput(tenantId, {
+      name: sourceName,
+      type: typeof raw.sourceType === 'string' ? raw.sourceType : 'well',
+      sourceId: sourceId ?? undefined,
+      unit: typeof raw.unit === 'string' ? raw.unit : 'gal',
+      notes: null,
+    });
+    if (!created.ok) return badRequest(created.error);
+    if (!dryRun) await store.putSource(created.source);
+    source = created.source;
+    sourcesCreated = 1;
+  }
   if (!source) {
     return badRequest(
-      'Unknown source — create it on /sources first, or pass a valid sourceId / sourceName.',
+      'Unknown source — create it on /sources first, pass a valid sourceId / sourceName, ' +
+        'or set createSources=true (CSV ingest creates missing sources by default).',
     );
   }
 
@@ -115,9 +142,14 @@ async function handleManualReading(
   if (!normalized.ok) return badRequest(normalized.error);
 
   if (dryRun) {
-    return ok({ dryRun: true, tenantId, reading: normalized.reading });
+    return ok({ dryRun: true, tenantId, reading: normalized.reading, sourcesCreated });
   }
 
   await store.putSourceReading(normalized.reading);
-  return ok({ tenantId, reading: normalized.reading, readingsWritten: 1 });
+  return ok({
+    tenantId,
+    reading: normalized.reading,
+    readingsWritten: 1,
+    sourcesCreated,
+  });
 }

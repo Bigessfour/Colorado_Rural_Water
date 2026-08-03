@@ -68,4 +68,34 @@ describe('MemorySourceStore tenant isolation', () => {
     assert.equal((await store.listSourceReadings('a'))[0]?.value, 100);
     assert.equal((await store.listSourceReadings('b'))[0]?.value, 200);
   });
+
+  it('delete cascades source readings for that source only', async () => {
+    const store = new MemorySourceStore();
+    await store.putSource(src({ tenantId: 'a', sourceId: 'w1', name: 'Well A' }));
+    await store.putSource(src({ tenantId: 'a', sourceId: 'w2', name: 'Well B' }));
+    await store.putSourceReading({
+      tenantId: 'a',
+      sourceId: 'w1',
+      sourceName: 'Well A',
+      timestamp: '2026-07-31T00:00:00.000Z',
+      value: 100,
+      volumeMode: 'period',
+      unit: 'gal',
+      notes: null,
+    });
+    await store.putSourceReading({
+      tenantId: 'a',
+      sourceId: 'w2',
+      sourceName: 'Well B',
+      timestamp: '2026-07-31T00:00:00.000Z',
+      value: 200,
+      volumeMode: 'period',
+      unit: 'gal',
+      notes: null,
+    });
+    assert.equal(await store.deleteSource('a', 'w1'), true);
+    const left = await store.listSourceReadings('a');
+    assert.equal(left.length, 1);
+    assert.equal(left[0].sourceId, 'w2');
+  });
 });

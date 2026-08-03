@@ -147,6 +147,7 @@ export class DynamoMeterStore implements MeterStore, SourceStore {
   }
 
   async listReadings(tenantId: string): Promise<MeterReading[]> {
+    // Full tenant RDG# prefix query — OK for pilot. Harden with GSI / date bounds later.
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
@@ -212,6 +213,18 @@ export class DynamoMeterStore implements MeterStore, SourceStore {
   async deleteSource(tenantId: string, sourceId: string): Promise<boolean> {
     const existing = await this.getSource(tenantId, sourceId);
     if (!existing) return false;
+
+    // Cascade delete SRD# for this source (pilot: avoid orphan readings in balance).
+    const readings = await this.listSourceReadingsForSource(tenantId, sourceId);
+    for (const r of readings) {
+      await client.send(
+        new DeleteCommand({
+          TableName: this.tableName,
+          Key: { pk: pk(tenantId), sk: srdSk(r.sourceId, r.timestamp) },
+        }),
+      );
+    }
+
     await client.send(
       new DeleteCommand({
         TableName: this.tableName,
@@ -222,6 +235,9 @@ export class DynamoMeterStore implements MeterStore, SourceStore {
   }
 
   async putSourceReading(reading: SourceReading): Promise<void> {
+    // Put on SRD#{sourceId}#{timestamp} upserts exact key; period-mode
+    // double-count across different timestamps in the same YYYY-MM is
+    // handled in sumSourceProduction (latest wins per source).
     await client.send(
       new PutCommand({
         TableName: this.tableName,
@@ -242,6 +258,10 @@ export class DynamoMeterStore implements MeterStore, SourceStore {
     );
   }
 
+  /**
+   * Full tenant SRD# prefix scan — fine for pilot scale.
+   * Ticket note: add GSI or tighter SK prefixes before large multi-year tenants.
+   */
   async listSourceReadings(tenantId: string): Promise<SourceReading[]> {
     const res = await client.send(
       new QueryCommand({
@@ -250,6 +270,26 @@ export class DynamoMeterStore implements MeterStore, SourceStore {
         ExpressionAttributeValues: {
           ':pk': pk(tenantId),
           ':sk': 'SRD#',
+        },
+      }),
+    );
+    return (res.Items ?? [])
+      .map(itemToSourceReading)
+      .filter((r): r is SourceReading => r !== null)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  }
+
+  async listSourceReadingsForSource(
+    tenantId: string,
+    sourceId: string,
+  ): Promise<SourceReading[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':sk': `SRD#${sourceId}#`,
         },
       }),
     );

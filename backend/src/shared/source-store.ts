@@ -5,9 +5,12 @@ export interface SourceStore {
   listSources(tenantId: string): Promise<WaterSource[]>;
   getSource(tenantId: string, sourceId: string): Promise<WaterSource | null>;
   putSource(source: WaterSource): Promise<void>;
+  /** Deletes SRC# and cascades SRD# for that sourceId (tenant-scoped). */
   deleteSource(tenantId: string, sourceId: string): Promise<boolean>;
   putSourceReading(reading: SourceReading): Promise<void>;
   listSourceReadings(tenantId: string): Promise<SourceReading[]>;
+  /** Optional: readings for one source (used by cascade / tests). */
+  listSourceReadingsForSource?(tenantId: string, sourceId: string): Promise<SourceReading[]>;
   putMapping(tenantId: string, kind: string, mapping: Record<string, string>): Promise<void>;
   getMapping(tenantId: string, kind: string): Promise<Record<string, string> | null>;
 }
@@ -38,7 +41,13 @@ export class MemorySourceStore implements SourceStore {
   }
 
   async deleteSource(tenantId: string, sourceId: string): Promise<boolean> {
-    return this.sources.delete(this.key(tenantId, sourceId));
+    const existed = this.sources.delete(this.key(tenantId, sourceId));
+    if (!existed) return false;
+    // Cascade: drop SRD# for this source so balance does not keep orphans.
+    this.readings = this.readings.filter(
+      (r) => !(r.tenantId === tenantId && r.sourceId === sourceId),
+    );
+    return true;
   }
 
   async putSourceReading(reading: SourceReading): Promise<void> {
@@ -56,6 +65,15 @@ export class MemorySourceStore implements SourceStore {
   async listSourceReadings(tenantId: string): Promise<SourceReading[]> {
     return this.readings
       .filter((r) => r.tenantId === tenantId)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  }
+
+  async listSourceReadingsForSource(
+    tenantId: string,
+    sourceId: string,
+  ): Promise<SourceReading[]> {
+    return this.readings
+      .filter((r) => r.tenantId === tenantId && r.sourceId === sourceId)
       .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   }
 
