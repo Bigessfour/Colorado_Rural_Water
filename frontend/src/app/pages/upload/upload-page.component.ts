@@ -34,6 +34,7 @@ const FIELD_LABELS: Record<CanonicalField, string> = {
   diagnosticFlags: 'Diagnostic flags',
 };
 
+/** Keep in sync with backend HEADER_ALIASES (csv-parse) for preview guesses. */
 const ALIASES: Record<CanonicalField, string[]> = {
   meterId: ['meter id', 'meterid', 'meter #', 'meter number', 'meter', 'meter no'],
   serviceAddress: [
@@ -42,6 +43,7 @@ const ALIASES: Record<CanonicalField, string[]> = {
     'location',
     'service location',
     'location address',
+    'location / address',
   ],
   occupantName: ['customer', 'customer name', 'occupant', 'name', 'owner'],
   accountNumber: ['account #', 'account', 'account number', 'acct', 'acct #'],
@@ -56,8 +58,19 @@ const ALIASES: Record<CanonicalField, string[]> = {
   ],
   unit: ['unit', 'units'],
   route: ['route', 'route #'],
-  diagnosticFlags: ['diag', 'diagnostic', 'flags', 'flag', 'flag alarm', 'alarm'],
+  diagnosticFlags: [
+    'diag',
+    'diagnostic',
+    'flags',
+    'flag',
+    'flag alarm',
+    'flag / alarm',
+    'alarm',
+  ],
 };
+
+/** Match backend MAX_EXCEL_BYTES — API JSON+base64 cannot carry 20MB workbooks. */
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 interface SheetOption {
   label: string;
@@ -111,6 +124,17 @@ export class UploadPageComponent {
     this.statusMessage = '';
     this.mergeArchive = false;
 
+    if (file.size > MAX_UPLOAD_BYTES) {
+      this.statusMessage = `File is too large (${Math.round(file.size / 1024 / 1024)} MB). Max is 5 MB for Upload — use a smaller export or the S3 drop-zone.`;
+      this.statusSeverity = 'warn';
+      this.headers = [];
+      this.previewRows = [];
+      this.excelBase64 = '';
+      this.csvText = '';
+      this.sheetOptions = [];
+      return;
+    }
+
     if (this.isExcel) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -122,7 +146,11 @@ export class UploadPageComponent {
         }
         const bytes = new Uint8Array(data);
         this.excelBase64 = this.bytesToBase64(bytes);
-        this.workbook = XLSX.read(bytes, { type: 'array', cellDates: true });
+        this.workbook = XLSX.read(bytes, {
+          type: 'array',
+          cellDates: true,
+          sheetRows: 50_000,
+        });
         this.sheetOptions = this.workbook.SheetNames.map((name) => ({
           label: this.sheetLabel(name),
           value: name,

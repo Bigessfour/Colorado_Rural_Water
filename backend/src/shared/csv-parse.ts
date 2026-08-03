@@ -3,6 +3,9 @@
  * Tolerates title rows, awkward headers, blank mid-rows, footers, mixed dates/units.
  */
 
+/** Hard cap for POST /ingest csvText (chars) — keeps Lambda memory bounded. */
+export const MAX_CSV_CHARS = 5 * 1024 * 1024;
+
 export type CanonicalField =
   | 'meterId'
   | 'serviceAddress'
@@ -409,6 +412,17 @@ export function parseCustomerReadingsCsv(
   mappingOverride?: ColumnMapping,
   options?: { requireAddress?: boolean },
 ): IngestParseResult {
+  if (text.length > MAX_CSV_CHARS) {
+    return {
+      mapping: {},
+      mappingGuessed: false,
+      rows: [],
+      errors: [
+        `CSV text is too large (${text.length} chars; max ${MAX_CSV_CHARS}). Split the export or use the S3 drop-zone.`,
+      ],
+      warnings: [],
+    };
+  }
   const parsed = parseCsvText(text);
   if (!parsed.headers.length) {
     return {

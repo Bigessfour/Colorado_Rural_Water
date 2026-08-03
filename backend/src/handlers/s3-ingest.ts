@@ -1,7 +1,8 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { S3Event } from 'aws-lambda';
-import { parseCustomerReadingsCsv } from '../shared/csv-parse.js';
+import { MAX_CSV_CHARS, parseCustomerReadingsCsv } from '../shared/csv-parse.js';
 import {
+  assertExcelBufferWithinLimit,
   isExcelFileName,
   looksLikeExcelBuffer,
   parseCustomerReadingsExcel,
@@ -15,6 +16,9 @@ import { parseSourceReadingsCsv } from '../shared/source-csv-parse.js';
 import { commitSourceIngest } from '../shared/source-ingest.js';
 
 const s3 = new S3Client({});
+
+/** Tenant slug shape — reject path traversal / junk segments from object keys. */
+const TENANT_ID_RE = /^[a-z0-9][a-z0-9-]{1,62}$/;
 
 /**
  * S3 ObjectCreated handler for tenant drop-zone uploads.
@@ -43,6 +47,15 @@ export const handler = async (event: S3Event): Promise<{ ok: true; results: unkn
     const buf = Buffer.from(bytes);
 
     if (isSourceUploadKey(key)) {
+      if (buf.length > MAX_CSV_CHARS) {
+        results.push({
+          key,
+          tenantId,
+          kind: 'source',
+          error: `Source CSV too large (${buf.length} bytes; max ${MAX_CSV_CHARS})`,
+        });
+        continue;
+      }
       const csvText = buf.toString('utf-8');
       const sourceStore = createSourceStoreFromEnv();
       const savedMapping = await sourceStore.getMapping(tenantId, 'source_readings');
@@ -64,9 +77,45 @@ export const handler = async (event: S3Event): Promise<{ ok: true; results: unkn
     const mapping = savedMapping ? (savedMapping as never) : undefined;
 
     const useExcel = isExcelFileName(key) || looksLikeExcelBuffer(buf);
-    const parsed = useExcel
-      ? parseCustomerReadingsExcel(buf, { mergeArchive: true, mapping })
-      : parseCustomerReadingsCsv(buf.toString('utf-8'), mapping);
+    if (useExcel) {
+      try {
+        assertExcelBufferWithinLimit(buf);
+      } catch (err) {
+        results.push({
+          key,
+          tenantId,
+          kind: 'customer',
+          format: 'excel',
+          error: err instanceof Error ? err.message : 'Excel too large',
+        });
+        continue;
+      }
+    } else if (buf.length > MAX_CSV_CHARS) {
+      results.push({
+        key,
+        tenantId,
+        kind: 'customer',
+        format: 'csv',
+        error: `CSV too large (${buf.length} bytes; max ${MAX_CSV_CHARS})`,
+      });
+      continue;
+    }
+
+    let parsed;
+    try {
+      parsed = useExcel
+        ? parseCustomerReadingsExcel(buf, { mergeArchive: true, mapping })
+        : parseCustomerReadingsCsv(buf.toString('utf-8'), mapping);
+    } catch (err) {
+      results.push({
+        key,
+        tenantId,
+        kind: 'customer',
+        format: useExcel ? 'excel' : 'csv',
+        error: err instanceof Error ? err.message : 'Parse failed',
+      });
+      continue;
+    }
 
     if (parsed.errors.length) {
       results.push({
@@ -95,10 +144,16 @@ export const handler = async (event: S3Event): Promise<{ ok: true; results: unkn
   return { ok: true, results };
 };
 
-function tenantFromKey(key: string): string | null {
+export function tenantFromKey(key: string): string | null {
+  // Reject absolute / traversal-ish keys before splitting.
+  if (!key || key.startsWith('/') || key.includes('\\') || key.includes('\0')) return null;
   const parts = key.split('/');
   if (parts[0] !== 'tenants' || parts[2] !== 'uploads' || !parts[1]) return null;
-  return parts[1];
+  const tenantId = parts[1].toLowerCase();
+  if (tenantId.includes('..') || !TENANT_ID_RE.test(tenantId)) return null;
+  // Ensure no empty path segments in the uploads prefix (path traversal via //).
+  if (parts.some((p, i) => i > 0 && p === '')) return null;
+  return tenantId;
 }
 
 /** tenants/{tenantId}/uploads/sources/... */

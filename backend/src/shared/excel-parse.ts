@@ -13,6 +13,14 @@ import {
   type MappedReadingRow,
 } from './csv-parse.js';
 
+/** Decoded workbook hard cap (rural exports are small; guards Lambda / zip bombs). */
+export const MAX_EXCEL_BYTES = 5 * 1024 * 1024;
+/** Max base64 characters for excelBase64 (~4/3 of decoded + padding). */
+export const MAX_EXCEL_BASE64_CHARS = Math.ceil((MAX_EXCEL_BYTES * 4) / 3) + 128;
+export const MAX_EXCEL_SHEETS = 32;
+/** Cap rows SheetJS materializes per sheet (zip-bomb / dense-sheet DoS). */
+export const MAX_EXCEL_SHEET_ROWS = 50_000;
+
 export interface ExcelSheetInfo {
   name: string;
   /** Likely meter data (not clerk notes / free text). */
@@ -134,7 +142,13 @@ export function parseCustomerReadingsExcel(
     if (archiveName && archiveName !== selected) {
       const archive = parseSheet(wb, archiveName, options.mapping);
       mergedSheets.push(archiveName);
-      warnings.push(`Merged archive sheet "${archiveName}" (${archive.rows.length} row(s)).`);
+      if (archive.errors.length) {
+        warnings.push(
+          `Archive sheet "${archiveName}" could not be fully parsed: ${archive.errors.join(' ')}`,
+        );
+      } else {
+        warnings.push(`Merged archive sheet "${archiveName}" (${archive.rows.length} row(s)).`);
+      }
       warnings.push(...archive.warnings.map((w) => `[${archiveName}] ${w}`));
       // Copy addresses from primary onto archive rows so history can commit before locations exist.
       const addressByMeter = new Map<string, string>();
@@ -165,10 +179,20 @@ export function parseCustomerReadingsExcel(
   };
 }
 
-/** Decode base64 (with optional data-URL prefix) to Buffer. */
+/** Decode base64 (with optional data-URL prefix) to Buffer. Rejects oversized payloads early. */
 export function bufferFromBase64(base64: string): Buffer {
   const cleaned = base64.replace(/^data:[^;]+;base64,/, '').trim();
-  return Buffer.from(cleaned, 'base64');
+  if (!cleaned) {
+    throw new Error('excelBase64 is empty');
+  }
+  if (cleaned.length > MAX_EXCEL_BASE64_CHARS) {
+    throw new Error(
+      `Excel payload is too large (max ${MAX_EXCEL_BYTES} bytes decoded / ~${MAX_EXCEL_BASE64_CHARS} base64 chars).`,
+    );
+  }
+  const buf = Buffer.from(cleaned, 'base64');
+  assertExcelBufferWithinLimit(buf);
+  return buf;
 }
 
 /** True if buffer looks like ZIP-based xlsx (PK..) or OLE xls. */
@@ -179,6 +203,17 @@ export function looksLikeExcelBuffer(buf: Buffer): boolean {
   // D0 CF 11 E0 OLE compound / xls
   if (buf[0] === 0xd0 && buf[1] === 0xcf && buf[2] === 0x11 && buf[3] === 0xe0) return true;
   return false;
+}
+
+export function assertExcelBufferWithinLimit(buf: Buffer | Uint8Array): void {
+  if (!buf.length) {
+    throw new Error('Excel file is empty');
+  }
+  if (buf.length > MAX_EXCEL_BYTES) {
+    throw new Error(
+      `Excel file is too large (${buf.length} bytes; max ${MAX_EXCEL_BYTES} bytes). Use a smaller export or S3 drop-zone for bulk history.`,
+    );
+  }
 }
 
 function parseSheet(
@@ -259,5 +294,16 @@ function readWorkbook(buffer: Buffer | ArrayBuffer | Uint8Array): XLSX.WorkBook 
       : buffer instanceof ArrayBuffer
         ? Buffer.from(buffer)
         : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  return XLSX.read(data, { type: 'buffer', cellDates: true });
+  assertExcelBufferWithinLimit(data);
+  const wb = XLSX.read(data, {
+    type: 'buffer',
+    cellDates: true,
+    sheetRows: MAX_EXCEL_SHEET_ROWS,
+  });
+  if (wb.SheetNames.length > MAX_EXCEL_SHEETS) {
+    throw new Error(
+      `Workbook has ${wb.SheetNames.length} sheets (max ${MAX_EXCEL_SHEETS}). Export only meter-data sheets.`,
+    );
+  }
+  return wb;
 }

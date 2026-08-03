@@ -1,7 +1,13 @@
 import type { AuthedHandler } from '../shared/apigw.js';
 import { parseAuthFromClaims, requireTenantId } from '../shared/auth.js';
-import { parseCustomerReadingsCsv, type ColumnMapping } from '../shared/csv-parse.js';
 import {
+  MAX_CSV_CHARS,
+  parseCustomerReadingsCsv,
+  type ColumnMapping,
+} from '../shared/csv-parse.js';
+import {
+  MAX_EXCEL_BASE64_CHARS,
+  MAX_EXCEL_BYTES,
   bufferFromBase64,
   listWorkbookSheets,
   looksLikeExcelBuffer,
@@ -10,6 +16,9 @@ import {
 import { createMeterStoreFromEnv } from '../shared/dynamo-store.js';
 import { commitCustomerIngest } from '../shared/ingest.js';
 import { badRequest, forbidden, ok, unauthorized } from '../shared/http.js';
+
+/** Stay under API Gateway HTTP API ~10 MiB payload; leave headroom for JSON wrappers. */
+const MAX_INGEST_BODY_CHARS = 8 * 1024 * 1024;
 
 /**
  * POST /ingest — parse customer CSV or Excel and write meter locations + readings.
@@ -33,6 +42,12 @@ export const handler: AuthedHandler = async (event) => {
 
   if (!event.body) {
     return badRequest('JSON body with csvText or excelBase64 is required');
+  }
+
+  if (event.body.length > MAX_INGEST_BODY_CHARS) {
+    return badRequest(
+      `Request body is too large (max ${MAX_INGEST_BODY_CHARS} characters). Use a smaller file or the S3 drop-zone.`,
+    );
   }
 
   let csvText: string | undefined;
@@ -62,6 +77,23 @@ export const handler: AuthedHandler = async (event) => {
     dryRun = Boolean(parsed.dryRun);
   } catch {
     return badRequest('Body must be JSON');
+  }
+
+  if (excelBase64 != null && typeof excelBase64 !== 'string') {
+    return badRequest('excelBase64 must be a string');
+  }
+  if (csvText != null && typeof csvText !== 'string') {
+    return badRequest('csvText must be a string');
+  }
+  if (excelBase64 && excelBase64.length > MAX_EXCEL_BASE64_CHARS) {
+    return badRequest(
+      `excelBase64 is too large (max ~${MAX_EXCEL_BYTES} bytes decoded). Use a smaller workbook or S3 upload.`,
+    );
+  }
+  if (csvText && csvText.length > MAX_CSV_CHARS) {
+    return badRequest(
+      `csvText is too large (max ${MAX_CSV_CHARS} characters). Split the export or use S3 upload.`,
+    );
   }
 
   if (listSheets) {

@@ -10,6 +10,9 @@ import {
   normalizeUnit,
 } from './csv-parse.js';
 import {
+  MAX_EXCEL_BYTES,
+  assertExcelBufferWithinLimit,
+  bufferFromBase64,
   classifySheet,
   listWorkbookSheets,
   parseCustomerReadingsExcel,
@@ -180,5 +183,23 @@ describe('Town of Steve Excel fixture', () => {
 
     const r004 = await store.listReadingsForMeter('town-steve', 'STEVE-004');
     assert.ok(r004.some((r) => r.diagnosticFlags.some((f) => /leak/i.test(f))));
+  });
+});
+
+describe('Excel size / DoS guards', () => {
+  it('rejects oversized decoded buffers', () => {
+    const huge = Buffer.alloc(MAX_EXCEL_BYTES + 1, 0x50);
+    assert.throws(() => assertExcelBufferWithinLimit(huge), /too large/i);
+  });
+
+  it('rejects oversized excelBase64 before decode allocates wildly', () => {
+    const oversized = 'A'.repeat(MAX_EXCEL_BYTES * 2);
+    assert.throws(() => bufferFromBase64(oversized), /too large/i);
+  });
+
+  it('accepts the Town of Steve fixture under the limit', () => {
+    const buf = readFileSync(excelPath);
+    assert.ok(buf.length < MAX_EXCEL_BYTES);
+    assert.doesNotThrow(() => assertExcelBufferWithinLimit(buf));
   });
 });
