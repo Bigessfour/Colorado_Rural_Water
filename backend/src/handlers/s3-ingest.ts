@@ -76,7 +76,20 @@ export const handler = async (event: S3Event): Promise<{ ok: true; results: unkn
     const savedMapping = await store.getMapping(tenantId, 'customer_readings');
     const mapping = savedMapping ? (savedMapping as never) : undefined;
 
-    const useExcel = isExcelFileName(key) || looksLikeExcelBuffer(buf);
+    // Extension preferred; magic alone only when OOXML markers present (not any ZIP).
+    const namedExcel = isExcelFileName(key);
+    const magicExcel = looksLikeExcelBuffer(buf);
+    if (namedExcel && !magicExcel) {
+      results.push({
+        key,
+        tenantId,
+        kind: 'customer',
+        format: 'excel',
+        error: 'File extension looks like Excel but content is not a recognizable workbook.',
+      });
+      continue;
+    }
+    const useExcel = namedExcel || magicExcel;
     if (useExcel) {
       try {
         assertExcelBufferWithinLimit(buf);

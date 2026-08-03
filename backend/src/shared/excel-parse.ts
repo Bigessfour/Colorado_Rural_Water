@@ -195,13 +195,24 @@ export function bufferFromBase64(base64: string): Buffer {
   return buf;
 }
 
-/** True if buffer looks like ZIP-based xlsx (PK..) or OLE xls. */
+/**
+ * True if buffer looks like Excel — OLE `.xls`, or ZIP `.xlsx` with OOXML markers.
+ * Plain ZIP magic alone is not enough (avoids treating arbitrary ZIPs as workbooks).
+ */
 export function looksLikeExcelBuffer(buf: Buffer): boolean {
   if (buf.length < 4) return false;
-  // PK\x03\x04 zip / xlsx
-  if (buf[0] === 0x50 && buf[1] === 0x4b) return true;
   // D0 CF 11 E0 OLE compound / xls
-  if (buf[0] === 0xd0 && buf[1] === 0xcf && buf[2] === 0x11 && buf[3] === 0xe0) return true;
+  if (buf[0] === 0xd0 && buf[1] === 0xcf && buf[2] === 0x11 && buf[3] === 0xe0) {
+    return true;
+  }
+  // PK.. zip — require OOXML path markers somewhere in the archive bytes
+  if (buf[0] === 0x50 && buf[1] === 0x4b) {
+    return (
+      buf.includes(Buffer.from('[Content_Types].xml')) ||
+      buf.includes(Buffer.from('xl/workbook')) ||
+      buf.includes(Buffer.from('xl/worksheets'))
+    );
+  }
   return false;
 }
 
@@ -211,7 +222,7 @@ export function assertExcelBufferWithinLimit(buf: Buffer | Uint8Array): void {
   }
   if (buf.length > MAX_EXCEL_BYTES) {
     throw new Error(
-      `Excel file is too large (${buf.length} bytes; max ${MAX_EXCEL_BYTES} bytes). Use a smaller export or S3 drop-zone for bulk history.`,
+      `Excel file is too large (${buf.length} bytes; max ${MAX_EXCEL_BYTES} bytes / 5 MiB). Split the export or wait for bulk history ingest (H2).`,
     );
   }
 }

@@ -15,6 +15,8 @@ Messy, real-world-style meter export fixtures for demos and ingestion tests.
 3. Optionally check “Also merge Older Reads / archive sheet”.
 4. Dry run → Ingest. S3 drop-zone uploads of `.xlsx` auto-parse with archive merge.
 
+**Size limit:** API + S3 Excel/CSV ingest cap is **5 MiB** decoded. Larger multi-year dumps wait on ticket **H2** (bulk history).
+
 ## Meter location rule (fixtures)
 
 - **Service Address** / **Location / Address** is tied to the meter and should not change across rows for the same Meter ID.

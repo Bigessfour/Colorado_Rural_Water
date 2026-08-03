@@ -202,4 +202,13 @@ describe('Excel size / DoS guards', () => {
     assert.ok(buf.length < MAX_EXCEL_BYTES);
     assert.doesNotThrow(() => assertExcelBufferWithinLimit(buf));
   });
+
+  it('does not treat a bare ZIP as Excel without OOXML markers', async () => {
+    const { looksLikeExcelBuffer } = await import('./excel-parse.js');
+    // Minimal local-file ZIP header, no xl/ paths
+    const bareZip = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00]);
+    assert.equal(looksLikeExcelBuffer(bareZip), false);
+    const steve = readFileSync(excelPath);
+    assert.equal(looksLikeExcelBuffer(steve), true);
+  });
 });
