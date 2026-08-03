@@ -28,6 +28,7 @@ CRWA admins operate with an explicit selected-tenant context for any tenant-scop
 | Column mappings       | `sk=MAP#customer_readings` or `MAP#source_readings` remembered per tenant                     |
 | Alert status (C3)     | `sk=ALERT#STATUS#{alertId}`; acknowledged/resolved + `actorUserId` / `actorEmail` / `updatedAt` |
 | Balance thresholds (G4) | `sk=CFG#balance_thresholds`; per-tenant overrides of Spec §7a defaults; audit who/when      |
+| Meter history (C5)    | Read path: `LOC#{meterId}` + `RDG#{meterId}#…` via `GET /meters/{meterId}` (JWT tenant only) |
 | Conversation history  | Partitioned by `tenant_id` + user (Epic E)                                                    |
 | Water balance periods | Pilot: UTC calendar `YYYY-MM` (Spec §7a); configurable cycles later (G4/G5)                    |
 

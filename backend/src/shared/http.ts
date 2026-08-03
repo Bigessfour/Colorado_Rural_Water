@@ -16,6 +16,22 @@ export function ok(body: unknown): APIGatewayProxyResult {
   return json(200, body);
 }
 
+/** CSV download response (ticket C4). */
+export function csv(body: string, filename: string): APIGatewayProxyResult {
+  const safeName = filename.replace(/[^\w.\-]+/g, '_');
+  return {
+    statusCode: 200,
+    headers: {
+      'content-type': 'text/csv; charset=utf-8',
+      'content-disposition': `attachment; filename="${safeName}"`,
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': 'authorization,content-type',
+      'access-control-expose-headers': 'content-disposition',
+    },
+    body,
+  };
+}
+
 export function badRequest(message: string, extra?: Record<string, unknown>): APIGatewayProxyResult {
   return json(400, { error: message, ...extra });
 }

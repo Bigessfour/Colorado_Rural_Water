@@ -8,6 +8,7 @@ import {
 } from '../shared/alert-status.js';
 import { evaluateBalanceAlerts } from '../shared/balance-alerts.js';
 import { mergeBalanceThresholds } from '../shared/balance-thresholds.js';
+import { buildFlaggedMetersCsv } from '../shared/flagged-export.js';
 import { parseAuthFromClaims, requireTenantId } from '../shared/auth.js';
 import {
   createAlertStatusStoreFromEnv,
@@ -15,12 +16,13 @@ import {
   createMeterStoreFromEnv,
   createSourceStoreFromEnv,
 } from '../shared/dynamo-store.js';
-import { badRequest, forbidden, ok, unauthorized } from '../shared/http.js';
+import { badRequest, csv, forbidden, ok, unauthorized } from '../shared/http.js';
 import { calculateWaterBalance } from '../shared/water-balance.js';
 
 /**
  * GET /alerts — evaluate open alerts from tenant readings (+ G4 balance alerts),
  * merged with persisted acknowledge/resolve status (C3).
+ * GET /alerts?format=csv — flagged meters only (C4), includes confidenceNote on Watch rows.
  * POST /alerts — acknowledge / resolve with audit who/when under TENANT#.
  */
 export const handler: AuthedHandler = async (event) => {
@@ -116,10 +118,30 @@ export const handler: AuthedHandler = async (event) => {
       event.queryStringParameters?.includeResolved === '1' ||
       event.queryStringParameters?.includeResolved === 'true';
 
+    const meterAlerts = applyAlertStatuses(alerts, statuses, { includeResolved });
+
+    const format = (event.queryStringParameters?.format ?? '').toLowerCase();
+    if (format === 'csv') {
+      const body = buildFlaggedMetersCsv(
+        meterAlerts.map((a) => ({
+          meterId: a.meterId,
+          serviceAddress: a.serviceAddress,
+          occupantName: a.occupantName,
+          mode: a.mode,
+          type: a.type,
+          summary: a.summary,
+          confidenceNote: a.confidenceNote,
+          status: a.status,
+        })),
+      );
+      const stamp = new Date().toISOString().slice(0, 10);
+      return csv(body, `flagged-meters-${tenantId}-${stamp}.csv`);
+    }
+
     return ok({
       tenantId,
       confidence,
-      alerts: applyAlertStatuses(alerts, statuses, { includeResolved }),
+      alerts: meterAlerts,
       balanceAlerts: applyAlertStatuses(balanceAlerts, statuses, { includeResolved }),
       balancePeriod: balance.period,
       balanceThresholds: {

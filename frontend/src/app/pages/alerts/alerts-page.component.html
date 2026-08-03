@@ -3,7 +3,8 @@
   <p class="lede">
     Prioritized issues from your meter readings. Watch means thin history — look when you can;
     Actionable means worth a field check now. Acknowledge or resolve to keep a durable record for
-    your system.
+    your system. Export flagged meters for field lists; open History for address and current
+    occupant.
   </p>
 
   <p-message severity="info" styleClass="hint">{{ confidenceNote() }}</p-message>
@@ -20,6 +21,13 @@
       <span class="muted"> to load alerts for your tenant.</span>
     }
     <p-button label="Refresh alerts" [loading]="busy()" (onClick)="refresh()" />
+    <p-button
+      label="Export flagged CSV"
+      severity="secondary"
+      [loading]="exportBusy()"
+      [disabled]="!auth.isLoggedIn()"
+      (onClick)="exportFlaggedCsv()"
+    />
   </div>
 
   <p-card styleClass="table-card">
@@ -46,16 +54,30 @@
             @if (alert.kind === 'balance') {
               Water balance
             } @else {
-              Meter {{ alert.meterId }}
+              <button type="button" class="meter-link" (click)="openHistory(alert)">
+                Meter {{ alert.meterId }}
+              </button>
             }
             @if (alert.serviceAddress) {
               <div class="addr">{{ alert.serviceAddress }}</div>
+            }
+            @if (alert.kind === 'meter' && alert.occupantName) {
+              <div class="addr">{{ alert.occupantName }}</div>
             }
           </td>
           <td>{{ alert.summary }}</td>
           <td>{{ alert.confidenceNote }}</td>
           <td>{{ statusLabel(alert) }}</td>
           <td class="actions">
+            @if (alert.kind === 'meter') {
+              <p-button
+                label="History"
+                size="small"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="openHistory(alert)"
+              />
+            }
             @if (alert.status === 'open' || alert.status === 'acknowledged') {
               @if (alert.status === 'open') {
                 <p-button
@@ -85,4 +107,61 @@
       </ng-template>
     </p-table>
   </p-card>
+
+  <p-dialog
+    header="Meter history"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: 'min(42rem, 96vw)' }"
+    [visible]="historyVisible()"
+    (visibleChange)="onHistoryVisibleChange($event)"
+  >
+    @if (historyBusy()) {
+      <p class="muted">Loading meter history…</p>
+    }
+    @if (historyError()) {
+      <p-message severity="error" styleClass="hint">{{ historyError() }}</p-message>
+    }
+    @if (history(); as h) {
+      <div class="history-meta">
+        <div>
+          <div class="kpi-label">Meter</div>
+          <div class="history-value">{{ h.meterId }}</div>
+        </div>
+        <div>
+          <div class="kpi-label">Service address</div>
+          <div class="history-value">{{ h.serviceAddress }}</div>
+        </div>
+        <div>
+          <div class="kpi-label">Current occupant</div>
+          <div class="history-value">{{ h.occupantName || '—' }}</div>
+        </div>
+      </div>
+      <p-table [value]="h.readings" [tableStyle]="{ 'min-width': '28rem' }">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Read date</th>
+            <th>Cumulative</th>
+            <th>Unit</th>
+            <th>Diag</th>
+            <th>Occupant at read</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td>{{ row.timestamp }}</td>
+            <td>{{ row.cumulativeReading }}</td>
+            <td>{{ row.unit }}</td>
+            <td>{{ row.diagnosticFlags?.length ? row.diagnosticFlags.join(', ') : '—' }}</td>
+            <td>{{ row.occupantNameAtRead || '—' }}</td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5">No readings stored for this meter yet.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </p-dialog>
 </section>

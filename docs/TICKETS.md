@@ -19,6 +19,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | Confidence UX       | H3 stub→heuristic, H4, H6 | §7b freeze in engine + dashboard card + Watch gating         |
 | Demo packaging      | F1, F2                    | docs/DEMO_WALKTHROUGH.md + docs/SMOKE_CHECKLIST.md           |
 | Ack persistence     | C3                        | **Pilot: durable ack/resolve + audit under TENANT#**         |
+| Export + history    | C4, C5                    | **Pilot: CSV export + meter history drill-down**             |
 
 ---
 
@@ -52,8 +53,8 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | C1  | Alert engine v1 (high usage, stuck, drops, flags, outliers) | P0       | done        | Kelly  | Deterministic rules + Confidence Watch/Actionable; GET /alerts               |
 | C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | done        | Kelly  | Live Confidence + balance chart (In/Out/Loss) + meter/balance alert feed |
 | C3  | Acknowledge / resolve alerts                                | P0       | done        | Pilot  | Dynamo `ALERT#STATUS#`; audit who/when; resolved hidden from default GET   |
-| C4  | Export flagged meters                                       | P1       | todo        | Pilot  | CSV download; include Confidence note on Watch rows                          |
-| C5  | Basic meter history view                                    | P1       | todo        | Pilot  | Drill-down shows service address + current occupant name                     |
+| C4  | Export flagged meters                                       | P1       | done        | Pilot  | `GET /alerts?format=csv` + Alerts “Export flagged CSV”; confidenceNote on Watch rows |
+| C5  | Basic meter history view                                    | P1       | done        | Pilot  | `GET /meters/{meterId}`; Alerts History dialog (address + current occupant)          |
 | C6  | AI plain-language alert explanations                        | P1       | todo        | Pilot  | Bedrock; tenant-scoped; Kelly may use static/heuristic copy                  |
 
 ## Epic D — Auth, roles & CRWA roll-up
@@ -119,9 +120,8 @@ Work with any amount of history (none → years); never treat thin-data flags as
 
 ## Suggested next sprint (Pilot)
 
-1. Manual pass of [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) on live demo tenant (ack/resolve + optional threshold PUT)
-2. **C4** export flagged meters (CSV + Confidence note) · **C5** meter history drill-down
-3. Roles **D1–D3**; MFA UX (**D5** remainder); IAM ABAC (**A6**)
-4. Then Epic E / D4 roll-up (G6/H5) — not before C4/C5 and smoke are green
+1. Manual pass of [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) on live demo tenant (ack/resolve + export CSV + meter History)
+2. Roles **D1–D3**; MFA UX (**D5** remainder); IAM ABAC (**A6**)
+3. Then Epic E / D4 roll-up (G6/H5) — not before smoke is green on C4/C5
 
 Do **not** start vNext (AMI, resident portal, billing write-back, custom ML, formal address parse, agent AWS provisioning).

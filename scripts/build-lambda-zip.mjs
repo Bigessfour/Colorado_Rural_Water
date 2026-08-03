@@ -23,6 +23,7 @@ const entryPoints = {
   alerts: join(backend, 'src/handlers/alerts.ts'),
   sources: join(backend, 'src/handlers/sources.ts'),
   balance: join(backend, 'src/handlers/balance.ts'),
+  meters: join(backend, 'src/handlers/meters.ts'),
   agent: join(backend, 'src/handlers/agent.ts'),
 };
 

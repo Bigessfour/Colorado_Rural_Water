@@ -68,3 +68,40 @@
   gap: 0.35rem;
   justify-content: flex-end;
 }
+
+.meter-link {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: #1a6b73;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.muted {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #6b8287;
+}
+
+.history-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b8287;
+}
+
+.history-value {
+  color: #0f3d42;
+  font-weight: 600;
+  margin-top: 0.15rem;
+}

@@ -24,6 +24,10 @@ curl -sS -H "Authorization: Bearer $TOKEN" "$API/alerts"   # includes balanceAle
 # C3: POST acknowledge / resolve (persists ALERT#STATUS# under tenant)
 # curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 #   -d '{"action":"acknowledge","alertId":"<id>"}' "$API/alerts"
+# C4: flagged meters CSV (confidenceNote column includes Watch caveat)
+# curl -sS -H "Authorization: Bearer $TOKEN" "$API/alerts?format=csv" -o flagged-meters.csv
+# C5: meter history (service address + current occupant + readings)
+# curl -sS -H "Authorization: Bearer $TOKEN" "$API/meters/<meterId>"
 # G4: optional PUT tenant thresholds (defaults remain Spec §7a if unset)
 # curl -sS -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 #   -d '{"lossPct":18}' "$API/balance/thresholds"
@@ -34,4 +38,4 @@ Expect: `200`, JSON scoped to one tenant; `balanceAlerts` present (may be `[]`);
 
 ## Not required for Kelly (Pilot)
 
-Persisted ack audit (C3), export (C4), CRWA roll-up, AI agent, MFA UX, tenant threshold store, bulk multi-year history.
+Persisted ack audit (C3 — shipped), export (C4 — shipped), meter history (C5 — shipped), CRWA roll-up, AI agent, MFA UX, bulk multi-year history.

@@ -454,7 +454,7 @@ Produce:
 
 ### 11b. Ready for pilot expansion (after Kelly)
 
-- [ ] C3 persist ack; C4 export; C5 meter history
+- [x] C3 persist ack; C4 export; C5 meter history
 - [ ] G4 tenant thresholds; G5 viz polish; G6 + D4 + H5 CRWA roll-up (balance + Confidence)
 - [ ] H3 Confidence calculator stored; H2 bulk history; H6 gating complete
 - [ ] Epic E agent obeys §6 (cost, deletes, no cross-tenant)

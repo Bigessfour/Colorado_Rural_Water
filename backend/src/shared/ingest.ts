@@ -13,6 +13,8 @@ export interface MeterStore {
   getMapping(tenantId: string, kind: string): Promise<Record<string, string> | null>;
   listLocations(tenantId: string): Promise<MeterLocation[]>;
   listReadings(tenantId: string): Promise<MeterReading[]>;
+  /** Readings for one meter under the tenant (C5 history). */
+  listReadingsForMeter(tenantId: string, meterId: string): Promise<MeterReading[]>;
 }
 
 export interface IngestCommitSummary {

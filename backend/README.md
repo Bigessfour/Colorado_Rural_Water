@@ -13,7 +13,8 @@ src/
     upload-url.ts   POST /uploads/presign (JWT) → S3 PutObject URL
     ingest.ts       POST /ingest (JWT) → parse CSV → DynamoDB
     s3-ingest.ts    S3 ObjectCreated under tenants/{tenantId}/uploads/
-    alerts.ts       list / acknowledge / resolve alerts (C3 persist + audit)
+    alerts.ts       list / acknowledge / resolve / CSV export (C3–C4)
+    meters.ts       GET /meters/{meterId} history (C5)
     agent.ts        conversational AI (stub)
 ```
 

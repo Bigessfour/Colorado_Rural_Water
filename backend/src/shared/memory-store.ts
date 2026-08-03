@@ -42,4 +42,10 @@ export class MemoryMeterStore implements MeterStore {
   async listReadings(tenantId: string): Promise<MeterReading[]> {
     return this.readings.filter((r) => r.tenantId === tenantId);
   }
+
+  async listReadingsForMeter(tenantId: string, meterId: string): Promise<MeterReading[]> {
+    return this.readings
+      .filter((r) => r.tenantId === tenantId && r.meterId === meterId)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  }
 }

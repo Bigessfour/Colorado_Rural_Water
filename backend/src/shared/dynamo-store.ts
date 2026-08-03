@@ -174,6 +174,22 @@ export class DynamoMeterStore
     return (res.Items ?? []).map(itemToReading);
   }
 
+  async listReadingsForMeter(tenantId: string, meterId: string): Promise<MeterReading[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':sk': `RDG#${meterId}#`,
+        },
+      }),
+    );
+    return (res.Items ?? [])
+      .map(itemToReading)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  }
+
   async listSources(tenantId: string): Promise<WaterSource[]> {
     const res = await client.send(
       new QueryCommand({

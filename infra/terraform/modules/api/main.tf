@@ -196,6 +196,20 @@ resource "aws_lambda_function" "balance" {
   }
 }
 
+resource "aws_lambda_function" "meters" {
+  function_name    = "${local.name_prefix}-meters"
+  role             = aws_iam_role.lambda.arn
+  handler          = "meters.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 20
+  memory_size      = 256
+  environment {
+    variables = local.lambda_env
+  }
+}
+
 resource "aws_apigatewayv2_api" "http" {
   name          = "${local.name_prefix}-http"
   protocol_type = "HTTP"
@@ -273,6 +287,13 @@ resource "aws_apigatewayv2_integration" "balance" {
   api_id                 = aws_apigatewayv2_api.http.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.balance.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "meters" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.meters.invoke_arn
   payload_format_version = "2.0"
 }
 
@@ -378,6 +399,14 @@ resource "aws_apigatewayv2_route" "balance_thresholds_put" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "meters_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /meters/{meterId}"
+  target             = "integrations/${aws_apigatewayv2_integration.meters.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
@@ -444,6 +473,14 @@ resource "aws_lambda_permission" "balance_apigw" {
   statement_id  = "AllowAPIGatewayInvokeBalance"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.balance.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "meters_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeMeters"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.meters.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }
