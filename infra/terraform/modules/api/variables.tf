@@ -48,3 +48,8 @@ variable "data_table_arn" {
   type        = string
   description = "DynamoDB data table ARN (from storage module)"
 }
+
+variable "cognito_user_pool_arn" {
+  type        = string
+  description = "Cognito user pool ARN for AdminCreateUser / group APIs (D2/D3)"
+}

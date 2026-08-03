@@ -15,8 +15,14 @@ import type { MeterLocation, MeterReading } from './meter-location.js';
 import type { MeterStore } from './ingest.js';
 import type { SourceReading, SourceVolumeMode } from './source-reading.js';
 import type { SourceStore } from './source-store.js';
+import type {
+  TenantProfile,
+  TenantStore,
+  TenantUserRecord,
+} from './tenant-admin.js';
 import type { SourceType, WaterSource } from './water-source.js';
 import { isSourceType } from './water-source.js';
+import type { AssignableTenantRole } from './auth.js';
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}), {
   marshallOptions: { removeUndefinedValues: true },
@@ -51,9 +57,25 @@ function alertStatusSk(alertId: string): string {
 }
 
 const BALANCE_THRESHOLDS_SK = 'CFG#balance_thresholds';
+const META_PROFILE_SK = 'META#profile';
+/** Synthetic tenant partition for CRWA tenant registry (stays under TENANT#* IAM). */
+const REGISTRY_TENANT_ID = '_registry';
+
+function userSk(email: string): string {
+  return `USER#${email.toLowerCase()}`;
+}
+
+function registrySk(tenantId: string): string {
+  return `TENANT#${tenantId}`;
+}
 
 export class DynamoMeterStore
-  implements MeterStore, SourceStore, AlertStatusStore, BalanceThresholdStore
+  implements
+    MeterStore,
+    SourceStore,
+    AlertStatusStore,
+    BalanceThresholdStore,
+    TenantStore
 {
   constructor(private readonly tableName: string) {}
 
@@ -405,6 +427,118 @@ export class DynamoMeterStore
       }),
     );
   }
+
+  async getTenantProfile(tenantId: string): Promise<TenantProfile | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: META_PROFILE_SK },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToTenantProfile(res.Item);
+  }
+
+  async putTenantProfile(profile: TenantProfile): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(profile.tenantId),
+          sk: META_PROFILE_SK,
+          entityType: 'tenant_profile',
+          tenantId: profile.tenantId,
+          displayName: profile.displayName,
+          createdAt: profile.createdAt,
+          createdByUserId: profile.createdByUserId,
+          createdByEmail: profile.createdByEmail,
+          initialUserEmail: profile.initialUserEmail,
+        },
+        ConditionExpression: 'attribute_not_exists(pk)',
+      }),
+    );
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(REGISTRY_TENANT_ID),
+          sk: registrySk(profile.tenantId),
+          entityType: 'tenant_registry',
+          tenantId: profile.tenantId,
+          displayName: profile.displayName,
+          createdAt: profile.createdAt,
+          createdByUserId: profile.createdByUserId,
+          createdByEmail: profile.createdByEmail,
+          initialUserEmail: profile.initialUserEmail,
+        },
+      }),
+    );
+  }
+
+  async listTenantProfiles(): Promise<TenantProfile[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        ExpressionAttributeValues: {
+          ':pk': pk(REGISTRY_TENANT_ID),
+          ':prefix': 'TENANT#',
+        },
+      }),
+    );
+    return (res.Items ?? [])
+      .map((item) => itemToTenantProfile(item))
+      .filter((p): p is TenantProfile => p !== null)
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }
+
+  async listTenantUsers(tenantId: string): Promise<TenantUserRecord[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':prefix': 'USER#',
+        },
+      }),
+    );
+    return (res.Items ?? [])
+      .map((item) => itemToTenantUser(item))
+      .filter((u): u is TenantUserRecord => u !== null)
+      .sort((a, b) => a.email.localeCompare(b.email));
+  }
+
+  async putTenantUser(user: TenantUserRecord): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(user.tenantId),
+          sk: userSk(user.email),
+          entityType: 'tenant_user',
+          tenantId: user.tenantId,
+          email: user.email,
+          role: user.role,
+          createdAt: user.createdAt,
+          createdByUserId: user.createdByUserId,
+          createdByEmail: user.createdByEmail,
+        },
+        ConditionExpression: 'attribute_not_exists(pk)',
+      }),
+    );
+  }
+
+  async getTenantUser(tenantId: string, email: string): Promise<TenantUserRecord | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: userSk(email) },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToTenantUser(res.Item);
+  }
 }
 
 function itemToLocation(item: Record<string, unknown>): MeterLocation {
@@ -498,6 +632,36 @@ function itemToBalanceThresholds(item: Record<string, unknown>): BalanceThreshol
   };
 }
 
+function itemToTenantProfile(item: Record<string, unknown>): TenantProfile | null {
+  const tenantId = item.tenantId;
+  const displayName = item.displayName;
+  if (typeof tenantId !== 'string' || typeof displayName !== 'string') return null;
+  return {
+    tenantId,
+    displayName,
+    createdAt: String(item.createdAt ?? new Date().toISOString()),
+    createdByUserId: String(item.createdByUserId ?? ''),
+    createdByEmail: String(item.createdByEmail ?? ''),
+    initialUserEmail: String(item.initialUserEmail ?? ''),
+  };
+}
+
+function itemToTenantUser(item: Record<string, unknown>): TenantUserRecord | null {
+  const role = item.role;
+  if (role !== 'operator' && role !== 'system_admin') return null;
+  const email = item.email;
+  const tenantId = item.tenantId;
+  if (typeof email !== 'string' || typeof tenantId !== 'string') return null;
+  return {
+    tenantId,
+    email,
+    role: role as AssignableTenantRole,
+    createdAt: String(item.createdAt ?? new Date().toISOString()),
+    createdByUserId: String(item.createdByUserId ?? ''),
+    createdByEmail: String(item.createdByEmail ?? ''),
+  };
+}
+
 export function createMeterStoreFromEnv(): MeterStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
@@ -523,6 +687,14 @@ export function createAlertStatusStoreFromEnv(): AlertStatusStore {
 }
 
 export function createBalanceThresholdStoreFromEnv(): BalanceThresholdStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error('DATA_TABLE env is not configured');
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createTenantStoreFromEnv(): TenantStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
     throw new Error('DATA_TABLE env is not configured');

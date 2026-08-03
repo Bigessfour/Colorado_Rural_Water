@@ -1,0 +1,165 @@
+<section class="page">
+  <h1>Admin</h1>
+  <p class="lede">
+    Provision municipalities (CRWA) and invite users within your system (System Admin). Tenant comes from
+    your sign-in — never from the form.
+  </p>
+
+  @if (!auth.isLoggedIn()) {
+    <p-message severity="warn" styleClass="hint">
+      <a routerLink="/login">Sign in</a> to continue.
+    </p-message>
+  } @else if (!auth.canManageUsers()) {
+    <p-message severity="info" styleClass="hint">
+      Your account is Operator-only. Ask a System Admin or CRWA Admin for access changes.
+    </p-message>
+  }
+
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+  @if (status()) {
+    <p-message severity="success" styleClass="hint">{{ status() }}</p-message>
+  }
+  @if (tempPassword()) {
+    <p-message severity="warn" styleClass="hint">
+      Temporary password (shown once): <code>{{ tempPassword() }}</code>
+    </p-message>
+  }
+
+  @if (auth.isLoggedIn()) {
+    <p class="who">
+      Signed in as {{ auth.email() }}
+      @if (auth.tenantId()) {
+        · system <strong>{{ auth.tenantId() }}</strong>
+      }
+      ·
+      @for (role of auth.roles(); track role) {
+        <p-tag [value]="roleLabel(role)" severity="secondary" styleClass="role-tag" />
+      }
+    </p>
+  }
+
+  @if (auth.isCrwaAdmin()) {
+    <p-card header="Provision municipality" styleClass="block">
+      <p class="card-lede">Creates the tenant record and one initial user (default: System Admin).</p>
+      <form class="form" (ngSubmit)="provisionTenant()">
+        <label>
+          System id (slug)
+          <input pInputText name="tenantId" [(ngModel)]="tenantId" placeholder="town-wiley" required />
+        </label>
+        <label>
+          Display name
+          <input pInputText name="displayName" [(ngModel)]="displayName" placeholder="Town of Wiley" required />
+        </label>
+        <label>
+          Initial user email
+          <input
+            pInputText
+            type="email"
+            name="initialUserEmail"
+            [(ngModel)]="initialUserEmail"
+            placeholder="clerk@town.gov"
+            required
+          />
+        </label>
+        <label>
+          Initial role
+          <p-select
+            [options]="roleOptions"
+            [(ngModel)]="initialUserRole"
+            name="initialUserRole"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        <p-button type="submit" label="Provision system" [loading]="busy()" [disabled]="busy()" />
+      </form>
+    </p-card>
+
+    <p-card header="Municipalities" styleClass="block">
+      <p-table [value]="tenants()" [loading]="busy()" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Initial user</th>
+            <th>Created</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td>{{ row.tenantId }}</td>
+            <td>{{ row.displayName }}</td>
+            <td>{{ row.initialUserEmail }}</td>
+            <td>{{ row.createdAt | date: 'mediumDate' }}</td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="4">No systems provisioned yet.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  }
+
+  @if (auth.isSystemAdmin()) {
+    <p-card header="Invite user to your system" styleClass="block">
+      <p class="card-lede">
+        Invites stay inside <strong>{{ auth.tenantId() ?? 'your system' }}</strong>. Client tenant overrides are
+        rejected by the API.
+      </p>
+      <form class="form" (ngSubmit)="inviteUser()">
+        <label>
+          Email
+          <input
+            pInputText
+            type="email"
+            name="inviteEmail"
+            [(ngModel)]="inviteEmail"
+            placeholder="operator@town.gov"
+            required
+          />
+        </label>
+        <label>
+          Role
+          <p-select
+            [options]="roleOptions"
+            [(ngModel)]="inviteRole"
+            name="inviteRole"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        <p-button type="submit" label="Invite user" [loading]="busy()" [disabled]="busy()" />
+      </form>
+    </p-card>
+
+    <p-card header="Users in your system" styleClass="block">
+      <p-table [value]="users()" [loading]="busy()" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Added</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td>{{ row.email }}</td>
+            <td>{{ roleLabel(row.role) }}</td>
+            <td>{{ row.createdAt | date: 'mediumDate' }}</td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="3">No users listed yet.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  }
+</section>

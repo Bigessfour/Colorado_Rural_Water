@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { AuthService } from '../core/auth.service';
@@ -9,8 +9,14 @@ import { AuthService } from '../core/auth.service';
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })
-export class ShellComponent {
+export class ShellComponent implements OnInit {
   readonly auth = inject(AuthService);
+
+  ngOnInit(): void {
+    if (this.auth.isLoggedIn()) {
+      void this.auth.refreshProfile();
+    }
+  }
 
   logout(): void {
     this.auth.logout();

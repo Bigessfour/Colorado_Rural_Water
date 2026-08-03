@@ -20,6 +20,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | Demo packaging      | F1, F2                    | docs/DEMO_WALKTHROUGH.md + docs/SMOKE_CHECKLIST.md           |
 | Ack persistence     | C3                        | **Pilot: durable ack/resolve + audit under TENANT#**         |
 | Export + history    | C4, C5                    | **Pilot: CSV export + meter history drill-down**             |
+| Roles + onboarding  | D1, D2, D3                | **Pilot: Cognito roles + CRWA provision + System Admin invite** |
 
 ---
 
@@ -61,9 +62,9 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 | ID  | Title                                       | Priority | Status      | Layer       | Notes                                                                  |
 | --- | ------------------------------------------- | -------- | ----------- | ----------- | ---------------------------------------------------------------------- |
-| D1  | Roles: Operator / System Admin / CRWA Admin | P0       | todo        | Pilot       | Cognito groups or custom claims                                        |
-| D2  | System Admin: invite users within tenant    | P1       | todo        | Pilot       |                                                                        |
-| D3  | CRWA Admin: provision tenant + initial user | P0       | todo        | Pilot       | Onboarding entry point                                                 |
+| D1  | Roles: Operator / System Admin / CRWA Admin | P0       | done        | Pilot       | Cognito groups → AuthContext; `/me` roles; Admin nav gated             |
+| D2  | System Admin: invite users within tenant    | P1       | done        | Pilot       | `POST /admin/users/invite`; JWT tenant only; temp password once        |
+| D3  | CRWA Admin: provision tenant + initial user | P0       | done        | Pilot       | `POST /admin/tenants`; META#profile + Cognito AdminCreateUser          |
 | D4  | CRWA enterprise roll-up (sanitized)         | P1       | todo        | Pilot       | No cross-tenant PII; include water-balance KPIs (G6) + Confidence (H5) |
 | D5  | Self-service password + MFA UX              | P1       | in_progress | Kelly/Pilot | SPA email/password done (Kelly); MFA UX later (Pilot)                  |
 
@@ -120,8 +121,8 @@ Work with any amount of history (none → years); never treat thin-data flags as
 
 ## Suggested next sprint (Pilot)
 
-1. Manual pass of [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) on live demo tenant (ack/resolve + export CSV + meter History)
-2. Roles **D1–D3**; MFA UX (**D5** remainder); IAM ABAC (**A6**)
-3. Then Epic E / D4 roll-up (G6/H5) — not before smoke is green on C4/C5
+1. Smoke D1–D3: CRWA provision tenant → initial System Admin signs in → invite Operator → upload path
+2. MFA UX (**D5** remainder); IAM ABAC (**A6**) thin if needed
+3. Then Epic E / D4 roll-up (G6/H5) — not before admin onboarding smoke is green
 
 Do **not** start vNext (AMI, resident portal, billing write-back, custom ML, formal address parse, agent AWS provisioning).

@@ -10,6 +10,7 @@ src/
   handlers/
     health.ts       GET /health
     me.ts           GET /me (JWT)
+    admin.ts        GET/POST /admin/tenants; GET /admin/users; POST /admin/users/invite (D1–D3)
     upload-url.ts   POST /uploads/presign (JWT) → S3 PutObject URL
     ingest.ts       POST /ingest (JWT) → parse CSV → DynamoDB
     s3-ingest.ts    S3 ObjectCreated under tenants/{tenantId}/uploads/

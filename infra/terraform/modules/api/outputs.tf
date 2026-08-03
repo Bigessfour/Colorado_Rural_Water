@@ -47,3 +47,13 @@ output "meters_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/meters/{meterId}"
   description = "GET /meters/{meterId} history drill-down (JWT, C5)"
 }
+
+output "admin_tenants_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/admin/tenants"
+  description = "GET/POST /admin/tenants (JWT, CRWA Admin D3)"
+}
+
+output "admin_users_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/admin/users"
+  description = "GET /admin/users (JWT, System Admin D2)"
+}

@@ -64,6 +64,15 @@ data "aws_iam_policy_document" "lambda_data" {
       values   = ["TENANT#*"]
     }
   }
+
+  statement {
+    sid = "CognitoAdminUserMgmt"
+    actions = [
+      "cognito-idp:AdminCreateUser",
+      "cognito-idp:AdminAddUserToGroup",
+    ]
+    resources = [var.cognito_user_pool_arn]
+  }
 }
 
 resource "aws_iam_role_policy" "lambda_data" {
@@ -74,8 +83,9 @@ resource "aws_iam_role_policy" "lambda_data" {
 
 locals {
   lambda_env = {
-    UPLOAD_BUCKET = var.uploads_bucket_name
-    DATA_TABLE    = var.data_table_name
+    UPLOAD_BUCKET        = var.uploads_bucket_name
+    DATA_TABLE           = var.data_table_name
+    COGNITO_USER_POOL_ID = var.cognito_user_pool_id
   }
 }
 
@@ -210,6 +220,20 @@ resource "aws_lambda_function" "meters" {
   }
 }
 
+resource "aws_lambda_function" "admin" {
+  function_name    = "${local.name_prefix}-admin"
+  role             = aws_iam_role.lambda.arn
+  handler          = "admin.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 30
+  memory_size      = 256
+  environment {
+    variables = local.lambda_env
+  }
+}
+
 resource "aws_apigatewayv2_api" "http" {
   name          = "${local.name_prefix}-http"
   protocol_type = "HTTP"
@@ -294,6 +318,13 @@ resource "aws_apigatewayv2_integration" "meters" {
   api_id                 = aws_apigatewayv2_api.http.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.meters.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "admin" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.admin.invoke_arn
   payload_format_version = "2.0"
 }
 
@@ -407,6 +438,38 @@ resource "aws_apigatewayv2_route" "meters_get" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "admin_tenants_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /admin/tenants"
+  target             = "integrations/${aws_apigatewayv2_integration.admin.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "admin_tenants_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /admin/tenants"
+  target             = "integrations/${aws_apigatewayv2_integration.admin.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "admin_users_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /admin/users"
+  target             = "integrations/${aws_apigatewayv2_integration.admin.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "admin_users_invite_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /admin/users/invite"
+  target             = "integrations/${aws_apigatewayv2_integration.admin.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
@@ -481,6 +544,14 @@ resource "aws_lambda_permission" "meters_apigw" {
   statement_id  = "AllowAPIGatewayInvokeMeters"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.meters.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "admin_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeAdmin"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.admin.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }

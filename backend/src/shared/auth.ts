@@ -1,5 +1,14 @@
 export type TenantRole = 'operator' | 'system_admin' | 'crwa_admin';
 
+/** Roles that may be assigned to municipal users (not CRWA staff). */
+export type AssignableTenantRole = 'operator' | 'system_admin';
+
+export const COGNITO_GROUP_BY_ROLE: Record<TenantRole, string> = {
+  operator: 'operators',
+  system_admin: 'system_admins',
+  crwa_admin: 'crwa_admins',
+};
+
 export interface AuthContext {
   userId: string;
   email: string;
@@ -7,14 +16,41 @@ export interface AuthContext {
   roles: TenantRole[];
 }
 
+/**
+ * Cognito puts groups on the token as a string[].
+ * API Gateway HTTP JWT authorizer stringifies arrays — often as `[crwa_admins]`
+ * (bracketed, unquoted) or a JSON array string / comma list.
+ */
+export function parseCognitoGroups(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map(String).map((g) => g.trim()).filter(Boolean);
+  if (typeof raw !== 'string' || !raw.trim()) return [];
+  const s = raw.trim();
+  if (s.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(s) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed.map(String).map((g) => g.trim()).filter(Boolean);
+      }
+    } catch {
+      // API GW often emits [group_a,group_b] without JSON quotes.
+      const inner = s.slice(1, s.endsWith(']') ? -1 : undefined);
+      return inner
+        .split(',')
+        .map((p) => p.trim().replace(/^["']|["']$/g, ''))
+        .filter(Boolean);
+    }
+  }
+  return s
+    .split(',')
+    .map((p) => p.trim().replace(/^["']|["']$/g, ''))
+    .filter(Boolean);
+}
+
 /** Claims expected on Cognito ID/access tokens once wired. */
 export function parseAuthFromClaims(claims: Record<string, unknown>): AuthContext {
-  const rawGroups = claims['cognito:groups'];
-  const groups = Array.isArray(rawGroups)
-    ? rawGroups.map(String)
-    : typeof rawGroups === 'string'
-      ? rawGroups.split(',')
-      : [];
+  const groups = parseCognitoGroups(
+    claims['cognito:groups'] ?? claims['cognito_groups'] ?? claims.groups,
+  );
 
   const roles: TenantRole[] = [];
   if (groups.includes('operators') || groups.includes('operator')) roles.push('operator');
@@ -34,6 +70,25 @@ export function parseAuthFromClaims(claims: Record<string, unknown>): AuthContex
     tenantId,
     roles: roles.length ? roles : ['operator'],
   };
+}
+
+export function hasRole(auth: AuthContext, role: TenantRole): boolean {
+  return auth.roles.includes(role);
+}
+
+export function hasAnyRole(auth: AuthContext, roles: TenantRole[]): boolean {
+  return roles.some((role) => auth.roles.includes(role));
+}
+
+/** Throws if the caller lacks every listed role (OR semantics). */
+export function requireAnyRole(auth: AuthContext, roles: TenantRole[]): void {
+  if (!hasAnyRole(auth, roles)) {
+    throw new Error(`Requires one of: ${roles.join(', ')}`);
+  }
+}
+
+export function isAssignableTenantRole(value: unknown): value is AssignableTenantRole {
+  return value === 'operator' || value === 'system_admin';
 }
 
 /** CRWA admins may lack a tenant; everyone else must have one. */

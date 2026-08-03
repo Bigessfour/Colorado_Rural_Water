@@ -15,12 +15,21 @@ Every persisted record and every authorized request is scoped by `tenant_id`. Cl
 
 CRWA admins operate with an explicit selected-tenant context for any tenant-scoped read/write (never implicit cross-tenant scan in member APIs).
 
+Role enforcement (Pilot D1–D3):
+
+| API | Who |
+| --- | --- |
+| `POST /admin/tenants` | `crwa_admin` only — creates `META#profile` + Cognito initial user |
+| `GET /admin/tenants` | `crwa_admin` — registry under `TENANT#_registry` / `TENANT#{id}` |
+| `POST /admin/users/invite` | `system_admin` — tenant from JWT only; client `tenantId` override → 403 |
+| `GET /admin/users` | `system_admin` (or `crwa_admin` with tenant claim) |
+
 ## Storage conventions
 
 | Store                 | Keying / design                                                                               |
 | --------------------- | --------------------------------------------------------------------------------------------- |
 | **S3 uploads**        | Bucket per env; keys `tenants/{tenant_id}/uploads/...` (customer) or `tenants/{tenant_id}/uploads/sources/...` (source CSVs; G2) |
-| **DynamoDB (chosen)** | Single-table `water-saver-{env}-data`; `pk=TENANT#{tenantId}`, `sk=LOC#…` / `RDG#…` / `MAP#…` / `SRC#…` / `SRD#…` / `ALERT#STATUS#…` / `CFG#…` |
+| **DynamoDB (chosen)** | Single-table `water-saver-{env}-data`; `pk=TENANT#{tenantId}`, `sk=LOC#…` / `RDG#…` / `MAP#…` / `SRC#…` / `SRD#…` / `ALERT#STATUS#…` / `CFG#…` / `META#…` / `USER#…` |
 | Meter locations       | `sk=LOC#{meterId}`; **service address stable**; occupant name mutable                         |
 | Readings              | `sk=RDG#{meterId}#{isoTimestamp}`; denormalized address for alert visibility                  |
 | Named sources (G1)    | `sk=SRC#{sourceId}`; name + type (well/spring/purchase/other); tenant PK only; DELETE cascades `SRD#` |
@@ -29,6 +38,8 @@ CRWA admins operate with an explicit selected-tenant context for any tenant-scop
 | Alert status (C3)     | `sk=ALERT#STATUS#{alertId}`; acknowledged/resolved + `actorUserId` / `actorEmail` / `updatedAt` |
 | Balance thresholds (G4) | `sk=CFG#balance_thresholds`; per-tenant overrides of Spec §7a defaults; audit who/when      |
 | Meter history (C5)    | Read path: `LOC#{meterId}` + `RDG#{meterId}#…` via `GET /meters/{meterId}` (JWT tenant only) |
+| Tenant profile (D3)   | `sk=META#profile`; registry mirror `pk=TENANT#_registry` / `sk=TENANT#{tenantId}`             |
+| Tenant users (D2)     | `sk=USER#{email}`; role + audit; Cognito is source of auth, Dynamo is invite roster           |
 | Conversation history  | Partitioned by `tenant_id` + user (Epic E)                                                    |
 | Water balance periods | Pilot: UTC calendar `YYYY-MM` (Spec §7a); configurable cycles later (G4/G5)                    |
 

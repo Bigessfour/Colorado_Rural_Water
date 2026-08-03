@@ -15,6 +15,7 @@ module "api" {
   environment                 = var.environment
   cognito_user_pool_id        = module.cognito[0].user_pool_id
   cognito_user_pool_client_id = module.cognito[0].spa_client_id
+  cognito_user_pool_arn       = module.cognito[0].user_pool_arn
   lambda_zip_path             = "${path.module}/build/api-handlers.zip"
   uploads_bucket_name         = module.storage[0].uploads_bucket_name
   uploads_bucket_arn          = module.storage[0].uploads_bucket_arn
@@ -55,6 +56,16 @@ output "api_ingest_sources_url" {
 output "api_balance_url" {
   value       = try(module.api[0].balance_url, null)
   description = "GET /balance (JWT)"
+}
+
+output "api_admin_tenants_url" {
+  value       = try(module.api[0].admin_tenants_url, null)
+  description = "GET/POST /admin/tenants (JWT, CRWA Admin)"
+}
+
+output "api_admin_users_url" {
+  value       = try(module.api[0].admin_users_url, null)
+  description = "GET /admin/users + POST /admin/users/invite (JWT)"
 }
 
 output "uploads_bucket" {

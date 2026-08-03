@@ -4,6 +4,8 @@ import { environment } from '../../environments/environment';
 const TOKEN_KEY = 'ws_id_token';
 const EMAIL_KEY = 'ws_email';
 
+export type TenantRole = 'operator' | 'system_admin' | 'crwa_admin';
+
 export interface AuthSession {
   idToken: string;
   accessToken: string;
@@ -12,16 +14,29 @@ export interface AuthSession {
   expiresAt: number;
 }
 
+export interface MeProfile {
+  userId: string;
+  email: string;
+  tenantId: string | null;
+  roles: TenantRole[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly session = signal<AuthSession | null>(this.readStored());
+  private readonly profile = signal<MeProfile | null>(null);
 
   readonly idToken = computed(() => this.session()?.idToken ?? null);
-  readonly email = computed(() => this.session()?.email ?? null);
+  readonly email = computed(() => this.session()?.email ?? this.profile()?.email ?? null);
+  readonly tenantId = computed(() => this.profile()?.tenantId ?? null);
+  readonly roles = computed(() => this.profile()?.roles ?? []);
   readonly isLoggedIn = computed(() => {
     const s = this.session();
     return Boolean(s?.idToken && s.expiresAt > Date.now());
   });
+  readonly isSystemAdmin = computed(() => this.roles().includes('system_admin'));
+  readonly isCrwaAdmin = computed(() => this.roles().includes('crwa_admin'));
+  readonly canManageUsers = computed(() => this.isSystemAdmin() || this.isCrwaAdmin());
 
   async login(email: string, password: string): Promise<void> {
     const endpoint = `https://cognito-idp.${environment.cognito.region}.amazonaws.com/`;
@@ -78,12 +93,14 @@ export class AuthService {
     };
     this.persist(next);
     this.session.set(next);
+    await this.refreshProfile();
   }
 
   logout(): void {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(EMAIL_KEY);
     this.session.set(null);
+    this.profile.set(null);
   }
 
   /** Prefer live session; fall back to legacy pasted token key. */
@@ -91,6 +108,36 @@ export class AuthService {
     if (this.isLoggedIn()) return this.idToken();
     const legacy = sessionStorage.getItem(TOKEN_KEY);
     return legacy?.trim() || null;
+  }
+
+  /** Load roles/tenant from GET /me (JWT claims via API). */
+  async refreshProfile(): Promise<MeProfile | null> {
+    const token = this.getBearerToken();
+    if (!token) {
+      this.profile.set(null);
+      return null;
+    }
+    try {
+      const res = await fetch(`${environment.apiBaseUrl}/me`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        this.profile.set(null);
+        return null;
+      }
+      const body = (await res.json()) as MeProfile;
+      const next: MeProfile = {
+        userId: body.userId ?? '',
+        email: body.email ?? this.email() ?? '',
+        tenantId: body.tenantId ?? null,
+        roles: Array.isArray(body.roles) ? body.roles : ['operator'],
+      };
+      this.profile.set(next);
+      return next;
+    } catch {
+      this.profile.set(null);
+      return null;
+    }
   }
 
   private persist(session: AuthSession): void {
