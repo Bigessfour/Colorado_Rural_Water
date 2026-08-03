@@ -12,6 +12,7 @@ export interface MeterStore {
   putMapping(tenantId: string, kind: string, mapping: Record<string, string>): Promise<void>;
   getMapping(tenantId: string, kind: string): Promise<Record<string, string> | null>;
   listLocations(tenantId: string): Promise<MeterLocation[]>;
+  listReadings(tenantId: string): Promise<MeterReading[]>;
 }
 
 export interface IngestCommitSummary {

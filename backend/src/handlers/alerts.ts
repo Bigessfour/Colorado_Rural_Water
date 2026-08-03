@@ -1,10 +1,12 @@
 import type { AuthedHandler } from '../shared/apigw.js';
+import { evaluateAlerts } from '../shared/alert-engine.js';
 import { parseAuthFromClaims, requireTenantId } from '../shared/auth.js';
+import { createMeterStoreFromEnv } from '../shared/dynamo-store.js';
 import { badRequest, forbidden, ok, unauthorized } from '../shared/http.js';
 
 /**
- * Stub alert list / acknowledge.
- * POST body { action: 'acknowledge' | 'resolve', alertId } for mutations.
+ * GET /alerts — evaluate open alerts from tenant readings.
+ * POST /alerts — acknowledge / resolve (status persistence TBD C3).
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
@@ -27,29 +29,26 @@ export const handler: AuthedHandler = async (event) => {
       return badRequest('Body must be JSON');
     }
     return ok({
-      stub: true,
       tenantId,
       action: body.action ?? 'acknowledge',
       alertId: body.alertId ?? null,
-      message: 'Alert mutation persistence not wired yet',
+      message: 'Acknowledged in session only — persistence lands in ticket C3',
     });
   }
 
-  return ok({
-    stub: true,
-    tenantId,
-    alerts: [
-      {
-        id: 'demo-alert-1',
-        priority: 'high',
-        type: 'unusual_high_usage',
-        meterId: '1042',
-        serviceAddress: '112 N Main St Wiley CO',
-        occupantName: 'A Rivera',
-        summary:
-          'Usage ~3× typical for this route at 112 N Main St Wiley CO — possible leak or irrigation change',
-        status: 'open',
-      },
-    ],
-  });
+  try {
+    const store = createMeterStoreFromEnv();
+    const [locations, readings] = await Promise.all([
+      store.listLocations(tenantId),
+      store.listReadings(tenantId),
+    ]);
+    const { confidence, alerts } = evaluateAlerts(locations, readings);
+    return ok({
+      tenantId,
+      confidence,
+      alerts,
+    });
+  } catch (err) {
+    return badRequest(err instanceof Error ? err.message : 'Failed to evaluate alerts');
+  }
 };

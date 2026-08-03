@@ -134,6 +134,20 @@ resource "aws_lambda_function" "s3_ingest" {
   }
 }
 
+resource "aws_lambda_function" "alerts" {
+  function_name    = "${local.name_prefix}-alerts"
+  role             = aws_iam_role.lambda.arn
+  handler          = "alerts.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 30
+  memory_size      = 512
+  environment {
+    variables = local.lambda_env
+  }
+}
+
 resource "aws_apigatewayv2_api" "http" {
   name          = "${local.name_prefix}-http"
   protocol_type = "HTTP"
@@ -186,6 +200,13 @@ resource "aws_apigatewayv2_integration" "ingest" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "alerts" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.alerts.invoke_arn
+  payload_format_version = "2.0"
+}
+
 resource "aws_apigatewayv2_route" "health" {
   api_id    = aws_apigatewayv2_api.http.id
   route_key = "GET /health"
@@ -212,6 +233,22 @@ resource "aws_apigatewayv2_route" "ingest" {
   api_id             = aws_apigatewayv2_api.http.id
   route_key          = "POST /ingest"
   target             = "integrations/${aws_apigatewayv2_integration.ingest.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "alerts_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /alerts"
+  target             = "integrations/${aws_apigatewayv2_integration.alerts.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "alerts_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /alerts"
+  target             = "integrations/${aws_apigatewayv2_integration.alerts.id}"
   authorization_type = "JWT"
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
@@ -250,6 +287,14 @@ resource "aws_lambda_permission" "ingest_apigw" {
   statement_id  = "AllowAPIGatewayInvokeIngest"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.ingest.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "alerts_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeAlerts"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.alerts.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }

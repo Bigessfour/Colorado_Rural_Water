@@ -1,12 +1,25 @@
 <section class="page">
   <h1>Alerts</h1>
   <p class="lede">
-    Prioritized issues that help catch leaks early and protect customers from surprise high bills.
-    Watch means thin history — look when you can; Actionable means worth a field check now.
+    Prioritized issues from your meter readings. Watch means thin history — look when you can;
+    Actionable means worth a field check now.
   </p>
 
+  <p-message severity="info" styleClass="hint">{{ confidenceNote() }}</p-message>
+  @if (error) {
+    <p-message severity="error" styleClass="hint">{{ error }}</p-message>
+  }
+
+  <p-card styleClass="table-card token-card">
+    <label class="token">
+      Cognito ID token
+      <textarea rows="2" [(ngModel)]="authToken" placeholder="Paste Bearer token"></textarea>
+    </label>
+    <p-button label="Refresh alerts" [loading]="busy" (onClick)="refresh()" />
+  </p-card>
+
   <p-card styleClass="table-card">
-    <p-table [value]="alerts" [tableStyle]="{ 'min-width': '44rem' }">
+    <p-table [value]="alerts()" [tableStyle]="{ 'min-width': '44rem' }">
       <ng-template pTemplate="header">
         <tr>
           <th>Mode</th>
@@ -25,19 +38,25 @@
               [value]="alert.mode"
             />
           </td>
-          <td>{{ alert.meterId }}</td>
+          <td>
+            {{ alert.meterId }}
+            @if (alert.serviceAddress) {
+              <div class="addr">{{ alert.serviceAddress }}</div>
+            }
+          </td>
           <td>{{ alert.summary }}</td>
           <td>{{ alert.confidenceNote }}</td>
           <td>{{ alert.status }}</td>
           <td>
             @if (alert.status === 'open') {
-              <p-button
-                label="Acknowledge"
-                size="small"
-                (onClick)="acknowledge(alert)"
-              />
+              <p-button label="Acknowledge" size="small" (onClick)="acknowledge(alert)" />
             }
           </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6">No alerts yet — ingest readings, then refresh.</td>
         </tr>
       </ng-template>
     </p-table>

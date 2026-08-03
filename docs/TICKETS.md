@@ -33,9 +33,9 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 | ID  | Title                                                       | Priority | Status | Notes                                                                                               |
 | --- | ----------------------------------------------------------- | -------- | ------ | --------------------------------------------------------------------------------------------------- |
-| C1  | Alert engine v1 (high usage, stuck, drops, flags, outliers) | P0       | todo   | Deterministic rules first; no custom ML; include water-balance rules (see G4); Confidence gate (H6) |
+| C1  | Alert engine v1 (high usage, stuck, drops, flags, outliers) | P0       | done   | Deterministic rules + Confidence Watch/Actionable; GET /alerts |
 | C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | todo   | Angular + PrimeNG; include water-balance panel (G5) + Confidence card (H4)                          |
-| C3  | Acknowledge / resolve alerts                                | P0       | todo   | Audit who/when                                                                                      |
+| C3  | Acknowledge / resolve alerts                                | P0       | todo   | Session ack wired; persist audit who/when                       |
 | C4  | Export flagged meters                                       | P1       | todo   | CSV download; include Confidence note on Watch rows                                                 |
 | C5  | Basic meter history view                                    | P1       | todo   | Drill-down shows service address + current occupant name                                            |
 | C6  | AI plain-language alert explanations                        | P1       | todo   | Bedrock; tenant-scoped context only; explain loss/gain + Confidence in plain language               |

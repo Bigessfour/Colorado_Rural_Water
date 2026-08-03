@@ -39,7 +39,7 @@ export class MemoryMeterStore implements MeterStore {
     return [...this.locations.values()].filter((l) => l.tenantId === tenantId);
   }
 
-  listReadings(tenantId: string): MeterReading[] {
+  async listReadings(tenantId: string): Promise<MeterReading[]> {
     return this.readings.filter((r) => r.tenantId === tenantId);
   }
 }

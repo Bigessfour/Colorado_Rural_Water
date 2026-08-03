@@ -18,3 +18,33 @@
   border: 1px solid rgba(15, 61, 66, 0.08);
   box-shadow: none;
 }
+
+:host ::ng-deep .hint {
+  margin-bottom: 0.85rem;
+  width: 100%;
+}
+
+.token-card {
+  margin-bottom: 1rem;
+}
+
+.token {
+  display: grid;
+  gap: 0.35rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #0f3d42;
+  margin-bottom: 0.75rem;
+}
+
+.token textarea {
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(15, 61, 66, 0.2);
+  border-radius: 4px;
+}
+
+.addr {
+  font-size: 0.8rem;
+  color: #6b8287;
+  margin-top: 0.15rem;
+}

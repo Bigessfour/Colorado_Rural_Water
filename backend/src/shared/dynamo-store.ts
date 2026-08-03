@@ -132,6 +132,20 @@ export class DynamoMeterStore implements MeterStore {
     );
     return (res.Items ?? []).map(itemToLocation);
   }
+
+  async listReadings(tenantId: string): Promise<MeterReading[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':sk': 'RDG#',
+        },
+      }),
+    );
+    return (res.Items ?? []).map(itemToReading);
+  }
 }
 
 function itemToLocation(item: Record<string, unknown>): MeterLocation {
@@ -145,6 +159,20 @@ function itemToLocation(item: Record<string, unknown>): MeterLocation {
     meterSize: (item.meterSize as string | null) ?? null,
     installDate: (item.installDate as string | null) ?? null,
     updatedAt: String(item.updatedAt ?? new Date().toISOString()),
+  };
+}
+
+function itemToReading(item: Record<string, unknown>): MeterReading {
+  const flags = item.diagnosticFlags;
+  return {
+    tenantId: String(item.tenantId),
+    meterId: String(item.meterId),
+    serviceAddress: String(item.serviceAddress),
+    occupantName: (item.occupantName as string | null) ?? null,
+    timestamp: String(item.timestamp),
+    cumulativeReading: Number(item.cumulativeReading),
+    unit: String(item.unit ?? 'gal'),
+    diagnosticFlags: Array.isArray(flags) ? flags.map(String) : [],
   };
 }
 

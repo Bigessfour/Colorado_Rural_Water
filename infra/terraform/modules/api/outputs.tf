@@ -22,3 +22,8 @@ output "presign_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/uploads/presign"
   description = "POST /uploads/presign (JWT)"
 }
+
+output "alerts_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/alerts"
+  description = "GET/POST /alerts (JWT)"
+}
