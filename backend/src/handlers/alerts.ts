@@ -1,5 +1,6 @@
 import type { AuthedHandler } from '../shared/apigw.js';
 import { evaluateAlerts } from '../shared/alert-engine.js';
+import { explainAlertTemplate, explainAlertsBatch } from '../shared/alert-explain.js';
 import {
   applyAlertStatuses,
   isAlertStatusAction,
@@ -8,6 +9,7 @@ import {
 } from '../shared/alert-status.js';
 import { evaluateBalanceAlerts } from '../shared/balance-alerts.js';
 import { mergeBalanceThresholds } from '../shared/balance-thresholds.js';
+import { converseText } from '../shared/bedrock.js';
 import { buildFlaggedMetersCsv } from '../shared/flagged-export.js';
 import { parseAuthFromClaims, requireTenantId } from '../shared/auth.js';
 import {
@@ -23,7 +25,9 @@ import { calculateWaterBalance } from '../shared/water-balance.js';
  * GET /alerts — evaluate open alerts from tenant readings (+ G4 balance alerts),
  * merged with persisted acknowledge/resolve status (C3).
  * GET /alerts?format=csv — flagged meters only (C4), includes confidenceNote on Watch rows.
+ * GET /alerts?explain=1 — attach plainLanguage explanations (C6 templates; Bedrock optional).
  * POST /alerts — acknowledge / resolve with audit who/when under TENANT#.
+ * POST /alerts/explain — explain one alertId with optional Bedrock polish.
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
@@ -40,6 +44,10 @@ export const handler: AuthedHandler = async (event) => {
   }
 
   if (event.requestContext.http.method === 'POST') {
+    const path = event.rawPath ?? event.requestContext.http.path ?? '';
+    if (path.endsWith('/alerts/explain')) {
+      return explainOneAlert(event.body, tenantId);
+    }
     if (!event.body) {
       return badRequest('Body must be JSON with action and alertId');
     }
@@ -138,18 +146,78 @@ export const handler: AuthedHandler = async (event) => {
       return csv(body, `flagged-meters-${tenantId}-${stamp}.csv`);
     }
 
+    const wantExplain =
+      event.queryStringParameters?.explain === '1' ||
+      event.queryStringParameters?.explain === 'true';
+    const explanations = wantExplain
+      ? explainAlertsBatch(meterAlerts, confidence)
+      : undefined;
+
     return ok({
       tenantId,
       confidence,
-      alerts: meterAlerts,
+      alerts: meterAlerts.map((a) => {
+        const exp = explanations?.find((e) => e.alertId === a.id);
+        return exp ? { ...a, plainLanguage: exp.plainLanguage, explanationSource: exp.source } : a;
+      }),
       balanceAlerts: applyAlertStatuses(balanceAlerts, statuses, { includeResolved }),
       balancePeriod: balance.period,
       balanceThresholds: {
         ...thresholds,
         source: storedThresholds ? 'tenant' : 'default',
       },
+      explanations,
     });
   } catch (err) {
     return badRequest(err instanceof Error ? err.message : 'Failed to evaluate alerts');
   }
 };
+
+async function explainOneAlert(bodyRaw: string | undefined, tenantId: string) {
+  if (!bodyRaw) return badRequest('JSON body with alertId is required');
+  let alertId: string;
+  let useBedrock = true;
+  try {
+    const body = JSON.parse(bodyRaw) as { alertId?: string; bedrock?: boolean };
+    if (typeof body.alertId !== 'string') return badRequest('alertId is required');
+    alertId = sanitizeAlertId(body.alertId);
+    if (body.bedrock === false) useBedrock = false;
+  } catch {
+    return badRequest('Body must be JSON');
+  }
+
+  try {
+    const meterStore = createMeterStoreFromEnv();
+    const [locations, readings] = await Promise.all([
+      meterStore.listLocations(tenantId),
+      meterStore.listReadings(tenantId),
+    ]);
+    const { confidence, alerts } = evaluateAlerts(locations, readings);
+    const alert = alerts.find((a) => a.id === alertId);
+    if (!alert) return badRequest('Alert not found for this system (or already resolved)');
+
+    let explanation = explainAlertTemplate(alert, confidence);
+    if (useBedrock) {
+      const polished = await converseText({
+        system: [
+          'Rewrite this water-utility alert for a rural Colorado clerk in calm plain language.',
+          `Tenant ${tenantId} only. Never invent other towns or customer names beyond what is given.`,
+          'Never claim a confirmed leak when Confidence is Thin or mode is Watch.',
+          `Confidence level: ${confidence.level}.`,
+        ].join(' '),
+        user: `Summary: ${alert.summary}\nNote: ${alert.confidenceNote}\nTemplate: ${explanation.plainLanguage}`,
+        maxTokens: 220,
+      });
+      if (polished) {
+        explanation = {
+          ...explanation,
+          plainLanguage: polished.text,
+          source: 'bedrock',
+        };
+      }
+    }
+    return ok({ tenantId, explanation, bedrockAvailable: explanation.source === 'bedrock' });
+  } catch (err) {
+    return badRequest(err instanceof Error ? err.message : 'Explain failed');
+  }
+}

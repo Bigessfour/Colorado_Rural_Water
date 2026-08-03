@@ -22,7 +22,12 @@ import {
   type PlanCode,
 } from '../shared/billing.js';
 import { createCognitoAdminFromEnv, type CognitoAdminClient } from '../shared/cognito-admin.js';
-import { createTenantStoreFromEnv } from '../shared/dynamo-store.js';
+import { buildCrwaRollupRow, sanitizeRollupForResponse } from '../shared/crwa-rollup.js';
+import {
+  createMeterStoreFromEnv,
+  createSourceStoreFromEnv,
+  createTenantStoreFromEnv,
+} from '../shared/dynamo-store.js';
 import { badRequest, forbidden, json, ok, unauthorized } from '../shared/http.js';
 import {
   generateTemporaryPassword,
@@ -37,9 +42,10 @@ import {
 } from '../shared/tenant-admin.js';
 
 /**
- * Admin APIs (Pilot D1–D3 + Epic I0–I2):
+ * Admin APIs (Pilot D1–D3 + Epic I0–I2 + D4 roll-up):
  *   POST /admin/tenants — CRWA Admin provisions municipality + initial user (+ billing)
  *   GET  /admin/tenants — CRWA Admin lists municipalities (incl. billing status)
+ *   GET  /admin/rollup — CRWA sanitized roll-up (balance % + Confidence; no PII)
  *   GET  /admin/tenants/{tenantId}/billing — CRWA billing profile + ledger
  *   POST /admin/tenants/{tenantId}/billing/{action} — record-payment | extend-pilot |
  *        mark-past-due | suspend | reactivate
@@ -66,6 +72,10 @@ export const handler: AuthedHandler = async (event) => {
 
     if (method === 'GET' && (path === '/billing' || path.endsWith('/billing')) && !path.includes('/admin/')) {
       return getMunicipalityBilling(auth, store);
+    }
+
+    if (method === 'GET' && (path === '/admin/rollup' || path.endsWith('/admin/rollup'))) {
+      return getCrwaRollup(auth, store);
     }
 
     const adminBillingMatch = path.match(
@@ -219,6 +229,35 @@ async function provisionTenant(
       temporaryPassword,
       note: 'Share this temporary password out-of-band. User must change it on first sign-in.',
     },
+  });
+}
+
+async function getCrwaRollup(auth: AuthContext, store: TenantStore) {
+  try {
+    requireAnyRole(auth, ['crwa_admin']);
+  } catch (err) {
+    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+  }
+
+  const profiles = await store.listTenantProfiles();
+  const meterStore = createMeterStoreFromEnv();
+  const sourceStore = createSourceStoreFromEnv();
+
+  const rows = [];
+  for (const profile of profiles) {
+    const [locations, readings, sourceReadings] = await Promise.all([
+      meterStore.listLocations(profile.tenantId),
+      meterStore.listReadings(profile.tenantId),
+      sourceStore.listSourceReadings(profile.tenantId),
+    ]);
+    rows.push(buildCrwaRollupRow(profile, locations, readings, sourceReadings));
+  }
+
+  return ok({
+    generatedAt: new Date().toISOString(),
+    sanitized: true,
+    noCustomerPii: true,
+    systems: sanitizeRollupForResponse(rows),
   });
 }
 
@@ -419,8 +458,11 @@ async function applyBillingAction(
     pilotExpiresAt,
   };
 
-  await store.updateTenantProfile(next);
+  // Ledger first so a profile update never lands without an audit row (I1).
+  // Residual: if profile update fails after the event write, CRWA sees the intent in BILL#EVENT
+  // and can retry; opposite order left status changed with no audit.
   await store.putBillingEvent(event);
+  await store.updateTenantProfile(next);
 
   return ok({
     tenant: sanitizeCrwaTenant(next),

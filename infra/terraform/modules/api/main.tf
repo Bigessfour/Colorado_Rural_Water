@@ -65,6 +65,16 @@ data "aws_iam_policy_document" "lambda_data" {
     }
   }
 
+  # A6 thin harden: deny table-wide Scan even if a future statement grants broader access.
+  statement {
+    sid    = "DenyDynamoScan"
+    effect = "Deny"
+    actions = [
+      "dynamodb:Scan",
+    ]
+    resources = [var.data_table_arn]
+  }
+
   statement {
     sid = "CognitoAdminUserMgmt"
     actions = [
@@ -72,6 +82,19 @@ data "aws_iam_policy_document" "lambda_data" {
       "cognito-idp:AdminAddUserToGroup",
     ]
     resources = [var.cognito_user_pool_arn]
+  }
+
+  # Epic E / C6 — cheapest Bedrock model (Nova Lite) in this region only.
+  statement {
+    sid = "BedrockConverse"
+    actions = [
+      "bedrock:InvokeModel",
+      "bedrock:Converse",
+    ]
+    resources = [
+      "arn:aws:bedrock:${data.aws_region.current.region}::foundation-model/amazon.nova-lite-v1:0",
+      "arn:aws:bedrock:${data.aws_region.current.region}::foundation-model/amazon.nova-micro-v1:0",
+    ]
   }
 }
 
@@ -86,6 +109,8 @@ locals {
     UPLOAD_BUCKET        = var.uploads_bucket_name
     DATA_TABLE           = var.data_table_name
     COGNITO_USER_POOL_ID = var.cognito_user_pool_id
+    BEDROCK_MODEL_ID     = "amazon.nova-lite-v1:0"
+    BEDROCK_ENABLED      = "1"
   }
 }
 
@@ -157,7 +182,7 @@ resource "aws_lambda_function" "alerts" {
   runtime          = "nodejs22.x"
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
-  timeout          = 30
+  timeout          = 45
   memory_size      = 512
   environment {
     variables = local.lambda_env
@@ -227,8 +252,22 @@ resource "aws_lambda_function" "admin" {
   runtime          = "nodejs22.x"
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
-  timeout          = 30
-  memory_size      = 256
+  timeout          = 60
+  memory_size      = 512
+  environment {
+    variables = local.lambda_env
+  }
+}
+
+resource "aws_lambda_function" "agent" {
+  function_name    = "${local.name_prefix}-agent"
+  role             = aws_iam_role.lambda.arn
+  handler          = "agent.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 45
+  memory_size      = 512
   environment {
     variables = local.lambda_env
   }
@@ -328,6 +367,13 @@ resource "aws_apigatewayv2_integration" "admin" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "agent" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.agent.invoke_arn
+  payload_format_version = "2.0"
+}
+
 resource "aws_apigatewayv2_route" "health" {
   api_id    = aws_apigatewayv2_api.http.id
   route_key = "GET /health"
@@ -369,6 +415,14 @@ resource "aws_apigatewayv2_route" "alerts_get" {
 resource "aws_apigatewayv2_route" "alerts_post" {
   api_id             = aws_apigatewayv2_api.http.id
   route_key          = "POST /alerts"
+  target             = "integrations/${aws_apigatewayv2_integration.alerts.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "alerts_explain_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /alerts/explain"
   target             = "integrations/${aws_apigatewayv2_integration.alerts.id}"
   authorization_type = "JWT"
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
@@ -502,6 +556,30 @@ resource "aws_apigatewayv2_route" "billing_get" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "admin_rollup_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /admin/rollup"
+  target             = "integrations/${aws_apigatewayv2_integration.admin.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "agent_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /agent"
+  target             = "integrations/${aws_apigatewayv2_integration.agent.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "agent_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /agent"
+  target             = "integrations/${aws_apigatewayv2_integration.agent.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
@@ -584,6 +662,14 @@ resource "aws_lambda_permission" "admin_apigw" {
   statement_id  = "AllowAPIGatewayInvokeAdmin"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.admin.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "agent_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeAgent"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.agent.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }

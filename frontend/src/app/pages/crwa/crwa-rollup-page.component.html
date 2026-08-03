@@ -1,8 +1,8 @@
 <section class="page">
   <h1>CRWA roll-up</h1>
   <p class="lede">
-    Sanitized pilot summary — water balance and Data Confidence across municipalities. No customer
-    names or service addresses here.
+    Live sanitized summary — water balance and Data Confidence across municipalities. No customer
+    names or service addresses.
   </p>
 
   <p-card header="Why Confidence appears here" styleClass="intro">
@@ -11,34 +11,59 @@
       accuracy. Use it to coach Thin pilots differently from Strong archives so operators are not
       pushed into false digs.
     </p>
-    <p class="muted">Stub for tickets D4 / G6 / H5. Live roll-up after CRWA Admin role (D1/D3).</p>
+    @if (generatedAt()) {
+      <p class="muted">Generated {{ generatedAt() }}</p>
+    }
   </p-card>
 
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+
+  <div class="toolbar">
+    <p-button label="Refresh roll-up" [loading]="busy()" (onClick)="refresh()" />
+  </div>
+
   <p-card styleClass="table-card">
-    <p-table [value]="pilots" [tableStyle]="{ 'min-width': '48rem' }">
+    <p-table [value]="rows()" [tableStyle]="{ 'min-width': '52rem' }">
       <ng-template pTemplate="header">
         <tr>
           <th>System</th>
           <th>Meters</th>
           <th>Unaccounted</th>
+          <th>Period</th>
           <th>Confidence</th>
           <th>Months</th>
+          <th>Billing</th>
           <th>CRWA note</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
           <td>{{ row.system }}</td>
-          <td>{{ row.meters }}</td>
-          <td>{{ row.unaccountedPct }}</td>
+          <td>{{ row.meterCount }}</td>
+          <td>{{ unaccountedLabel(row) }}</td>
+          <td>{{ row.periodLabel }}</td>
           <td>
             <p-tag
               [severity]="confidenceSeverity(row.confidence)"
               [value]="row.confidence"
             />
           </td>
-          <td>{{ row.monthsHistory }}</td>
+          <td>{{ row.monthsOfHistory }}</td>
+          <td>{{ row.billingStatus }}</td>
           <td>{{ row.note }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8">
+            @if (busy()) {
+              Loading…
+            } @else {
+              No municipalities yet — provision a tenant from Admin.
+            }
+          </td>
         </tr>
       </ng-template>
     </p-table>

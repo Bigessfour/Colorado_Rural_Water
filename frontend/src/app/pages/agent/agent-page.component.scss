@@ -1,0 +1,72 @@
+.page {
+  max-width: 48rem;
+}
+
+.lede {
+  color: var(--p-text-muted-color, #5c6b73);
+  margin-bottom: 1rem;
+}
+
+.hint {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 12rem;
+  max-height: 28rem;
+  overflow: auto;
+  margin-bottom: 1rem;
+}
+
+.bubble {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--p-surface-100, #f4f7f8) 100%, transparent);
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--p-primary-50, #e8f4f2) 100%, transparent);
+  max-width: 90%;
+}
+
+.bubble.assistant {
+  align-self: flex-start;
+  max-width: 95%;
+}
+
+.who {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--p-text-muted-color, #5c6b73);
+}
+
+.text {
+  white-space: pre-wrap;
+}
+
+.empty {
+  color: var(--p-text-muted-color, #5c6b73);
+}
+
+.composer {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.signin-hint {
+  margin-bottom: 1rem;
+}

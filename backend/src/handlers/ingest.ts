@@ -141,6 +141,12 @@ export const handler: AuthedHandler = async (event) => {
       warnings: result.warnings,
       sheets: 'sheets' in result ? result.sheets : undefined,
       selectedSheet: 'selectedSheet' in result ? result.selectedSheet : undefined,
+      status: {
+        phase: 'failed',
+        friendly: 'We found problems in this file. Fix the rows below, or adjust column mapping, then try again.',
+        warningCount: result.warnings.length,
+        errorCount: result.errors.length,
+      },
     });
   }
 
@@ -155,6 +161,12 @@ export const handler: AuthedHandler = async (event) => {
       sheets: 'sheets' in result ? result.sheets : undefined,
       selectedSheet: 'selectedSheet' in result ? result.selectedSheet : undefined,
       mergedSheets: 'mergedSheets' in result ? result.mergedSheets : undefined,
+      status: {
+        phase: 'dry_run_ok',
+        friendly: `Looks good — ${result.rows.length} rows would import. Review warnings, then ingest.`,
+        warningCount: result.warnings.length,
+        errorCount: 0,
+      },
     });
   }
 
@@ -162,6 +174,7 @@ export const handler: AuthedHandler = async (event) => {
     const store = createMeterStoreFromEnv();
     const summary = await commitCustomerIngest(store, tenantId, result);
     const locations = await store.listLocations(tenantId);
+    const conflictCount = summary.addressConflicts?.length ?? 0;
     return ok({
       tenantId,
       mapping: result.mapping,
@@ -170,8 +183,26 @@ export const handler: AuthedHandler = async (event) => {
       sheets: 'sheets' in result ? result.sheets : undefined,
       selectedSheet: 'selectedSheet' in result ? result.selectedSheet : undefined,
       mergedSheets: 'mergedSheets' in result ? result.mergedSheets : undefined,
+      warnings: result.warnings,
+      status: {
+        phase: 'committed',
+        friendly:
+          conflictCount > 0
+            ? `Imported ${summary.readingsWritten} readings. ${conflictCount} address conflict(s) kept on the existing meter location.`
+            : `Imported ${summary.readingsWritten} readings across ${locations.length} meters.`,
+        warningCount: result.warnings.length,
+        errorCount: 0,
+        addressConflicts: conflictCount,
+      },
     });
   } catch (err) {
-    return badRequest(err instanceof Error ? err.message : 'Ingest failed');
+    return badRequest(err instanceof Error ? err.message : 'Ingest failed', {
+      status: {
+        phase: 'failed',
+        friendly: 'We could not finish this import. Fix the message below and try again.',
+        warningCount: result.warnings.length,
+        errorCount: 1,
+      },
+    });
   }
 };

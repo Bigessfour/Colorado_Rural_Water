@@ -1,7 +1,10 @@
 <header class="top">
   <div class="brand">
-    <span class="brand-name">Water Saver</span>
-    <span class="brand-sub">Colorado Rural Water · Pilot</span>
+    <span class="brand-mark" aria-hidden="true">WS</span>
+    <div class="brand-text">
+      <span class="brand-name">Water Saver</span>
+      <span class="brand-sub">Colorado Rural Water Association · working name</span>
+    </div>
   </div>
   <nav class="nav" aria-label="Primary">
     <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
@@ -9,6 +12,7 @@
     <a routerLink="/sources" routerLinkActive="active">Sources</a>
     <a routerLink="/alerts" routerLinkActive="active">Alerts</a>
     @if (auth.isLoggedIn()) {
+      <a routerLink="/assistant" routerLinkActive="active">Assistant</a>
       <a routerLink="/account" routerLinkActive="active">Account</a>
     }
     @if (auth.canManageUsers()) {
@@ -33,3 +37,10 @@
 <main class="main">
   <router-outlet />
 </main>
+<footer class="foot">
+  <p>
+    Water Saver is a CRWA member service. AI help uses the cheapest option first (templates, then
+    Nova Lite). Token use bills this environment — not your municipal water customers. Membership
+    dues status is on Billing.
+  </p>
+</footer>

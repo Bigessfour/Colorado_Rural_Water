@@ -65,7 +65,12 @@
               <div class="addr">{{ alert.occupantName }}</div>
             }
           </td>
-          <td>{{ alert.summary }}</td>
+          <td>
+            <div>{{ alert.summary }}</div>
+            @if (alert.plainLanguage) {
+              <div class="plain">{{ alert.plainLanguage }}</div>
+            }
+          </td>
           <td>{{ alert.confidenceNote }}</td>
           <td>{{ statusLabel(alert) }}</td>
           <td class="actions">
@@ -76,6 +81,14 @@
                 severity="secondary"
                 [outlined]="true"
                 (onClick)="openHistory(alert)"
+              />
+              <p-button
+                label="Explain"
+                size="small"
+                severity="secondary"
+                [text]="true"
+                [loading]="explainBusyId() === alert.id"
+                (onClick)="explain(alert)"
               />
             }
             @if (alert.status === 'open' || alert.status === 'acknowledged') {

@@ -67,3 +67,13 @@ output "admin_users_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/admin/users"
   description = "GET /admin/users (JWT, System Admin D2)"
 }
+
+output "admin_rollup_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/admin/rollup"
+  description = "GET /admin/rollup sanitized CRWA roll-up (JWT, CRWA Admin D4/G6/H5)"
+}
+
+output "agent_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/agent"
+  description = "GET/POST /agent conversational AI (JWT, Epic E)"
+}

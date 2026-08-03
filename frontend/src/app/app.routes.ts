@@ -9,6 +9,7 @@ import { SourcesPageComponent } from './pages/sources/sources-page.component';
 import { AdminPageComponent } from './pages/admin/admin-page.component';
 import { BillingPageComponent } from './pages/billing/billing-page.component';
 import { AccountPageComponent } from './pages/account/account-page.component';
+import { AgentPageComponent } from './pages/agent/agent-page.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -21,6 +22,7 @@ export const routes: Routes = [
       { path: 'upload', component: UploadPageComponent },
       { path: 'sources', component: SourcesPageComponent },
       { path: 'alerts', component: AlertsPageComponent },
+      { path: 'assistant', component: AgentPageComponent },
       { path: 'account', component: AccountPageComponent },
       { path: 'admin', component: AdminPageComponent },
       { path: 'billing', component: BillingPageComponent },

@@ -139,18 +139,36 @@ export class UploadPageComponent {
   statusMessage = '';
   statusSeverity: 'info' | 'success' | 'warn' | 'error' = 'info';
   busy = false;
+  /** B6 — operator-facing ingest phase. */
+  ingestPhase: 'idle' | 'loaded' | 'mapped' | 'dry_run_ok' | 'committed' | 'failed' = 'idle';
+  ingestWarnings: string[] = [];
+  lastStatusFriendly = '';
+  /** H2 — summary rows after multi-file bulk load. */
+  queue: Array<{ name: string; status: string; ok: boolean }> = [];
 
   onCustomUpload(event: FileUploadHandlerEvent): void {
-    const file = event.files?.[0];
-    if (!file) return;
+    const files = event.files ?? [];
+    if (!files.length) return;
+    if (files.length > 1) {
+      void this.ingestFileQueue([...files]);
+      return;
+    }
+    this.beginLoadFile(files[0]);
+  }
+
+  private beginLoadFile(file: File): void {
     this.fileName = file.name;
     this.isExcel = /\.xlsx?$/i.test(file.name);
     this.statusMessage = '';
     this.mergeArchive = false;
+    this.ingestWarnings = [];
+    this.ingestPhase = 'idle';
 
     if (file.size > MAX_UPLOAD_BYTES) {
       this.statusMessage = `File is too large (${Math.round(file.size / 1024 / 1024)} MB). Max is 5 MB for Upload — use a smaller export or the S3 drop-zone.`;
       this.statusSeverity = 'warn';
+      this.ingestPhase = 'failed';
+      this.lastStatusFriendly = this.statusMessage;
       this.headers = [];
       this.previewRows = [];
       this.excelBase64 = '';
@@ -166,6 +184,7 @@ export class UploadPageComponent {
         if (!(data instanceof ArrayBuffer)) {
           this.statusMessage = 'Could not read Excel file.';
           this.statusSeverity = 'error';
+          this.ingestPhase = 'failed';
           return;
         }
         const bytes = new Uint8Array(data);
@@ -188,11 +207,15 @@ export class UploadPageComponent {
         this.csvText = '';
         if (this.selectedSheet) {
           this.loadSelectedSheet();
-          this.statusMessage = `Loaded ${file.name}. Choose a sheet, review mapping, then ingest.`;
+          this.ingestPhase = 'mapped';
+          this.statusMessage = `Loaded ${file.name}. Choose a sheet, review mapping, then dry run.`;
           this.statusSeverity = 'info';
+          this.lastStatusFriendly = this.statusMessage;
         } else {
           this.statusMessage = 'No meter-data sheets found (Clerk Notes alone is ignored).';
           this.statusSeverity = 'warn';
+          this.ingestPhase = 'failed';
+          this.lastStatusFriendly = this.statusMessage;
         }
       };
       reader.readAsArrayBuffer(file);
@@ -207,10 +230,58 @@ export class UploadPageComponent {
     reader.onload = () => {
       this.csvText = String(reader.result ?? '');
       this.preparePreview(this.csvText);
-      this.statusMessage = 'File loaded. Review column mapping, then ingest.';
+      this.ingestPhase = this.headers.length ? 'mapped' : 'loaded';
+      this.statusMessage = 'File loaded. Review column mapping, then dry run.';
       this.statusSeverity = 'info';
+      this.lastStatusFriendly = this.statusMessage;
     };
     reader.readAsText(file);
+  }
+
+  /** Wait until FileReader finishes for queue processing. */
+  private waitUntilLoaded(timeoutMs = 4000): Promise<boolean> {
+    const start = Date.now();
+    return new Promise((resolve) => {
+      const tick = () => {
+        if (this.ingestPhase === 'mapped' || this.ingestPhase === 'loaded') {
+          resolve(true);
+          return;
+        }
+        if (this.ingestPhase === 'failed' || Date.now() - start > timeoutMs) {
+          resolve(false);
+          return;
+        }
+        setTimeout(tick, 40);
+      };
+      tick();
+    });
+  }
+
+  /** H2 multi-file historical load — sequential commit + “what we loaded” summary. */
+  private async ingestFileQueue(files: File[]): Promise<void> {
+    this.queue = [];
+    this.busy = true;
+    this.statusSeverity = 'info';
+    this.statusMessage = `Bulk load: ${files.length} files (max 5 MB each)…`;
+    for (const file of files) {
+      this.beginLoadFile(file);
+      const loaded = await this.waitUntilLoaded();
+      if (!loaded || (!this.csvText.trim() && !this.excelBase64)) {
+        this.queue.push({ name: file.name, status: this.statusMessage || 'Failed to load', ok: false });
+        continue;
+      }
+      await this.ingest(false);
+      this.queue.push({
+        name: file.name,
+        status: this.lastStatusFriendly || this.statusMessage,
+        ok: this.ingestPhase === 'committed',
+      });
+    }
+    const okCount = this.queue.filter((q) => q.ok).length;
+    this.statusMessage = `Bulk load finished — ${okCount} of ${files.length} file(s) imported.`;
+    this.statusSeverity = okCount === files.length ? 'success' : 'warn';
+    this.lastStatusFriendly = this.statusMessage;
+    this.busy = false;
   }
 
   onSheetChange(): void {
@@ -330,20 +401,39 @@ export class UploadPageComponent {
       });
       const payload = await res.json();
       if (!res.ok) {
-        this.statusMessage = payload.error ?? `Ingest failed (${res.status})`;
+        this.ingestPhase = 'failed';
+        this.ingestWarnings = Array.isArray(payload.warnings) ? payload.warnings : [];
+        this.statusMessage =
+          payload.status?.friendly ?? payload.error ?? `Ingest failed (${res.status})`;
+        this.lastStatusFriendly = this.statusMessage;
         this.statusSeverity = 'error';
         return;
       }
+      this.ingestWarnings = Array.isArray(payload.warnings) ? payload.warnings : [];
+      if (payload.status?.friendly) {
+        this.lastStatusFriendly = payload.status.friendly;
+      }
       const sheetNote = payload.selectedSheet ? ` (sheet: ${payload.selectedSheet})` : '';
-      this.statusMessage = dryRun
-        ? `Dry run OK — ${payload.rowCount} rows would import${sheetNote}.`
-        : `Imported ${payload.readingsWritten} readings across ${payload.metersTracked} meters${sheetNote}.` +
-          (payload.addressConflicts?.length
-            ? ` ${payload.addressConflicts.length} address conflict(s) kept on existing location.`
-            : '');
+      if (dryRun) {
+        this.ingestPhase = 'dry_run_ok';
+        this.statusMessage =
+          payload.status?.friendly ??
+          `Dry run OK — ${payload.rowCount} rows would import${sheetNote}.`;
+      } else {
+        this.ingestPhase = 'committed';
+        this.statusMessage =
+          payload.status?.friendly ??
+          `Imported ${payload.readingsWritten} readings across ${payload.metersTracked} meters${sheetNote}.` +
+            (payload.addressConflicts?.length
+              ? ` ${payload.addressConflicts.length} address conflict(s) kept on existing location.`
+              : '');
+      }
+      this.lastStatusFriendly = this.statusMessage;
       this.statusSeverity = 'success';
     } catch (err) {
+      this.ingestPhase = 'failed';
       this.statusMessage = err instanceof Error ? err.message : 'Network error';
+      this.lastStatusFriendly = this.statusMessage;
       this.statusSeverity = 'error';
     } finally {
       this.busy = false;

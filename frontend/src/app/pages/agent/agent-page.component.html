@@ -1,0 +1,65 @@
+<section class="page">
+  <h1>Assistant</h1>
+  <p class="lede">
+    Onboarding help, Confidence coaching, and calm explanations — scoped to your system only.
+  </p>
+
+  <p-message severity="info" styleClass="hint">{{ costNote() }}</p-message>
+  @if (coaching()) {
+    <p-message severity="info" styleClass="hint">{{ coaching() }}</p-message>
+  }
+  @if (needsConfirm()) {
+    <p-message severity="warn" styleClass="hint">
+      That sounded like a change or delete. Reply with CONFIRM DELETE or CONFIRM CHANGE to proceed.
+    </p-message>
+  }
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+
+  @if (!auth.isLoggedIn()) {
+    <p class="signin-hint"><a routerLink="/login">Sign in</a> to use the assistant.</p>
+  }
+
+  <p-card styleClass="chat-card">
+    <div class="toolbar">
+      <p-button
+        label="Start onboarding inventory"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="!auth.isLoggedIn() || busy()"
+        (onClick)="askOnboarding()"
+      />
+      <p-tag value="Tenant-scoped" severity="success" />
+    </div>
+
+    <div class="transcript" aria-live="polite">
+      @for (msg of messages(); track $index) {
+        <div class="bubble" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
+          <div class="who">{{ msg.role === 'user' ? 'You' : 'Water Saver' }}</div>
+          <div class="text">{{ msg.text }}</div>
+        </div>
+      } @empty {
+        <p class="empty">Ask about Confidence, onboarding history, or mapping tips.</p>
+      }
+    </div>
+
+    <form class="composer" (ngSubmit)="send()">
+      <textarea
+        pTextarea
+        name="agentDraft"
+        [(ngModel)]="draft"
+        rows="3"
+        fluid
+        placeholder="Ask in everyday language…"
+        [disabled]="busy() || !auth.isLoggedIn()"
+      ></textarea>
+      <p-button
+        type="submit"
+        label="Send"
+        [loading]="busy()"
+        [disabled]="busy() || !draft.trim() || !auth.isLoggedIn()"
+      />
+    </form>
+  </p-card>
+</section>

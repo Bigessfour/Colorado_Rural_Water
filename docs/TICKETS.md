@@ -8,7 +8,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 ---
 
-## Kelly critical path (finish before F1/F2)
+## Kelly critical path (closed)
 
 **Kelly path closed** (`e0bfd92` on main). Remaining work is **Pilot hardening** (Spec §0).
 
@@ -33,7 +33,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | A3  | Cognito user pool + app client (MFA optional) | P0       | done   | Kelly | Live pool us-east-2_oHpsTZZAN; MFA/groups IAM workarounds                                       |
 | A4  | Tenant model + isolation strategy doc         | P0       | done   | Kelly | DynamoDB single-table + S3 uploads; see TENANT_ISOLATION.md                                     |
 | A5  | API Gateway + Lambda stub (health + me)       | P0       | done   | Kelly | Live API 14jxov7h72; /health 200, /me JWT 401 without token                                     |
-| A6  | Per-tenant IAM ABAC / session tags            | P1       | todo   | Pilot | Shared role hardened to tenants/* + LeadingKeys TENANT#*; true cross-tenant IAM deny still open |
+| A6  | Per-tenant IAM ABAC / session tags            | P1       | done   | Pilot | Thin: `tenants/*` S3 + LeadingKeys `TENANT#*` + **Deny Scan** + Bedrock model ARNs; residual = no session-tag ABAC yet (documented) |
 
 ## Epic B — Ingestion (critical path)
 
@@ -44,7 +44,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | B3  | Parse CSV/Excel with forgiving heuristics     | P0       | done   | Kelly | `csv-parse.ts` + `excel-parse.ts` (xlsx); header detect, footers, aliases, CF warn; **size/DoS caps + tenantFromKey harden** (post-review); tests on Town of Steve workbook |
 | B4  | Visual column mapper UI + saved mapping       | P0       | done   | Kelly | Upload mapper UI + Dynamo `MAP#customer_readings`      |
 | B5  | Canonical reading + meter-location store      | P0       | done   | Kelly | Dynamo LOC#/RDG#; POST /ingest smoked with sample CSV; optional asset metadata (manufacturer/model/serial/size/install/type/location/radio/lastTested/notes) with non-wipe upsert |
-| B6  | Ingestion status UX (progress / failures)     | P1       | todo   | Pilot | Non-technical friendly                                 |
+| B6  | Ingestion status UX (progress / failures)     | P1       | done   | Pilot | Phase list + friendly `status` from API + warnings panel |
 | B7  | Occupant-name update without relocating meter | P1       | done   | Kelly | Covered by meter-location upsert + ingest commit       |
 | B8  | Operator meter asset metadata edit            | P1       | done   | Pilot | `PUT /meters/{id}` partial metadata; Alerts History form; CSV aliases for common asset headers |
 
@@ -57,7 +57,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | C3  | Acknowledge / resolve alerts                                | P0       | done        | Pilot  | Dynamo `ALERT#STATUS#`; audit who/when; resolved hidden from default GET   |
 | C4  | Export flagged meters                                       | P1       | done        | Pilot  | `GET /alerts?format=csv` + Alerts “Export flagged CSV”; confidenceNote on Watch rows |
 | C5  | Basic meter history view                                    | P1       | done        | Pilot  | `GET/PUT /meters/{meterId}`; History dialog shows + edits optional asset metadata |
-| C6  | AI plain-language alert explanations                        | P1       | todo        | Pilot  | Bedrock; tenant-scoped; Kelly may use static/heuristic copy                  |
+| C6  | AI plain-language alert explanations                        | P1       | done        | Pilot  | Templates always; Bedrock Nova Lite polish when available (`?explain=1` / `POST /alerts/explain`) |
 
 ## Epic D — Auth, roles & CRWA roll-up
 
@@ -66,8 +66,8 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | D1  | Roles: Operator / System Admin / CRWA Admin | P0       | done        | Pilot       | Cognito groups → AuthContext; `/me` roles; Admin nav gated             |
 | D2  | System Admin: invite users within tenant    | P1       | done        | Pilot       | `POST /admin/users/invite`; JWT tenant only; temp password once        |
 | D3  | CRWA Admin: provision tenant + initial user | P0       | done        | Pilot       | `POST /admin/tenants`; META#profile + Cognito AdminCreateUser          |
-| D4  | CRWA enterprise roll-up (sanitized)         | P1       | todo        | Pilot       | No cross-tenant PII; include water-balance KPIs (G6) + Confidence (H5) |
-| D5  | Self-service password + MFA UX              | P1       | done        | Kelly/Pilot | Password change + TOTP setup on Account; login MFA / NEW_PASSWORD / MFA_SETUP challenges; pool already OPTIONAL+software token (no TF apply). Residual: no SMS MFA; no QR render (otpauth link + copy secret); re-login if old session lacks access token |
+| D4  | CRWA enterprise roll-up (sanitized)         | P1       | done        | Pilot       | Live `GET /admin/rollup` — balance % + Confidence; no customer PII     |
+| D5  | Self-service password + MFA UX              | P1       | done        | Kelly/Pilot | Password change + TOTP; disable MFA requires password step-up (post-review) |
 
 ## Epic G — Water balance (production in vs billed out)
 
@@ -80,19 +80,19 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 | G3  | Balance calculator for billing period                     | P0       | done        | Kelly       | GET /balance; one-sided=insufficient; period dedupe; UTC YYYY-MM                  |
 | G4  | Water-balance alerts (high loss + sold > pumped)          | P0       | done        | Kelly/Pilot | Feed + UI (Kelly); tenant `CFG#balance_thresholds` + PUT /balance/thresholds (Pilot) |
 | G5  | Operator dashboard viz (In / Out / Loss trend)            | P0       | done        | Kelly       | KPI + In/Out/Unaccounted chart; insufficient calm copy                      |
-| G6  | CRWA roll-up water-balance summary                        | P1       | todo        | Pilot       | Sanitized per-municipality; wire with D4                                          |
+| G6  | CRWA roll-up water-balance summary                        | P1       | done        | Pilot       | Shipped with D4 (`unaccountedPct` + balanceStatus per system)                     |
 | G7  | Sample source + customer fixtures for demo balance        | P0       | done        | Kelly       | `messy-source-readings-july.csv` + customer CSV; GH #9                            |
 
 ## Epic E — Conversational AI
 
 | ID  | Title                                              | Priority | Status | Layer | Notes                                                          |
 | --- | -------------------------------------------------- | -------- | ------ | ----- | -------------------------------------------------------------- |
-| E1  | Agent shell + conversation history (tenant-scoped) | P1       | todo   | Pilot | Bedrock                                                        |
-| E2  | Onboarding interview flow                          | P1       | todo   | Pilot | Per Spec §5; include data-inventory questions (extend with H1) |
+| E1  | Agent shell + conversation history (tenant-scoped) | P1       | done   | Pilot | `GET/POST /agent`; Dynamo `CONV#`; SPA `/assistant`            |
+| E2  | Onboarding interview flow                          | P1       | todo   | Pilot | Thin inventory via Assistant “Start onboarding”; full flow later |
 | E3  | Mapping assistance + config help                   | P1       | todo   | Pilot |                                                                |
-| E4  | Cost-transparency + confirmation guardrails        | P0       | todo   | Pilot | Cheapest option first; no delete without multi-step confirm    |
-| E5  | Tenant isolation tests for AI context              | P0       | todo   | Pilot | Hard safety rule                                               |
-| E6  | Confidence coaching copy in agent                  | P1       | todo   | Pilot | Watch vs Actionable; never overclaim; Spec §5 / §7b            |
+| E4  | Cost-transparency + confirmation guardrails        | P0       | done   | Pilot | Cost note + CONFIRM DELETE/CHANGE; cheapest-first              |
+| E5  | Tenant isolation tests for AI context              | P0       | done   | Pilot | `agent-isolation.test.ts` + assertNoCrossTenantContext         |
+| E6  | Confidence coaching copy in agent                  | P1       | done   | Pilot | Watch vs Actionable; never-overclaim; with H7                  |
 
 ## Epic F — Polish for Kelly Stone demo
 
@@ -100,23 +100,23 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 | --- | ------------------------------------------ | -------- | ------ | ----- | ------------------- |
 | F1  | Seed demo tenant + guided walkthrough      | P0       | done   | Kelly | docs/DEMO_WALKTHROUGH.md + sample-data CSVs |
 | F2  | End-to-end smoke test checklist            | P0       | done   | Kelly | docs/SMOKE_CHECKLIST.md ↔ Spec §11a   |
-| F3  | Cost/usage transparency copy in UI         | P2       | todo   | Pilot |                     |
-| F4  | Branding placeholder (CRWA + working name) | P2       | todo   | Pilot | Final name TBD      |
+| F3  | Cost/usage transparency copy in UI         | P2       | done   | Pilot | Shell footer + Assistant cost note    |
+| F4  | Branding placeholder (CRWA + working name) | P2       | done   | Pilot | WS mark + CRWA working-name subtitle  |
 
 ## Epic H — Onboarding agility & Data Confidence
 
 Work with any amount of history (none → years); never treat thin-data flags as dig-now alarms. Spec §5 paths + §7b. Heuristics only (no custom ML). Tracking: [GH #10](https://github.com/Bigessfour/Colorado_Rural_Water/issues/10).
 
-| ID  | Title                                                           | Priority | Status | Layer       | Notes                                                                             |
-| --- | --------------------------------------------------------------- | -------- | ------ | ----------- | --------------------------------------------------------------------------------- |
-| H1  | Onboarding data-inventory interview                             | P0       | todo   | Pilot       | Extend E2: ask what history they have; set Confidence expectations; paths A–D     |
-| H2  | Historical bulk ingest UX                                       | P0       | todo   | Pilot       | Multi-file / multi-year load on top of Epic B; post-load “what we loaded” summary |
-| H3  | Confidence calculator (tenant + per-signal; optional per-meter) | P0       | done   | Kelly/Pilot | Heuristic §7b freeze (months + coverage + seasonality); store/per-meter = Pilot |
-| H4  | Operator dashboard Confidence card                              | P0       | done   | Kelly       | Level + display score + improve hint + per-signal Watch/Actionable              |
-| H5  | CRWA roll-up Confidence column / card                           | P1       | todo   | Pilot       | Sanitized per-municipality; wire with D4 / G6                                     |
-| H6  | Alert UX gating: Watch vs Actionable by Confidence              | P0       | done   | Kelly       | Statistical Watch until Solid; stuck/diag Actionable; balance Watch (§7a)         |
-| H7  | Agent Confidence copy + never-overclaim guardrails              | P1       | todo   | Pilot       | Same intent as E6; ship with Epic E                                               |
-| H8  | Kelly review: Confidence threshold defaults                     | P1       | todo   | Pilot       | Revisit Spec §7b freeze after Kelly feedback                                      |
+| ID  | Title                                                           | Priority | Status  | Layer       | Notes                                                                             |
+| --- | --------------------------------------------------------------- | -------- | ------- | ----------- | --------------------------------------------------------------------------------- |
+| H1  | Onboarding data-inventory interview                             | P0       | done    | Pilot       | Thin stub: Assistant onboarding inventory (paths A–D); full E2 interview later    |
+| H2  | Historical bulk ingest UX                                       | P0       | done    | Pilot       | Multi-file upload queue + “what we loaded” summary (5 MB/file)                    |
+| H3  | Confidence calculator (tenant + per-signal; optional per-meter) | P0       | done    | Kelly/Pilot | Heuristic §7b freeze (months + coverage + seasonality); store/per-meter = Pilot |
+| H4  | Operator dashboard Confidence card                              | P0       | done    | Kelly       | Level + display score + improve hint + per-signal Watch/Actionable              |
+| H5  | CRWA roll-up Confidence column / card                           | P1       | done    | Pilot       | Live with D4 / G6                                                                 |
+| H6  | Alert UX gating: Watch vs Actionable by Confidence              | P0       | done    | Kelly       | Statistical Watch until Solid; stuck/diag Actionable; balance Watch (§7a)         |
+| H7  | Agent Confidence copy + never-overclaim guardrails              | P1       | done    | Pilot       | Shipped with E6                                                                   |
+| H8  | Kelly review: Confidence threshold defaults                     | P1       | blocked | Pilot       | **Blocked** awaiting Kelly feedback on Spec §7b freeze                            |
 
 ## Epic I — CRWA membership billing (processor-agnostic)
 
@@ -124,27 +124,28 @@ Water Saver as a **CRWA member service** (dues / pilot status) — not municipal
 
 **Do not** add a payment-processor SDK, webhooks, or secrets until **I3** is written with a decision. I0–I2 ship without a processor.
 
-| ID  | Title                                                                                          | Priority | Status | Layer              | Notes                                                                                          |
-| --- | ---------------------------------------------------------------------------------------------- | -------- | ------ | ------------------ | ---------------------------------------------------------------------------------------------- |
-| I0  | Tenant billing fields + status on CRWA tenant list; provision form plan + pilot/paid           | P1       | done   | Early pilot        | `billingStatus`, plan, meter estimate; extend D3 profile; no processor                         |
-| I1  | Admin: Record external payment, Extend pilot, Mark past due / Suspend / Reactivate + audit     | P1       | done   | Early pilot        | Internal `BILL#EVENT` ledger; offline check/ACH; no processor                                  |
-| I2  | Municipality Billing page (status + plain-language plan; history from our ledger)              | P1       | done   | Early pilot / near | System Admin only; no “update card” until I4–I6                                                |
-| I3  | **Due-out:** Payment processor discovery with CRWA                                             | P1       | todo   | Discovery          | Outcome in Spec §12 / BILLING.md; blocks I4+ only                                              |
-| I4  | **Install:** Processor adapter (Stripe recommended if greenfield)                              | P1       | todo   | After I3           | Secrets in SSM/Secrets Manager; vendor-neutral `paymentProvider` + external ids                |
-| I5  | Webhooks / sync → auto `billingStatus`                                                         | P0       | todo   | After I4           | Idempotent external event ids                                                                  |
-| I6  | Self-serve payment-method update (portal or vendor equivalent)                                 | P1       | todo   | After I4           | Municipality System Admin                                                                      |
-| I7  | Subscriptions + dunning automation                                                             | P2       | todo   | Later              | After pilot hardens                                                                            |
-| I8  | Usage band suggestion polish + basic revenue export                                            | P2       | todo   | Later              | Meter band on create-tenant; export for CRWA bookkeeping                                       |
+| ID  | Title                                                                                          | Priority | Status  | Layer              | Notes                                                                                          |
+| --- | ---------------------------------------------------------------------------------------------- | -------- | ------- | ------------------ | ---------------------------------------------------------------------------------------------- |
+| I0  | Tenant billing fields + status on CRWA tenant list; provision form plan + pilot/paid           | P1       | done    | Early pilot        | `billingStatus`, plan, meter estimate; extend D3 profile; no processor                         |
+| I1  | Admin: Record external payment, Extend pilot, Mark past due / Suspend / Reactivate + audit     | P1       | done    | Early pilot        | Internal `BILL#EVENT` ledger; offline check/ACH; no processor                                  |
+| I2  | Municipality Billing page (status + plain-language plan; history from our ledger)              | P1       | done    | Early pilot / near | System Admin only; no “update card” until I4–I6                                                |
+| I3  | **Due-out:** Payment processor discovery with CRWA                                             | P1       | blocked | Discovery          | **Blocked** awaiting CRWA discovery conversation; outcome → Spec §12 / BILLING.md              |
+| I4  | **Install:** Processor adapter (Stripe recommended if greenfield)                              | P1       | blocked | After I3           | Blocked on I3                                                                                  |
+| I5  | Webhooks / sync → auto `billingStatus`                                                         | P0       | blocked | After I4           | Blocked on I3 → I4                                                                             |
+| I6  | Self-serve payment-method update (portal or vendor equivalent)                                 | P1       | blocked | After I4           | Blocked on I3 → I4                                                                             |
+| I7  | Subscriptions + dunning automation                                                             | P2       | blocked | Later              | Blocked on I3                                                                                  |
+| I8  | Usage band suggestion polish + basic revenue export                                            | P2       | blocked | Later              | Blocked on I3                                                                                  |
 
 ---
 
 ## Suggested next sprint (Pilot)
 
-1. Smoke D1–D3: CRWA provision tenant → initial System Admin signs in → invite Operator → upload path
-2. IAM ABAC (**A6**) thin if needed; D5 MFA/password **done** (Account + login challenges)
-3. Then Epic E / D4 roll-up (G6/H5) — not before admin onboarding smoke is green
-4. When CRWA needs pilot vs paid tracking: **I0–I2 done** (manual status; still no processor SDK)
-5. **I3** discovery conversation before any processor install (I4+)
+1. Smoke live **D4 roll-up** (CRWA Admin → `/crwa`) and **Assistant** (`/assistant` + `GET/POST /agent`)
+2. Smoke **B6** upload status + **H2** multi-file; confirm archive merge no longer wipes occupant names
+3. Finish **E2/E3** mapping/onboarding interview depth (H1 thin stub already live)
+4. **I3** CRWA processor discovery conversation (blocks I4–I8)
+5. **H8** after Kelly Confidence-threshold feedback
+6. True session-tag ABAC when multi-municipality scale demands it (A6 residual)
 
 Do **not** start vNext (AMI, resident portal, **municipal CIS** billing write-back, custom ML, formal address parse, agent AWS provisioning).
 

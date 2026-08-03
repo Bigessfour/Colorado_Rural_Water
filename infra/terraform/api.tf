@@ -78,6 +78,16 @@ output "api_admin_users_url" {
   description = "GET /admin/users + POST /admin/users/invite (JWT)"
 }
 
+output "api_admin_rollup_url" {
+  value       = try(module.api[0].admin_rollup_url, null)
+  description = "GET /admin/rollup (JWT, CRWA Admin D4)"
+}
+
+output "api_agent_url" {
+  value       = try(module.api[0].agent_url, null)
+  description = "GET/POST /agent (JWT, Epic E)"
+}
+
 output "uploads_bucket" {
   value       = try(module.storage[0].uploads_bucket_name, null)
   description = "S3 uploads bucket"

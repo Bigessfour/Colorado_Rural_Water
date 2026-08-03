@@ -2,31 +2,59 @@
   <h1>Upload meter readings</h1>
   <p class="lede">
     Drop a messy CSV or Excel export. We guess columns in everyday language — address stays with the
-    meter; occupant name can change.
+    meter; occupant name can change. Choose multiple files for a bulk historical load (H2).
   </p>
 
   <p-message severity="info" styleClass="hint">{{ sampleHint }}</p-message>
 
-  @if (statusMessage) {
-    <p-message [severity]="statusSeverity" styleClass="hint">{{ statusMessage }}</p-message>
-  }
+  <p-card header="Ingestion status" styleClass="status-card">
+    <ol class="phase-list">
+      <li [class.done]="ingestPhase !== 'idle'">1. Load file</li>
+      <li [class.done]="ingestPhase === 'mapped' || ingestPhase === 'dry_run_ok' || ingestPhase === 'committed'">
+        2. Map columns
+      </li>
+      <li [class.done]="ingestPhase === 'dry_run_ok' || ingestPhase === 'committed'">3. Dry run</li>
+      <li [class.done]="ingestPhase === 'committed'">4. Import</li>
+    </ol>
+    @if (statusMessage) {
+      <p-message [severity]="statusSeverity" styleClass="hint">{{ statusMessage }}</p-message>
+    }
+    @if (ingestWarnings.length) {
+      <ul class="warn-list">
+        @for (w of ingestWarnings; track w) {
+          <li>{{ w }}</li>
+        }
+      </ul>
+    }
+    @if (queue.length) {
+      <div class="queue">
+        <div class="queue-title">What we loaded</div>
+        <ul>
+          @for (q of queue; track q.name) {
+            <li [class.ok]="q.ok" [class.bad]="!q.ok">{{ q.name }} — {{ q.status }}</li>
+          }
+        </ul>
+      </div>
+    }
+  </p-card>
 
   <p-card styleClass="upload-card">
     <p-fileupload
       mode="advanced"
       name="readings"
-      chooseLabel="Choose file"
+      chooseLabel="Choose file(s)"
       uploadLabel="Load for mapping"
       cancelLabel="Clear"
       [customUpload]="true"
       [auto]="false"
+      [multiple]="true"
       accept=".csv,.txt,.xlsx,.xls"
       [maxFileSize]="5000000"
       (uploadHandler)="onCustomUpload($event)"
     >
       <ng-template pTemplate="empty">
         <div class="drop">
-          Drag a CSV or Excel file here, or choose a file to preview column mapping.
+          Drag CSV/Excel here (one file to map, or several for bulk history). Max 5 MB each.
         </div>
       </ng-template>
     </p-fileupload>

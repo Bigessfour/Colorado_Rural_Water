@@ -44,7 +44,7 @@ Role enforcement (Pilot D1–D3):
 | Tenant profile (D3)   | `sk=META#profile`; registry mirror `pk=TENANT#_registry` / `sk=TENANT#{tenantId}`             |
 | Tenant users (D2)     | `sk=USER#{email}`; role + audit; Cognito is source of auth, Dynamo is invite roster           |
 | Membership billing (Epic I) | Profile fields on `META#profile` (+ registry mirror): `billingStatus`, `billingMode`, `planCode`, `meterCountEstimate`, `pilotExpiresAt`, `lastPaymentAt`, `billingContactEmail`, `billingNotes`, `paymentProvider` (`none` until I4). Ledger: `sk=BILL#EVENT#{iso}#{id}`. Spec §9; [BILLING.md](BILLING.md). **No processor SDK until I3 decision.** |
-| Conversation history  | Partitioned by `tenant_id` + user (Epic E)                                                    |
+| Conversation history  | `sk=CONV#{userId}#{iso}#{messageId}` under tenant PK (Epic E1)                                |
 | Water balance periods | Pilot: UTC calendar `YYYY-MM` (Spec §7a); configurable cycles later (G4/G5)                    |
 
 Aurora was considered for A4; DynamoDB is the MVP default for serverless cost and tenant keying. Revisit if reporting needs heavy SQL.
@@ -57,19 +57,21 @@ Aurora was considered for A4; DynamoDB is the MVP default for serverless cost an
 3. `requireTenantId(auth)` (or CRWA selected-tenant) before data access.
 4. Repository layer accepts `tenantId` as a required parameter — no global list endpoints for member data.
 
-## IAM notes (shared Lambda role)
+## IAM notes (shared Lambda role) — A6 progress
 
 MVP Lambdas share one execution role. Hardening in place:
 
 - S3 object access limited to `tenants/*` keys (not the whole bucket).
 - DynamoDB access conditioned on `dynamodb:LeadingKeys` matching `TENANT#*`.
+- Explicit **Deny** on `dynamodb:Scan` for the data table (blocks accidental table-wide reads).
+- Bedrock `Converse` limited to Nova Lite / Micro foundation-model ARNs in this region.
 
-True per-tenant IAM (unable to touch another `TENANT#…` even if app bugs) needs session tags / ABAC or per-tenant roles — track as a hardening ticket before production multi-municipality scale.
+**Residual (honest):** true per-tenant IAM isolation (unable to touch another `TENANT#…` even if app bugs) still needs session tags / ABAC or per-tenant roles. Shared Lambda role + LeadingKeys is a measurable improvement, not full ABAC. Do not invent broken STS session-tag infra in this pilot — track full ABAC as follow-on before production multi-municipality scale.
 
 ## AI
 
-Prompts and retrieval context are built only from the caller's tenant. Automated tests (ticket E5) must fail the build if another tenant's ids or readings appear in agent context.
+Prompts and retrieval context are built only from the caller's tenant. Conversation history is `sk=CONV#{userId}#…` under `TENANT#{tenantId}`. Automated tests (ticket E5) fail if another tenant's ids appear in agent context.
 
 ## Audit
 
-Acknowledge/resolve alert, mapping changes, retention changes, and destructive actions write an audit event with `tenant_id`, actor, and timestamp.
+Acknowledge/resolve alert, mapping changes, retention changes, billing ledger events, and destructive actions write an audit event with `tenant_id`, actor, and timestamp.

@@ -22,6 +22,7 @@ interface AlertRow {
   summary: string;
   status: string;
   confidenceNote: string;
+  plainLanguage?: string;
   acknowledgedBy: string | null;
   acknowledgedAt: string | null;
 }
@@ -94,6 +95,7 @@ export class AlertsPageComponent implements OnInit {
   busy = signal(false);
   exportBusy = signal(false);
   actionBusyId = signal<string | null>(null);
+  explainBusyId = signal<string | null>(null);
   error = signal('');
   notice = signal('');
 
@@ -118,7 +120,7 @@ export class AlertsPageComponent implements OnInit {
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await fetch(`${environment.apiBaseUrl}/alerts`, {
+      const res = await fetch(`${environment.apiBaseUrl}/alerts?explain=1`, {
         headers: { authorization: `Bearer ${token}` },
       });
       const body = await res.json();
@@ -138,6 +140,7 @@ export class AlertsPageComponent implements OnInit {
           occupantName?: string | null;
           summary: string;
           confidenceNote: string;
+          plainLanguage?: string;
           status?: string;
           acknowledgedBy?: string | null;
           acknowledgedAt?: string | null;
@@ -150,6 +153,7 @@ export class AlertsPageComponent implements OnInit {
           occupantName: a.occupantName ?? null,
           summary: a.summary,
           confidenceNote: a.confidenceNote,
+          plainLanguage: a.plainLanguage,
           status: a.status ?? 'open',
           acknowledgedBy: a.acknowledgedBy ?? null,
           acknowledgedAt: a.acknowledgedAt ?? null,
@@ -363,6 +367,48 @@ export class AlertsPageComponent implements OnInit {
 
   async resolve(alert: AlertRow): Promise<void> {
     await this.updateStatus(alert, 'resolve');
+  }
+
+  async explain(alert: AlertRow): Promise<void> {
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.error.set('Sign in to explain alerts.');
+      return;
+    }
+    this.explainBusyId.set(alert.id);
+    this.error.set('');
+    try {
+      const res = await fetch(`${environment.apiBaseUrl}/alerts/explain`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ alertId: alert.id }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        this.error.set(body.error ?? `Explain failed (${res.status})`);
+        return;
+      }
+      const text = body.explanation?.plainLanguage as string | undefined;
+      if (!text) {
+        this.error.set('No explanation returned.');
+        return;
+      }
+      this.alerts.update((rows) =>
+        rows.map((r) => (r.id === alert.id ? { ...r, plainLanguage: text } : r)),
+      );
+      this.notice.set(
+        body.explanation?.source === 'bedrock'
+          ? 'Explanation refreshed with Bedrock (Nova Lite).'
+          : 'Plain-language explanation ready (template).',
+      );
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      this.explainBusyId.set(null);
+    }
   }
 
   statusLabel(alert: AlertRow): string {

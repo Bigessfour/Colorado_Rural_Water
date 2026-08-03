@@ -1,54 +1,82 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
+import { MessageModule } from 'primeng/message';
+import { ButtonModule } from 'primeng/button';
+import { AuthService } from '../../core/auth.service';
+import { environment } from '../../../environments/environment';
 
 type ConfidenceLevel = 'Thin' | 'Building' | 'Solid' | 'Strong';
 
-interface PilotRow {
+interface RollupRow {
+  tenantId: string;
   system: string;
-  meters: string;
-  unaccountedPct: string;
+  meterCount: number;
+  unaccountedPct: number | null;
+  balanceStatus: string;
+  periodLabel: string;
   confidence: ConfidenceLevel;
-  monthsHistory: number;
+  monthsOfHistory: number;
+  coveragePct: number;
   note: string;
+  billingStatus: string;
 }
 
 @Component({
   selector: 'app-crwa-rollup-page',
-  standalone: true,
-  imports: [CardModule, TagModule, TableModule],
+  imports: [CardModule, TagModule, TableModule, MessageModule, ButtonModule],
   templateUrl: './crwa-rollup-page.component.html',
   styleUrl: './crwa-rollup-page.component.scss',
 })
-export class CrwaRollupPageComponent {
-  /** Sanitized demo rows — no customer PII. Spec §7b / tickets D4, G6, H5. */
-  readonly pilots: PilotRow[] = [
-    {
-      system: 'Pilot A (demo)',
-      meters: '~180',
-      unaccountedPct: '8.4%',
-      confidence: 'Thin',
-      monthsHistory: 2,
-      note: 'Watch statistical flags; coach for more history',
-    },
-    {
-      system: 'Pilot B (demo)',
-      meters: '~420',
-      unaccountedPct: '4.1%',
-      confidence: 'Solid',
-      monthsHistory: 14,
-      note: 'Actionable comparative alerts OK',
-    },
-    {
-      system: 'Pilot C (demo)',
-      meters: '~95',
-      unaccountedPct: '11.2%',
-      confidence: 'Building',
-      monthsHistory: 5,
-      note: '~1 more season toward Solid',
-    },
-  ];
+export class CrwaRollupPageComponent implements OnInit {
+  readonly auth = inject(AuthService);
+
+  rows = signal<RollupRow[]>([]);
+  busy = signal(false);
+  error = signal('');
+  generatedAt = signal('');
+
+  ngOnInit(): void {
+    void this.refresh();
+  }
+
+  async refresh(): Promise<void> {
+    if (!this.auth.isCrwaAdmin()) {
+      this.error.set('CRWA Admin role required for the enterprise roll-up.');
+      return;
+    }
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.error.set('Sign in as CRWA Admin to load the live roll-up.');
+      return;
+    }
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const res = await fetch(`${environment.apiBaseUrl}/admin/rollup`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        this.error.set(body.error ?? `Roll-up failed (${res.status})`);
+        return;
+      }
+      this.generatedAt.set(body.generatedAt ?? '');
+      this.rows.set((body.systems ?? []) as RollupRow[]);
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  unaccountedLabel(row: RollupRow): string {
+    if (row.balanceStatus === 'insufficient' || row.unaccountedPct == null) {
+      return '— (need In + Out)';
+    }
+    return `${row.unaccountedPct.toFixed(1)}%`;
+  }
 
   confidenceSeverity(level: ConfidenceLevel): 'secondary' | 'info' | 'success' | 'warn' {
     switch (level) {

@@ -23,6 +23,11 @@ import type {
 } from './billing.js';
 import { billEventSk, isBillingMode, isBillingStatus, isPlanCode } from './billing.js';
 import type {
+  ConversationMessage,
+  ConversationStore,
+} from './conversation.js';
+import { conversationSk } from './conversation.js';
+import type {
   TenantProfile,
   TenantStore,
   TenantUserRecord,
@@ -105,7 +110,8 @@ export class DynamoMeterStore
     SourceStore,
     AlertStatusStore,
     BalanceThresholdStore,
-    TenantStore
+    TenantStore,
+    ConversationStore
 {
   constructor(private readonly tableName: string) {}
 
@@ -628,6 +634,48 @@ export class DynamoMeterStore
       .filter((e): e is BillingEvent => e !== null);
   }
 
+  async putMessage(msg: ConversationMessage): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(msg.tenantId),
+          sk: conversationSk(msg.userId, msg.createdAt, msg.messageId),
+          entityType: 'conversation_message',
+          tenantId: msg.tenantId,
+          userId: msg.userId,
+          messageId: msg.messageId,
+          role: msg.role,
+          text: msg.text,
+          createdAt: msg.createdAt,
+          model: msg.model ?? null,
+        },
+      }),
+    );
+  }
+
+  async listRecent(
+    tenantId: string,
+    userId: string,
+    limit = 20,
+  ): Promise<ConversationMessage[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':prefix': `CONV#${userId}#`,
+        },
+        ScanIndexForward: true,
+      }),
+    );
+    const rows = (res.Items ?? [])
+      .map((item) => itemToConversation(item))
+      .filter((m): m is ConversationMessage => m !== null);
+    return rows.slice(-Math.min(Math.max(limit, 1), 50));
+  }
+
   async getTenantUser(tenantId: string, email: string): Promise<TenantUserRecord | null> {
     const res = await client.send(
       new GetCommand({
@@ -847,6 +895,32 @@ function itemToTenantUser(item: Record<string, unknown>): TenantUserRecord | nul
   };
 }
 
+function itemToConversation(item: Record<string, unknown>): ConversationMessage | null {
+  const tenantId = item.tenantId;
+  const userId = item.userId;
+  const messageId = item.messageId;
+  const role = item.role;
+  const text = item.text;
+  if (
+    typeof tenantId !== 'string' ||
+    typeof userId !== 'string' ||
+    typeof messageId !== 'string' ||
+    typeof text !== 'string' ||
+    (role !== 'user' && role !== 'assistant')
+  ) {
+    return null;
+  }
+  return {
+    tenantId,
+    userId,
+    messageId,
+    role,
+    text,
+    createdAt: String(item.createdAt ?? new Date().toISOString()),
+    model: typeof item.model === 'string' ? item.model : null,
+  };
+}
+
 export function createMeterStoreFromEnv(): MeterStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
@@ -880,6 +954,14 @@ export function createBalanceThresholdStoreFromEnv(): BalanceThresholdStore {
 }
 
 export function createTenantStoreFromEnv(): TenantStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error('DATA_TABLE env is not configured');
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createConversationStoreFromEnv(): ConversationStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
     throw new Error('DATA_TABLE env is not configured');
