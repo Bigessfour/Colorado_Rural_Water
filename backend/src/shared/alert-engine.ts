@@ -18,7 +18,8 @@ export interface TenantAlert {
   occupantName: string | null;
   summary: string;
   confidenceNote: string;
-  status: 'open';
+  /** Lifecycle status before C3 merge — engine always emits open. */
+  status: 'open' | 'acknowledged' | 'resolved';
 }
 
 export interface ConfidenceSnapshot {

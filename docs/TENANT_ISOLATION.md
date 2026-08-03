@@ -20,12 +20,14 @@ CRWA admins operate with an explicit selected-tenant context for any tenant-scop
 | Store                 | Keying / design                                                                               |
 | --------------------- | --------------------------------------------------------------------------------------------- |
 | **S3 uploads**        | Bucket per env; keys `tenants/{tenant_id}/uploads/...` (customer) or `tenants/{tenant_id}/uploads/sources/...` (source CSVs; G2) |
-| **DynamoDB (chosen)** | Single-table `water-saver-{env}-data`; `pk=TENANT#{tenantId}`, `sk=LOC#…` / `RDG#…` / `MAP#…` / `SRC#…` / `SRD#…` |
+| **DynamoDB (chosen)** | Single-table `water-saver-{env}-data`; `pk=TENANT#{tenantId}`, `sk=LOC#…` / `RDG#…` / `MAP#…` / `SRC#…` / `SRD#…` / `ALERT#STATUS#…` / `CFG#…` |
 | Meter locations       | `sk=LOC#{meterId}`; **service address stable**; occupant name mutable                         |
 | Readings              | `sk=RDG#{meterId}#{isoTimestamp}`; denormalized address for alert visibility                  |
 | Named sources (G1)    | `sk=SRC#{sourceId}`; name + type (well/spring/purchase/other); tenant PK only; DELETE cascades `SRD#` |
 | Source readings (G2)  | `sk=SRD#{sourceId}#{isoTimestamp}`; period volume or cumulative; tenant PK only               |
 | Column mappings       | `sk=MAP#customer_readings` or `MAP#source_readings` remembered per tenant                     |
+| Alert status (C3)     | `sk=ALERT#STATUS#{alertId}`; acknowledged/resolved + `actorUserId` / `actorEmail` / `updatedAt` |
+| Balance thresholds (G4) | `sk=CFG#balance_thresholds`; per-tenant overrides of Spec §7a defaults; audit who/when      |
 | Conversation history  | Partitioned by `tenant_id` + user (Epic E)                                                    |
 | Water balance periods | Pilot: UTC calendar `YYYY-MM` (Spec §7a); configurable cycles later (G4/G5)                    |
 

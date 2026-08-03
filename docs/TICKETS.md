@@ -10,15 +10,15 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 ## Kelly critical path (finish before F1/F2)
 
-Remaining work that blocks §11a acceptance. Do these before expanding Epic E / CRWA roll-up.
+**Kelly path closed** (`e0bfd92` on main). Remaining work is **Pilot hardening** (Spec §0).
 
 | Focus               | Tickets                   | Notes                                                        |
 | ------------------- | ------------------------- | ------------------------------------------------------------ |
 | Dashboard polish    | C2                        | Live balance + Confidence + balance alert feed; chart In/Out/Loss |
-| Balance alerts feed | G4 (thin), G5             | Defaults frozen; UI feed done; tenant store = Pilot          |
+| Balance alerts feed | G4 (thin), G5             | Defaults frozen; UI feed done; **tenant threshold store shipped Pilot** |
 | Confidence UX       | H3 stub→heuristic, H4, H6 | §7b freeze in engine + dashboard card + Watch gating         |
 | Demo packaging      | F1, F2                    | docs/DEMO_WALKTHROUGH.md + docs/SMOKE_CHECKLIST.md           |
-| Ack (nice for demo) | C3                        | Session ack exists; persist = Pilot if time-boxed            |
+| Ack persistence     | C3                        | **Pilot: durable ack/resolve + audit under TENANT#**         |
 
 ---
 
@@ -51,7 +51,7 @@ Remaining work that blocks §11a acceptance. Do these before expanding Epic E / 
 | --- | ----------------------------------------------------------- | -------- | ----------- | ------ | ---------------------------------------------------------------------------- |
 | C1  | Alert engine v1 (high usage, stuck, drops, flags, outliers) | P0       | done        | Kelly  | Deterministic rules + Confidence Watch/Actionable; GET /alerts               |
 | C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | done        | Kelly  | Live Confidence + balance chart (In/Out/Loss) + meter/balance alert feed |
-| C3  | Acknowledge / resolve alerts                                | P0       | todo        | Pilot* | Session ack wired; persist audit who/when — *nice for Kelly if quick*        |
+| C3  | Acknowledge / resolve alerts                                | P0       | done        | Pilot  | Dynamo `ALERT#STATUS#`; audit who/when; resolved hidden from default GET   |
 | C4  | Export flagged meters                                       | P1       | todo        | Pilot  | CSV download; include Confidence note on Watch rows                          |
 | C5  | Basic meter history view                                    | P1       | todo        | Pilot  | Drill-down shows service address + current occupant name                     |
 | C6  | AI plain-language alert explanations                        | P1       | todo        | Pilot  | Bedrock; tenant-scoped; Kelly may use static/heuristic copy                  |
@@ -75,7 +75,7 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 | G1  | Named sources CRUD (tenant-scoped)                        | P0       | done        | Kelly       | GET/POST/PUT/DELETE /sources; Dynamo SRC#; DELETE cascades SRD#                   |
 | G2  | Source reading ingest (manual + CSV/S3, forgiving mapper) | P0       | done        | Kelly       | POST /ingest/sources; SRD#; S3 `uploads/sources/` via `kind:source`               |
 | G3  | Balance calculator for billing period                     | P0       | done        | Kelly       | GET /balance; one-sided=insufficient; period dedupe; UTC YYYY-MM                  |
-| G4  | Water-balance alerts (high loss + sold > pumped)          | P0       | done        | Kelly/Pilot | Evaluate + UI feed on GET /alerts (Kelly Watch); tenant threshold store (Pilot) |
+| G4  | Water-balance alerts (high loss + sold > pumped)          | P0       | done        | Kelly/Pilot | Feed + UI (Kelly); tenant `CFG#balance_thresholds` + PUT /balance/thresholds (Pilot) |
 | G5  | Operator dashboard viz (In / Out / Loss trend)            | P0       | done        | Kelly       | KPI + In/Out/Unaccounted chart; insufficient calm copy                      |
 | G6  | CRWA roll-up water-balance summary                        | P1       | todo        | Pilot       | Sanitized per-municipality; wire with D4                                          |
 | G7  | Sample source + customer fixtures for demo balance        | P0       | done        | Kelly       | `messy-source-readings-july.csv` + customer CSV; GH #9                            |
@@ -117,11 +117,11 @@ Work with any amount of history (none → years); never treat thin-data flags as
 
 ---
 
-## Suggested next sprint (after Kelly close-out)
+## Suggested next sprint (Pilot)
 
-1. ~~Finish G4 feed + G5 + H3/H4/H6 + C2 + F1/F2~~ (Kelly path shipped)
-2. Manual pass of [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) on live demo tenant
-3. Optional C3 persist if needed for demo polish
-4. **Then** Pilot: Epic E, D1–D4, A6, H1/H2, G4 threshold store, G6/H5 roll-up
+1. Manual pass of [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) on live demo tenant (ack/resolve + optional threshold PUT)
+2. **C4** export flagged meters (CSV + Confidence note) · **C5** meter history drill-down
+3. Roles **D1–D3**; MFA UX (**D5** remainder); IAM ABAC (**A6**)
+4. Then Epic E / D4 roll-up (G6/H5) — not before C4/C5 and smoke are green
 
-Do **not** expand AI or CRWA roll-up until §11a checklist is green on the demo tenant.
+Do **not** start vNext (AMI, resident portal, billing write-back, custom ML, formal address parse, agent AWS provisioning).

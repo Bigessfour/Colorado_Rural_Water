@@ -61,3 +61,10 @@
   color: #6b8287;
   margin-top: 0.15rem;
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}

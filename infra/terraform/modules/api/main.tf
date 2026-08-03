@@ -370,6 +370,14 @@ resource "aws_apigatewayv2_route" "balance_get" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "balance_thresholds_put" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "PUT /balance/thresholds"
+  target             = "integrations/${aws_apigatewayv2_integration.balance.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"

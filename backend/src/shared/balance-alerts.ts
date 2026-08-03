@@ -37,7 +37,8 @@ export interface BalanceAlert {
   periodLabel: string;
   summary: string;
   confidenceNote: string;
-  status: 'open';
+  /** Lifecycle status before C3 merge — engine always emits open. */
+  status: 'open' | 'acknowledged' | 'resolved';
   unaccountedGal: number;
   unaccountedPct: number | null;
 }

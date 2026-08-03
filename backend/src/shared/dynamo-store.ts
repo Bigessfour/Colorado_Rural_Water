@@ -6,6 +6,11 @@ import {
   PutCommand,
   QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
+import type { AlertStatusRecord, AlertStatusStore } from './alert-status.js';
+import type {
+  BalanceThresholdConfig,
+  BalanceThresholdStore,
+} from './balance-thresholds.js';
 import type { MeterLocation, MeterReading } from './meter-location.js';
 import type { MeterStore } from './ingest.js';
 import type { SourceReading, SourceVolumeMode } from './source-reading.js';
@@ -41,7 +46,15 @@ function srdSk(sourceId: string, timestamp: string): string {
   return `SRD#${sourceId}#${timestamp}`;
 }
 
-export class DynamoMeterStore implements MeterStore, SourceStore {
+function alertStatusSk(alertId: string): string {
+  return `ALERT#STATUS#${alertId}`;
+}
+
+const BALANCE_THRESHOLDS_SK = 'CFG#balance_thresholds';
+
+export class DynamoMeterStore
+  implements MeterStore, SourceStore, AlertStatusStore, BalanceThresholdStore
+{
   constructor(private readonly tableName: string) {}
 
   async getLocation(tenantId: string, meterId: string): Promise<MeterLocation | null> {
@@ -298,6 +311,84 @@ export class DynamoMeterStore implements MeterStore, SourceStore {
       .filter((r): r is SourceReading => r !== null)
       .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   }
+
+  async putAlertStatus(record: AlertStatusRecord): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(record.tenantId),
+          sk: alertStatusSk(record.alertId),
+          entityType: 'alert_status',
+          tenantId: record.tenantId,
+          alertId: record.alertId,
+          status: record.status,
+          actorUserId: record.actorUserId,
+          actorEmail: record.actorEmail,
+          updatedAt: record.updatedAt,
+        },
+      }),
+    );
+  }
+
+  async getAlertStatus(tenantId: string, alertId: string): Promise<AlertStatusRecord | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: alertStatusSk(alertId) },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToAlertStatus(res.Item);
+  }
+
+  async listAlertStatuses(tenantId: string): Promise<AlertStatusRecord[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':sk': 'ALERT#STATUS#',
+        },
+      }),
+    );
+    return (res.Items ?? [])
+      .map(itemToAlertStatus)
+      .filter((r): r is AlertStatusRecord => r !== null);
+  }
+
+  async getBalanceThresholds(tenantId: string): Promise<BalanceThresholdConfig | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: BALANCE_THRESHOLDS_SK },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToBalanceThresholds(res.Item);
+  }
+
+  async putBalanceThresholds(config: BalanceThresholdConfig): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(config.tenantId),
+          sk: BALANCE_THRESHOLDS_SK,
+          entityType: 'balance_thresholds',
+          tenantId: config.tenantId,
+          lossPct: config.lossPct,
+          lossGalMin: config.lossGalMin,
+          gainTolerancePct: config.gainTolerancePct,
+          gainGalMin: config.gainGalMin,
+          updatedAt: config.updatedAt,
+          updatedByUserId: config.updatedByUserId,
+          updatedByEmail: config.updatedByEmail,
+        },
+      }),
+    );
+  }
 }
 
 function itemToLocation(item: Record<string, unknown>): MeterLocation {
@@ -358,6 +449,39 @@ function itemToSourceReading(item: Record<string, unknown>): SourceReading | nul
   };
 }
 
+function itemToAlertStatus(item: Record<string, unknown>): AlertStatusRecord | null {
+  const status = item.status;
+  if (status !== 'acknowledged' && status !== 'resolved') return null;
+  return {
+    tenantId: String(item.tenantId),
+    alertId: String(item.alertId),
+    status,
+    actorUserId: String(item.actorUserId ?? ''),
+    actorEmail: String(item.actorEmail ?? ''),
+    updatedAt: String(item.updatedAt ?? new Date().toISOString()),
+  };
+}
+
+function itemToBalanceThresholds(item: Record<string, unknown>): BalanceThresholdConfig | null {
+  const lossPct = Number(item.lossPct);
+  const lossGalMin = Number(item.lossGalMin);
+  const gainTolerancePct = Number(item.gainTolerancePct);
+  const gainGalMin = Number(item.gainGalMin);
+  if (![lossPct, lossGalMin, gainTolerancePct, gainGalMin].every(Number.isFinite)) {
+    return null;
+  }
+  return {
+    tenantId: String(item.tenantId),
+    lossPct,
+    lossGalMin,
+    gainTolerancePct,
+    gainGalMin,
+    updatedAt: String(item.updatedAt ?? new Date().toISOString()),
+    updatedByUserId: String(item.updatedByUserId ?? ''),
+    updatedByEmail: String(item.updatedByEmail ?? ''),
+  };
+}
+
 export function createMeterStoreFromEnv(): MeterStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
@@ -367,6 +491,22 @@ export function createMeterStoreFromEnv(): MeterStore {
 }
 
 export function createSourceStoreFromEnv(): SourceStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error('DATA_TABLE env is not configured');
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createAlertStatusStoreFromEnv(): AlertStatusStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error('DATA_TABLE env is not configured');
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createBalanceThresholdStoreFromEnv(): BalanceThresholdStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
     throw new Error('DATA_TABLE env is not configured');

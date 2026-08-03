@@ -2,10 +2,14 @@
   <h1>Alerts</h1>
   <p class="lede">
     Prioritized issues from your meter readings. Watch means thin history — look when you can;
-    Actionable means worth a field check now.
+    Actionable means worth a field check now. Acknowledge or resolve to keep a durable record for
+    your system.
   </p>
 
   <p-message severity="info" styleClass="hint">{{ confidenceNote() }}</p-message>
+  @if (notice()) {
+    <p-message severity="success" styleClass="hint">{{ notice() }}</p-message>
+  }
   @if (error()) {
     <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
   }
@@ -50,17 +54,33 @@
           </td>
           <td>{{ alert.summary }}</td>
           <td>{{ alert.confidenceNote }}</td>
-          <td>{{ alert.status }}</td>
-          <td>
-            @if (alert.status === 'open') {
-              <p-button label="Acknowledge" size="small" (onClick)="acknowledge(alert)" />
+          <td>{{ statusLabel(alert) }}</td>
+          <td class="actions">
+            @if (alert.status === 'open' || alert.status === 'acknowledged') {
+              @if (alert.status === 'open') {
+                <p-button
+                  label="Acknowledge"
+                  size="small"
+                  [loading]="actionBusyId() === alert.id"
+                  [disabled]="actionBusyId() !== null && actionBusyId() !== alert.id"
+                  (onClick)="acknowledge(alert)"
+                />
+              }
+              <p-button
+                label="Resolve"
+                size="small"
+                severity="secondary"
+                [loading]="actionBusyId() === alert.id"
+                [disabled]="actionBusyId() !== null && actionBusyId() !== alert.id"
+                (onClick)="resolve(alert)"
+              />
             }
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="6">No alerts yet — ingest readings, then refresh.</td>
+          <td colspan="6">No open alerts — ingest readings, then refresh.</td>
         </tr>
       </ng-template>
     </p-table>

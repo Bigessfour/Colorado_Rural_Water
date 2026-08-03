@@ -20,7 +20,13 @@ With a Bearer token for the demo tenant:
 ```bash
 curl -sS -H "Authorization: Bearer $TOKEN" "$API/me"
 curl -sS -H "Authorization: Bearer $TOKEN" "$API/balance"
-curl -sS -H "Authorization: Bearer $TOKEN" "$API/alerts"   # includes balanceAlerts
+curl -sS -H "Authorization: Bearer $TOKEN" "$API/alerts"   # includes balanceAlerts + statuses
+# C3: POST acknowledge / resolve (persists ALERT#STATUS# under tenant)
+# curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+#   -d '{"action":"acknowledge","alertId":"<id>"}' "$API/alerts"
+# G4: optional PUT tenant thresholds (defaults remain Spec §7a if unset)
+# curl -sS -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+#   -d '{"lossPct":18}' "$API/balance/thresholds"
 curl -sS -H "Authorization: Bearer $TOKEN" "$API/sources"
 ```
 
