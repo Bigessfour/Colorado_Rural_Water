@@ -19,6 +19,17 @@ interface LiveAlert {
   confidenceNote: string;
 }
 
+interface BalanceView {
+  periodLabel: string;
+  producedGal: number;
+  billedGal: number;
+  unaccountedGal: number;
+  unaccountedPct: number | null;
+  status: 'loss' | 'gain' | 'ok' | 'insufficient';
+  live: boolean;
+  hint: string;
+}
+
 @Component({
   selector: 'app-dashboard-page',
   imports: [CardModule, TagModule, ChartModule, DecimalPipe, MessageModule, RouterLink],
@@ -31,7 +42,7 @@ export class DashboardPageComponent implements OnInit {
   kpis = signal([
     { label: 'Meters monitored', value: '—', hint: 'After first upload' },
     { label: 'Open alerts', value: '—', hint: 'Sign in to refresh' },
-    { label: 'Water balance', value: '8.4%', hint: 'Unaccounted (demo)' },
+    { label: 'Water balance', value: '—', hint: 'Unaccounted (live)' },
     { label: 'Data Confidence', value: '—', hint: 'History depth, not leak %' },
   ]);
 
@@ -55,21 +66,23 @@ export class DashboardPageComponent implements OnInit {
   liveAlerts = signal<LiveAlert[]>([]);
   loadError = signal('');
 
-  readonly balance = {
-    periodLabel: 'July 2026 (demo)',
-    producedGal: 1_240_000,
-    billedGal: 1_136_000,
-    unaccountedGal: 104_000,
-    unaccountedPct: 8.4,
-    status: 'loss' as 'loss' | 'gain' | 'ok',
-  };
+  balance = signal<BalanceView>({
+    periodLabel: 'No period yet',
+    producedGal: 0,
+    billedGal: 0,
+    unaccountedGal: 0,
+    unaccountedPct: null,
+    status: 'insufficient',
+    live: false,
+    hint: 'Ingest customer meters and source readings, then refresh.',
+  });
 
-  readonly balanceChartData = {
-    labels: ['Mar', 'Apr', 'May', 'Jun', 'Jul'],
+  balanceChartData = signal({
+    labels: [] as string[],
     datasets: [
       {
         label: 'Produced (in)',
-        data: [1.18, 1.21, 1.19, 1.25, 1.24],
+        data: [] as number[],
         borderColor: '#1a6b73',
         backgroundColor: 'rgba(26, 107, 115, 0.12)',
         tension: 0.35,
@@ -77,14 +90,14 @@ export class DashboardPageComponent implements OnInit {
       },
       {
         label: 'Billed (out)',
-        data: [1.09, 1.12, 1.08, 1.14, 1.136],
+        data: [] as number[],
         borderColor: '#c45c26',
         backgroundColor: 'transparent',
         tension: 0.35,
         fill: false,
       },
     ],
-  };
+  });
 
   readonly balanceChartOptions = {
     maintainAspectRatio: false,
@@ -119,23 +132,89 @@ export class DashboardPageComponent implements OnInit {
       return;
     }
     try {
-      const res = await fetch(`${environment.apiBaseUrl}/alerts`, {
-        headers: { authorization: `Bearer ${token}` },
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        this.loadError.set(body.error ?? `Alerts failed (${res.status})`);
+      const [alertsRes, balanceRes] = await Promise.all([
+        fetch(`${environment.apiBaseUrl}/alerts`, {
+          headers: { authorization: `Bearer ${token}` },
+        }),
+        fetch(`${environment.apiBaseUrl}/balance`, {
+          headers: { authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const alertsBody = await alertsRes.json();
+      if (!alertsRes.ok) {
+        this.loadError.set(alertsBody.error ?? `Alerts failed (${alertsRes.status})`);
         return;
       }
       this.loadError.set('');
-      const level = (body.confidence?.level ?? 'Thin') as ConfidenceLevel;
-      const months = Number(body.confidence?.monthsOfHistory ?? 0);
-      const meterCount = Number(body.confidence?.meterCount ?? 0);
-      const alerts = (body.alerts ?? []) as LiveAlert[];
+      const level = (alertsBody.confidence?.level ?? 'Thin') as ConfidenceLevel;
+      const months = Number(alertsBody.confidence?.monthsOfHistory ?? 0);
+      const meterCount = Number(alertsBody.confidence?.meterCount ?? 0);
+      const alerts = (alertsBody.alerts ?? []) as LiveAlert[];
       const watch = alerts.filter((a) => a.mode === 'Watch').length;
       const actionable = alerts.filter((a) => a.mode === 'Actionable').length;
       const displayScore =
         level === 'Thin' ? 28 : level === 'Building' ? 55 : level === 'Solid' ? 82 : 94;
+
+      let balanceHint = 'Ingest customer + source readings for live In/Out.';
+      let balanceKpi = '—';
+      let balanceKpiHint = 'Unaccounted';
+
+      if (balanceRes.ok) {
+        const bal = await balanceRes.json();
+        const pct = bal.unaccountedPct;
+        const status = (bal.status ?? 'insufficient') as BalanceView['status'];
+        this.balance.set({
+          periodLabel: bal.periodLabel ?? bal.period ?? '—',
+          producedGal: Number(bal.producedGal ?? 0),
+          billedGal: Number(bal.billedGal ?? 0),
+          unaccountedGal: Number(bal.unaccountedGal ?? 0),
+          unaccountedPct: pct == null ? null : Number(pct),
+          status,
+          live: true,
+          hint:
+            status === 'insufficient'
+              ? 'Need source production and customer meter deltas in the same period.'
+              : 'Live from GET /balance — In − Out = unaccounted.',
+        });
+        balanceKpi = pct == null ? '—' : `${pct}%`;
+        balanceKpiHint =
+          status === 'gain' ? 'Sold > pumped' : status === 'loss' ? 'Unaccounted loss' : 'Balanced';
+        balanceHint = bal.periodLabel ?? '';
+
+        const trend = (bal.trend ?? []) as Array<{
+          periodLabel?: string;
+          period?: string;
+          producedGal?: number;
+          billedGal?: number;
+        }>;
+        if (trend.length) {
+          this.balanceChartData.set({
+            labels: trend.map((t) => shortPeriod(t.periodLabel ?? t.period ?? '')),
+            datasets: [
+              {
+                label: 'Produced (in)',
+                data: trend.map((t) => Number(t.producedGal ?? 0) / 1_000_000),
+                borderColor: '#1a6b73',
+                backgroundColor: 'rgba(26, 107, 115, 0.12)',
+                tension: 0.35,
+                fill: true,
+              },
+              {
+                label: 'Billed (out)',
+                data: trend.map((t) => Number(t.billedGal ?? 0) / 1_000_000),
+                borderColor: '#c45c26',
+                backgroundColor: 'transparent',
+                tension: 0.35,
+                fill: false,
+              },
+            ],
+          });
+        }
+      } else {
+        const balErr = await balanceRes.json().catch(() => ({}));
+        balanceHint = balErr.error ?? `Balance unavailable (${balanceRes.status})`;
+      }
 
       this.confidence.set({
         level,
@@ -145,13 +224,13 @@ export class DashboardPageComponent implements OnInit {
         seasonality: months < 6 ? 'Incomplete (need more seasons)' : 'Broader seasonal coverage',
         meaning:
           'Confidence measures how much comparable history and meter coverage we have — not how sure we are of a leak.',
-        guidance: body.confidence?.plainLanguage ?? '',
-        plainLanguage: body.confidence?.plainLanguage ?? '',
+        guidance: alertsBody.confidence?.plainLanguage ?? '',
+        plainLanguage: alertsBody.confidence?.plainLanguage ?? '',
         signals: [
           {
             name: 'Customer usage outliers',
             level,
-            mode: body.confidence?.statisticalMode ?? 'Watch',
+            mode: alertsBody.confidence?.statisticalMode ?? 'Watch',
           },
           { name: 'Water balance', level: 'Thin', mode: 'Watch' },
           { name: 'Stuck / diagnostic meters', level: '—', mode: 'Actionable' },
@@ -165,7 +244,7 @@ export class DashboardPageComponent implements OnInit {
           value: String(alerts.length),
           hint: `${watch} Watch · ${actionable} Actionable`,
         },
-        { label: 'Water balance', value: '8.4%', hint: 'Unaccounted (demo)' },
+        { label: 'Water balance', value: balanceKpi, hint: balanceKpiHint || balanceHint },
         { label: 'Data Confidence', value: level, hint: `${months} mo history` },
       ]);
       this.liveAlerts.set(alerts.slice(0, 5));
@@ -186,4 +265,15 @@ export class DashboardPageComponent implements OnInit {
         return 'success';
     }
   }
+}
+
+function shortPeriod(label: string): string {
+  const m = label.match(/^([A-Za-z]{3})/);
+  if (m) return m[1];
+  const ym = label.match(/^\d{4}-(\d{2})$/);
+  if (ym) {
+    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return names[Number(ym[1]) - 1] ?? label;
+  }
+  return label.slice(0, 3) || label;
 }

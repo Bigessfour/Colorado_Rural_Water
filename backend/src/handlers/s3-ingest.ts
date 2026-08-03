@@ -1,17 +1,23 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { S3Event } from 'aws-lambda';
 import { parseCustomerReadingsCsv } from '../shared/csv-parse.js';
-import { createMeterStoreFromEnv } from '../shared/dynamo-store.js';
+import {
+  createMeterStoreFromEnv,
+  createSourceStoreFromEnv,
+} from '../shared/dynamo-store.js';
 import { commitCustomerIngest } from '../shared/ingest.js';
+import { parseSourceReadingsCsv } from '../shared/source-csv-parse.js';
+import { commitSourceIngest } from '../shared/source-ingest.js';
 
 const s3 = new S3Client({});
 
 /**
  * S3 ObjectCreated handler for tenant drop-zone uploads.
- * Key format: tenants/{tenantId}/uploads/...
+ * Key format:
+ *   tenants/{tenantId}/uploads/...          → customer readings
+ *   tenants/{tenantId}/uploads/sources/...  → source / well readings (G2)
  */
 export const handler = async (event: S3Event): Promise<{ ok: true; results: unknown[] }> => {
-  const store = createMeterStoreFromEnv();
   const results = [];
 
   for (const record of event.Records) {
@@ -30,18 +36,35 @@ export const handler = async (event: S3Event): Promise<{ ok: true; results: unkn
       continue;
     }
 
+    if (isSourceUploadKey(key)) {
+      const sourceStore = createSourceStoreFromEnv();
+      const savedMapping = await sourceStore.getMapping(tenantId, 'source_readings');
+      const parsed = parseSourceReadingsCsv(
+        csvText,
+        savedMapping ? (savedMapping as never) : undefined,
+      );
+      if (parsed.errors.length) {
+        results.push({ key, tenantId, kind: 'source', errors: parsed.errors, warnings: parsed.warnings });
+        continue;
+      }
+      const summary = await commitSourceIngest(sourceStore, tenantId, parsed);
+      results.push({ key, tenantId, kind: 'source', ...summary });
+      continue;
+    }
+
+    const store = createMeterStoreFromEnv();
     const savedMapping = await store.getMapping(tenantId, 'customer_readings');
     const parsed = parseCustomerReadingsCsv(
       csvText,
       savedMapping ? (savedMapping as never) : undefined,
     );
     if (parsed.errors.length) {
-      results.push({ key, tenantId, errors: parsed.errors, warnings: parsed.warnings });
+      results.push({ key, tenantId, kind: 'customer', errors: parsed.errors, warnings: parsed.warnings });
       continue;
     }
 
     const summary = await commitCustomerIngest(store, tenantId, parsed);
-    results.push({ key, tenantId, ...summary });
+    results.push({ key, tenantId, kind: 'customer', ...summary });
   }
 
   return { ok: true, results };
@@ -51,4 +74,10 @@ function tenantFromKey(key: string): string | null {
   const parts = key.split('/');
   if (parts[0] !== 'tenants' || parts[2] !== 'uploads' || !parts[1]) return null;
   return parts[1];
+}
+
+/** tenants/{tenantId}/uploads/sources/... */
+function isSourceUploadKey(key: string): boolean {
+  const parts = key.split('/');
+  return parts[0] === 'tenants' && parts[2] === 'uploads' && parts[3] === 'sources';
 }

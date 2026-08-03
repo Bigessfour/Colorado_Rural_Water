@@ -1,8 +1,8 @@
 <section class="page">
   <h1>Named sources</h1>
   <p class="lede">
-    Name each well, spring, or purchased supply once. Later cycles compare production (in) to billed
-    customer usage (out) for water balance.
+    Name each well, spring, or purchased supply once, then enter or upload period production
+    readings. Dashboard water balance compares production (in) to billed customer usage (out).
   </p>
 
   @if (!auth.isLoggedIn()) {
@@ -91,9 +91,104 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="5">No named sources yet — add Well 1 / Well 2 to start water balance.</td>
+          <td colspan="5">No named sources yet — add Well 1 / Well 2, or ingest a source CSV.</td>
         </tr>
       </ng-template>
     </p-table>
+  </p-card>
+
+  <p-card header="Enter a period reading" styleClass="form-card">
+    <form class="form reading-form" (ngSubmit)="saveManualReading()">
+      <label>
+        Source
+        <p-select
+          [options]="sources()"
+          [(ngModel)]="readingSourceId"
+          name="readingSourceId"
+          optionLabel="name"
+          optionValue="sourceId"
+          placeholder="Choose source"
+          styleClass="type-select"
+          [disabled]="!sources().length"
+        />
+      </label>
+      <label>
+        Read date (period end)
+        <input
+          pInputText
+          name="readingDate"
+          [(ngModel)]="readingDate"
+          placeholder="07/31/2026"
+          fluid
+          aria-label="Source read date"
+        />
+      </label>
+      <label>
+        Period volume (gal)
+        <input
+          pInputText
+          name="readingVolume"
+          [(ngModel)]="readingVolume"
+          placeholder="620000"
+          fluid
+          aria-label="Period volume gallons"
+        />
+      </label>
+      <label>
+        Notes (optional)
+        <input
+          pInputText
+          name="readingNotes"
+          [(ngModel)]="readingNotes"
+          fluid
+          aria-label="Reading notes"
+        />
+      </label>
+      <div class="form-actions">
+        <p-button
+          type="submit"
+          label="Save reading"
+          [loading]="ingesting()"
+          [disabled]="ingesting() || !auth.isLoggedIn() || !sources().length"
+        />
+      </div>
+    </form>
+  </p-card>
+
+  <p-card header="Upload source readings CSV" styleClass="form-card">
+    <p class="ingest-lede">{{ ingestHint }}</p>
+    <p-fileupload
+      mode="advanced"
+      name="sourceReadings"
+      chooseLabel="Choose file"
+      uploadLabel="Load CSV"
+      cancelLabel="Clear"
+      [customUpload]="true"
+      [auto]="false"
+      accept=".csv,.txt"
+      [maxFileSize]="20000000"
+      (uploadHandler)="onSourceCsvUpload($event)"
+    >
+      <ng-template pTemplate="empty">
+        <div class="drop">Drag a source CSV here, or choose a file.</div>
+      </ng-template>
+    </p-fileupload>
+    <div class="form-actions ingest-actions">
+      <p-button
+        type="button"
+        label="Dry run"
+        severity="secondary"
+        [loading]="ingesting()"
+        [disabled]="ingesting() || !csvText || !auth.isLoggedIn()"
+        (onClick)="ingestCsv(true)"
+      />
+      <p-button
+        type="button"
+        label="Ingest source readings"
+        [loading]="ingesting()"
+        [disabled]="ingesting() || !csvText || !auth.isLoggedIn()"
+        (onClick)="ingestCsv(false)"
+      />
+    </div>
   </p-card>
 </section>

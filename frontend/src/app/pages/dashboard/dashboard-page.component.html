@@ -75,36 +75,39 @@
   </p-card>
 
   <p-card header="Water balance — produced vs billed" styleClass="balance">
-    <p class="balance-period">{{ balance.periodLabel }}</p>
+    <p class="balance-period">{{ balance().periodLabel }}</p>
     <div class="balance-stats">
       <div>
         <div class="kpi-label">Produced (in)</div>
-        <div class="balance-stat">{{ balance.producedGal | number }} gal</div>
+        <div class="balance-stat">{{ balance().producedGal | number }} gal</div>
         <div class="kpi-hint">Named wells / sources</div>
       </div>
       <div>
         <div class="kpi-label">Billed (out)</div>
-        <div class="balance-stat">{{ balance.billedGal | number }} gal</div>
+        <div class="balance-stat">{{ balance().billedGal | number }} gal</div>
         <div class="kpi-hint">Customer meters (aggregate)</div>
       </div>
       <div>
         <div class="kpi-label">Unaccounted</div>
         <div
           class="balance-stat"
-          [class.loss]="balance.status === 'loss'"
-          [class.gain]="balance.status === 'gain'"
+          [class.loss]="balance().status === 'loss'"
+          [class.gain]="balance().status === 'gain'"
         >
-          {{ balance.unaccountedGal | number }} gal ({{ balance.unaccountedPct }}%)
+          {{ balance().unaccountedGal | number }} gal
+          @if (balance().unaccountedPct != null) {
+            ({{ balance().unaccountedPct }}%)
+          }
         </div>
         <div class="kpi-hint">Positive = loss; negative = sold more than pumped</div>
       </div>
     </div>
     <div class="chart-wrap">
-      <p-chart type="line" [data]="balanceChartData" [options]="balanceChartOptions" />
+      <p-chart type="line" [data]="balanceChartData()" [options]="balanceChartOptions" />
     </div>
     <p class="muted">
-      Demo stub for balance numbers — configure
-      <a routerLink="/sources">named sources</a> now (G1); live In/Out lands in G2–G3 / G5.
+      {{ balance().hint }}
+      Configure <a routerLink="/sources">named sources</a> and ingest readings to refresh.
     </p>
   </p-card>
 

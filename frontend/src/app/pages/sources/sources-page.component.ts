@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { FileUploadModule, type FileUploadHandlerEvent } from 'primeng/fileupload';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
@@ -32,6 +33,7 @@ interface WaterSourceRow {
     SelectModule,
     TableModule,
     MessageModule,
+    FileUploadModule,
   ],
   templateUrl: './sources-page.component.html',
   styleUrl: './sources-page.component.scss',
@@ -49,6 +51,7 @@ export class SourcesPageComponent implements OnInit {
   sources = signal<WaterSourceRow[]>([]);
   busy = signal(false);
   saving = signal(false);
+  ingesting = signal(false);
   error = signal('');
   status = signal('');
 
@@ -56,6 +59,15 @@ export class SourcesPageComponent implements OnInit {
   type: SourceType = 'well';
   notes = '';
   editingId: string | null = null;
+
+  /** Manual period reading */
+  readingSourceId = '';
+  readingDate = '';
+  readingVolume = '';
+  readingNotes = '';
+
+  csvText = '';
+  ingestHint = 'Try sample-data/messy-source-readings-july.csv — period production volumes.';
 
   ngOnInit(): void {
     void this.refresh();
@@ -73,6 +85,17 @@ export class SourcesPageComponent implements OnInit {
     this.name = row.name;
     this.type = row.type;
     this.notes = row.notes ?? '';
+  }
+
+  onSourceCsvUpload(event: FileUploadHandlerEvent): void {
+    const file = event.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.csvText = String(reader.result ?? '');
+      this.status.set(`Loaded ${file.name} — ready to ingest source readings.`);
+    };
+    reader.readAsText(file);
   }
 
   async refresh(): Promise<void> {
@@ -94,6 +117,9 @@ export class SourcesPageComponent implements OnInit {
       }
       this.sources.set((body.sources ?? []) as WaterSourceRow[]);
       this.status.set(`${body.count ?? 0} named source(s) for your system.`);
+      if (!this.readingSourceId && body.sources?.[0]?.sourceId) {
+        this.readingSourceId = body.sources[0].sourceId;
+      }
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Network error');
     } finally {
@@ -154,7 +180,7 @@ export class SourcesPageComponent implements OnInit {
   async remove(row: WaterSourceRow): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) return;
-    if (!confirm(`Remove “${row.name}”? Source readings (later) would need re-mapping.`)) {
+    if (!confirm(`Remove “${row.name}”? Existing source readings stay until cleaned up.`)) {
       return;
     }
     this.busy.set(true);
@@ -179,6 +205,101 @@ export class SourcesPageComponent implements OnInit {
       this.error.set(err instanceof Error ? err.message : 'Network error');
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  async saveManualReading(): Promise<void> {
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.error.set('Sign in to enter a source reading.');
+      return;
+    }
+    if (!this.readingSourceId || !this.readingDate || !this.readingVolume.trim()) {
+      this.error.set('Pick a source, read date, and period volume (gal).');
+      return;
+    }
+    const periodVolume = Number(this.readingVolume.replace(/,/g, ''));
+    if (!Number.isFinite(periodVolume) || periodVolume < 0) {
+      this.error.set('Period volume must be a non-negative number.');
+      return;
+    }
+
+    this.ingesting.set(true);
+    this.error.set('');
+    try {
+      const res = await fetch(`${environment.apiBaseUrl}/ingest/sources`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          reading: {
+            sourceId: this.readingSourceId,
+            timestamp: this.readingDate,
+            periodVolume,
+            notes: this.readingNotes.trim() || null,
+          },
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        this.error.set(body.error ?? `Reading save failed (${res.status})`);
+        return;
+      }
+      this.status.set(
+        `Saved period reading for ${body.reading?.sourceName ?? 'source'}: ${periodVolume.toLocaleString()} gal.`,
+      );
+      this.readingVolume = '';
+      this.readingNotes = '';
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      this.ingesting.set(false);
+    }
+  }
+
+  async ingestCsv(dryRun = false): Promise<void> {
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.error.set('Sign in to ingest source readings.');
+      return;
+    }
+    if (!this.csvText.trim()) {
+      this.error.set('Load a source CSV first.');
+      return;
+    }
+
+    this.ingesting.set(true);
+    this.error.set('');
+    try {
+      const res = await fetch(`${environment.apiBaseUrl}/ingest/sources`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ csvText: this.csvText, dryRun }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        this.error.set(body.error ?? `Ingest failed (${res.status})`);
+        return;
+      }
+      if (dryRun) {
+        this.status.set(`Dry run OK — ${body.rowCount ?? 0} row(s) would be written.`);
+        return;
+      }
+      this.status.set(
+        `Ingested ${body.readingsWritten ?? 0} source reading(s)` +
+          (body.sourcesCreated ? `; created ${body.sourcesCreated} source(s)` : '') +
+          '.',
+      );
+      await this.refresh();
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      this.ingesting.set(false);
     }
   }
 }

@@ -34,7 +34,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | ID  | Title                                                       | Priority | Status      | Notes                                                                                 |
 | --- | ----------------------------------------------------------- | -------- | ----------- | ------------------------------------------------------------------------------------- |
 | C1  | Alert engine v1 (high usage, stuck, drops, flags, outliers) | P0       | done        | Deterministic rules + Confidence Watch/Actionable; GET /alerts                        |
-| C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | in_progress | Live Confidence + alert feed from GET /alerts; water-balance still demo               |
+| C2  | Member dashboard (KPIs, trends, alert feed)                 | P0       | in_progress | Live Confidence + alerts + water balance from GET /balance; chart still thin |
 | C3  | Acknowledge / resolve alerts                                | P0       | todo        | Session ack wired; persist audit who/when                                             |
 | C4  | Export flagged meters                                       | P1       | todo        | CSV download; include Confidence note on Watch rows                                   |
 | C5  | Basic meter history view                                    | P1       | todo        | Drill-down shows service address + current occupant name                              |
@@ -57,8 +57,8 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 | ID  | Title                                                     | Priority | Status | Notes                                                           |
 | --- | --------------------------------------------------------- | -------- | ------ | --------------------------------------------------------------- |
 | G1  | Named sources CRUD (tenant-scoped)                        | P0       | done   | GET/POST/PUT/DELETE /sources; Dynamo SRC#; SPA /sources page    |
-| G2  | Source reading ingest (manual + CSV/S3, forgiving mapper) | P0       | todo   | Same UX bar as Epic B; period or cumulative                     |
-| G3  | Balance calculator for billing period                     | P0       | todo   | In − Out, unaccounted %; align period with reading cycle        |
+| G2  | Source reading ingest (manual + CSV/S3, forgiving mapper) | P0       | done   | POST /ingest/sources; Dynamo SRD#; S3 `uploads/sources/`; SPA sources page    |
+| G3  | Balance calculator for billing period                     | P0       | done   | GET /balance In−Out + %; dashboard wired; period=YYYY-MM                      |
 | G4  | Water-balance alerts (high loss + sold > pumped)          | P0       | todo   | Tenant thresholds; tolerance for small timing mismatch          |
 | G5  | Operator dashboard viz (In / Out / Loss trend)            | P0       | todo   | KPI + simple chart; stub already on member dashboard            |
 | G6  | CRWA roll-up water-balance summary                        | P1       | todo   | Sanitized per-municipality KPI/trend; wire with D4              |

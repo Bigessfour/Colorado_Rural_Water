@@ -18,9 +18,11 @@ const entryPoints = {
   me: join(backend, 'src/handlers/me.ts'),
   'upload-url': join(backend, 'src/handlers/upload-url.ts'),
   ingest: join(backend, 'src/handlers/ingest.ts'),
+  'ingest-sources': join(backend, 'src/handlers/ingest-sources.ts'),
   's3-ingest': join(backend, 'src/handlers/s3-ingest.ts'),
   alerts: join(backend, 'src/handlers/alerts.ts'),
   sources: join(backend, 'src/handlers/sources.ts'),
+  balance: join(backend, 'src/handlers/balance.ts'),
   agent: join(backend, 'src/handlers/agent.ts'),
 };
 

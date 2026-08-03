@@ -1,3 +1,4 @@
+import type { SourceReading } from './source-reading.js';
 import type { WaterSource } from './water-source.js';
 
 export interface SourceStore {
@@ -5,11 +6,17 @@ export interface SourceStore {
   getSource(tenantId: string, sourceId: string): Promise<WaterSource | null>;
   putSource(source: WaterSource): Promise<void>;
   deleteSource(tenantId: string, sourceId: string): Promise<boolean>;
+  putSourceReading(reading: SourceReading): Promise<void>;
+  listSourceReadings(tenantId: string): Promise<SourceReading[]>;
+  putMapping(tenantId: string, kind: string, mapping: Record<string, string>): Promise<void>;
+  getMapping(tenantId: string, kind: string): Promise<Record<string, string> | null>;
 }
 
 /** In-memory store for unit tests — always filters by tenantId. */
 export class MemorySourceStore implements SourceStore {
   private sources = new Map<string, WaterSource>();
+  private readings: SourceReading[] = [];
+  private mappings = new Map<string, Record<string, string>>();
 
   private key(tenantId: string, sourceId: string): string {
     return `${tenantId}::${sourceId}`;
@@ -32,5 +39,35 @@ export class MemorySourceStore implements SourceStore {
 
   async deleteSource(tenantId: string, sourceId: string): Promise<boolean> {
     return this.sources.delete(this.key(tenantId, sourceId));
+  }
+
+  async putSourceReading(reading: SourceReading): Promise<void> {
+    this.readings = this.readings.filter(
+      (r) =>
+        !(
+          r.tenantId === reading.tenantId &&
+          r.sourceId === reading.sourceId &&
+          r.timestamp === reading.timestamp
+        ),
+    );
+    this.readings.push({ ...reading });
+  }
+
+  async listSourceReadings(tenantId: string): Promise<SourceReading[]> {
+    return this.readings
+      .filter((r) => r.tenantId === tenantId)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  }
+
+  async putMapping(
+    tenantId: string,
+    kind: string,
+    mapping: Record<string, string>,
+  ): Promise<void> {
+    this.mappings.set(`${tenantId}::${kind}`, { ...mapping });
+  }
+
+  async getMapping(tenantId: string, kind: string): Promise<Record<string, string> | null> {
+    return this.mappings.get(`${tenantId}::${kind}`) ?? null;
   }
 }

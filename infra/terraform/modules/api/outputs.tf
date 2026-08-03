@@ -32,3 +32,13 @@ output "sources_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/sources"
   description = "GET/POST /sources and PUT/DELETE /sources/{sourceId} (JWT)"
 }
+
+output "ingest_sources_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/ingest/sources"
+  description = "POST /ingest/sources (JWT)"
+}
+
+output "balance_url" {
+  value       = "${aws_apigatewayv2_api.http.api_endpoint}/balance"
+  description = "GET /balance (JWT)"
+}

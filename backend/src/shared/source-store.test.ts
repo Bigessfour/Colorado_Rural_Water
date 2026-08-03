@@ -42,4 +42,30 @@ describe('MemorySourceStore tenant isolation', () => {
     assert.equal(await store.deleteSource('a', 'w1'), true);
     assert.equal(await store.getSource('a', 'w1'), null);
   });
+
+  it('source readings are tenant-scoped', async () => {
+    const store = new MemorySourceStore();
+    await store.putSourceReading({
+      tenantId: 'a',
+      sourceId: 'w1',
+      sourceName: 'Well A',
+      timestamp: '2026-07-31T00:00:00.000Z',
+      value: 100,
+      volumeMode: 'period',
+      unit: 'gal',
+      notes: null,
+    });
+    await store.putSourceReading({
+      tenantId: 'b',
+      sourceId: 'w1',
+      sourceName: 'Well B',
+      timestamp: '2026-07-31T00:00:00.000Z',
+      value: 200,
+      volumeMode: 'period',
+      unit: 'gal',
+      notes: null,
+    });
+    assert.equal((await store.listSourceReadings('a'))[0]?.value, 100);
+    assert.equal((await store.listSourceReadings('b'))[0]?.value, 200);
+  });
 });

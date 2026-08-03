@@ -8,6 +8,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import type { MeterLocation, MeterReading } from './meter-location.js';
 import type { MeterStore } from './ingest.js';
+import type { SourceReading, SourceVolumeMode } from './source-reading.js';
 import type { SourceStore } from './source-store.js';
 import type { SourceType, WaterSource } from './water-source.js';
 import { isSourceType } from './water-source.js';
@@ -34,6 +35,10 @@ function mapSk(kind: string): string {
 
 function srcSk(sourceId: string): string {
   return `SRC#${sourceId}`;
+}
+
+function srdSk(sourceId: string, timestamp: string): string {
+  return `SRD#${sourceId}#${timestamp}`;
 }
 
 export class DynamoMeterStore implements MeterStore, SourceStore {
@@ -215,6 +220,44 @@ export class DynamoMeterStore implements MeterStore, SourceStore {
     );
     return true;
   }
+
+  async putSourceReading(reading: SourceReading): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(reading.tenantId),
+          sk: srdSk(reading.sourceId, reading.timestamp),
+          entityType: 'source_reading',
+          tenantId: reading.tenantId,
+          sourceId: reading.sourceId,
+          sourceName: reading.sourceName,
+          timestamp: reading.timestamp,
+          value: reading.value,
+          volumeMode: reading.volumeMode,
+          unit: reading.unit,
+          notes: reading.notes,
+        },
+      }),
+    );
+  }
+
+  async listSourceReadings(tenantId: string): Promise<SourceReading[]> {
+    const res = await client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': pk(tenantId),
+          ':sk': 'SRD#',
+        },
+      }),
+    );
+    return (res.Items ?? [])
+      .map(itemToSourceReading)
+      .filter((r): r is SourceReading => r !== null)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  }
 }
 
 function itemToLocation(item: Record<string, unknown>): MeterLocation {
@@ -257,6 +300,21 @@ function itemToSource(item: Record<string, unknown>): WaterSource | null {
     notes: (item.notes as string | null) ?? null,
     createdAt: String(item.createdAt ?? new Date().toISOString()),
     updatedAt: String(item.updatedAt ?? new Date().toISOString()),
+  };
+}
+
+function itemToSourceReading(item: Record<string, unknown>): SourceReading | null {
+  const mode = item.volumeMode;
+  if (mode !== 'period' && mode !== 'cumulative') return null;
+  return {
+    tenantId: String(item.tenantId),
+    sourceId: String(item.sourceId),
+    sourceName: String(item.sourceName ?? item.sourceId),
+    timestamp: String(item.timestamp),
+    value: Number(item.value),
+    volumeMode: mode as SourceVolumeMode,
+    unit: String(item.unit ?? 'gal'),
+    notes: (item.notes as string | null) ?? null,
   };
 }
 

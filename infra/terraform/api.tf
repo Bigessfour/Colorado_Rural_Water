@@ -47,6 +47,16 @@ output "api_sources_url" {
   description = "GET/POST /sources (JWT)"
 }
 
+output "api_ingest_sources_url" {
+  value       = try(module.api[0].ingest_sources_url, null)
+  description = "POST /ingest/sources (JWT)"
+}
+
+output "api_balance_url" {
+  value       = try(module.api[0].balance_url, null)
+  description = "GET /balance (JWT)"
+}
+
 output "uploads_bucket" {
   value       = try(module.storage[0].uploads_bucket_name, null)
   description = "S3 uploads bucket"
