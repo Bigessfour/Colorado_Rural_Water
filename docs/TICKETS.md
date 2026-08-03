@@ -59,7 +59,7 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 | G1  | Named sources CRUD (tenant-scoped)                        | P0       | done   | GET/POST/PUT/DELETE /sources; Dynamo SRC#; DELETE cascades SRD#; SPA /sources page |
 | G2  | Source reading ingest (manual + CSV/S3, forgiving mapper) | P0       | done   | POST /ingest/sources; Dynamo SRD#; S3 `uploads/sources/` via `kind:source` presign; SPA sources page |
 | G3  | Balance calculator for billing period                     | P0       | done   | GET /balance In−Out + %; one-sided=insufficient; period dedupe; UTC YYYY-MM pilot |
-| G4  | Water-balance alerts (high loss + sold > pumped)          | P0       | todo   | Tenant thresholds; tolerance for small timing mismatch          |
+| G4  | Water-balance alerts (high loss + sold > pumped)          | P0       | in_progress | `evaluateBalanceAlerts` + GET /alerts `balanceAlerts`; tenant threshold store next |
 | G5  | Operator dashboard viz (In / Out / Loss trend)            | P0       | todo   | KPI + simple chart; stub already on member dashboard            |
 | G6  | CRWA roll-up water-balance summary                        | P1       | todo   | Sanitized per-municipality KPI/trend; wire with D4              |
 | G7  | Sample source + customer fixtures for demo balance        | P0       | done   | `messy-source-readings-july.csv` + existing customer CSV; GH #9 |
