@@ -29,7 +29,7 @@ Skipping RAG start/end or package-MCP doc checks is a process failure for this r
 ## 2. Product & architecture guardrails
 
 - Multi-tenant isolation by `tenant_id` on every record and authorized request. Never trust client-supplied tenant overrides.
-- Spec Kit: `docs/SPEC.md`. Tickets: `docs/TICKETS.md`. Isolation: `docs/TENANT_ISOLATION.md`.
+- Spec Kit: `docs/SPEC.md` — **§0 Scope layers** is authoritative (Kelly vs Pilot vs vNext). Tickets: `docs/TICKETS.md`. Isolation: `docs/TENANT_ISOLATION.md`.
 - AI agent (product): cheapest option first, explain cost, require confirmation, multi-step confirm for deletes. No cross-tenant data in prompts.
 - Prefer reversible local edits. Confirm before push, shared deploys, or IAM mutations.
 - **AWS account (locked):** `570912405222` · CLI profile **`townofwiley`** · region **`us-east-2`** — see `docs/AWS_ACCOUNT.md`. Never use `codeplatoon` for this repo.
