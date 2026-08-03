@@ -1,0 +1,63 @@
+<section class="page">
+  <h1>Member dashboard</h1>
+  <p class="lede">
+    Trends, water balance, and prioritized alerts for your system — built for rural operators, not
+    enterprise dashboards.
+  </p>
+
+  <div class="kpi-grid">
+    @for (kpi of kpis; track kpi.label) {
+      <p-card styleClass="kpi-card">
+        <div class="kpi-label">{{ kpi.label }}</div>
+        <div class="kpi-value">{{ kpi.value }}</div>
+        <div class="kpi-hint">{{ kpi.hint }}</div>
+      </p-card>
+    }
+  </div>
+
+  <p-card header="Water balance — produced vs billed" styleClass="balance">
+    <p class="balance-period">{{ balance.periodLabel }}</p>
+    <div class="balance-stats">
+      <div>
+        <div class="kpi-label">Produced (in)</div>
+        <div class="balance-stat">{{ balance.producedGal | number }} gal</div>
+        <div class="kpi-hint">Named wells / sources</div>
+      </div>
+      <div>
+        <div class="kpi-label">Billed (out)</div>
+        <div class="balance-stat">{{ balance.billedGal | number }} gal</div>
+        <div class="kpi-hint">Customer meters (aggregate)</div>
+      </div>
+      <div>
+        <div class="kpi-label">Unaccounted</div>
+        <div class="balance-stat" [class.loss]="balance.status === 'loss'" [class.gain]="balance.status === 'gain'">
+          {{ balance.unaccountedGal | number }} gal ({{ balance.unaccountedPct }}%)
+        </div>
+        <div class="kpi-hint">Positive = loss; negative = sold more than pumped</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <p-chart type="line" [data]="balanceChartData" [options]="balanceChartOptions" />
+    </div>
+    <p class="muted">Demo stub — live numbers wire up in tickets G3 / G5 after source + customer ingest.</p>
+  </p-card>
+
+  <p-card header="Priority alert feed" styleClass="feed">
+    <div class="alert-row">
+      <p-tag severity="warn" value="Loss" />
+      <div>
+        <strong>System water balance</strong> — unaccounted volume ~8.4% this period. Check for
+        distribution leaks or meter timing gaps.
+        <div class="muted">Water-balance alerts land in ticket G4.</div>
+      </div>
+    </div>
+    <div class="alert-row">
+      <p-tag severity="danger" value="High" />
+      <div>
+        <strong>Meter M-1042</strong> · 112 N Main St Wiley CO — usage ~3× typical for this route.
+        Current occupant: A Rivera (name may change; address stays with the meter).
+        <div class="muted">AI explanations wire up in ticket C6.</div>
+      </div>
+    </div>
+  </p-card>
+</section>

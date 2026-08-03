@@ -1,0 +1,7 @@
+aws_account_id = "570912405222"
+aws_profile    = "townofwiley"
+aws_region     = "us-east-2"
+environment    = "dev"
+project_name   = "water-saver"
+enable_cognito = true
+enable_api     = true

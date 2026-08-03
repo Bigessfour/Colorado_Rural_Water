@@ -1,0 +1,29 @@
+<section class="page">
+  <h1>Upload meter readings</h1>
+  <p class="lede">
+    Drop a messy CSV or Excel export. We will help map columns in everyday language — no perfect
+    formatting required.
+  </p>
+
+  <p-message severity="info" styleClass="hint">{{ sampleHint }}</p-message>
+
+  <p-card styleClass="upload-card">
+    <p-fileupload
+      mode="advanced"
+      name="readings"
+      chooseLabel="Choose file"
+      uploadLabel="Upload"
+      cancelLabel="Clear"
+      [customUpload]="true"
+      [auto]="false"
+      accept=".csv,.xlsx,.xls"
+      [maxFileSize]="20000000"
+    >
+      <ng-template pTemplate="empty">
+        <div class="drop">
+          Drag a file here, or choose one. Column mapper and S3 presign land in tickets B2–B4.
+        </div>
+      </ng-template>
+    </p-fileupload>
+  </p-card>
+</section>

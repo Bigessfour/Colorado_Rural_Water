@@ -1,0 +1,20 @@
+{
+  "name": "water-saver-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Water Saver serverless API and pipeline handlers",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test src/**/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.147",
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "mcpServers": {
+    "crwa-rag": {
+      "command": "/opt/homebrew/opt/node@24/bin/node",
+      "args": [
+        "/Users/stephenmckitrick/Colorado Rural Water/mcp/crwa-rag/server.mjs"
+      ],
+      "env": {
+        "CRWA_RAG_ROOT": "/Users/stephenmckitrick/Colorado Rural Water",
+        "PATH": "/opt/homebrew/opt/node@24/bin:/usr/local/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    },
+    "angular-cli": {
+      "command": "bash",
+      "args": [
+        "/Users/stephenmckitrick/Colorado Rural Water/scripts/angular-mcp.sh"
+      ],
+      "env": {
+        "PATH": "/opt/homebrew/opt/node@24/bin:/usr/local/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NO_UPDATE_NOTIFIER": "1"
+      }
+    },
+    "primeng": {
+      "command": "/opt/homebrew/opt/node@24/bin/node",
+      "args": [
+        "/Users/stephenmckitrick/Colorado Rural Water/scripts/primeng-mcp.mjs"
+      ],
+      "env": {
+        "NODE_OPTIONS": "--no-deprecation",
+        "PATH": "/opt/homebrew/opt/node@24/bin:/usr/local/opt/node@24/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    },
+    "terraform": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "hashicorp/terraform-mcp-server:1.0.0"
+      ]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+---
+description: Non-negotiable RAG turn protocol and package MCP docs for Water Saver
+alwaysApply: true
+---
+
+# Water Saver — mandatory agent protocol
+
+Full text: [`AGENTS.md`](../../AGENTS.md) / [`agent.md`](../../agent.md).
+
+## Every turn — start
+
+1. MCP **`crwa-rag`** → **`search_codebase`** with a query covering the full task (project context). Use **`rag_status`** if results look empty/stale.
+2. Before Angular / PrimeNG / Terraform / AWS config or API work: query the matching package MCP for **latest** docs:
+   - `angular-cli` · `primeng` · `terraform` · `aws`
+3. Do not invent package configuration from memory when an MCP exists.
+
+## Every turn — end
+
+4. MCP **`crwa-rag`** → **`refresh_index`** (incremental). CLI: `npm run rag:index:incremental`.
+
+## Hard product rules
+
+- `tenant_id` isolation on all data paths; no cross-tenant AI context.
+- Spec: `docs/SPEC.md`. Isolation: `docs/TENANT_ISOLATION.md`.
+- AWS account **570912405222** only (`townofwiley` / `us-east-2`) — `docs/AWS_ACCOUNT.md`.

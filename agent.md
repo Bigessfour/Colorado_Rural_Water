@@ -1,0 +1,69 @@
+# Water Saver / Colorado Rural Water — Agent Rules (NON-NEGOTIABLE)
+
+Working name: **Water Saver**. Stack: Angular 22+, PrimeNG 22, Terraform, AWS serverless, Cognito, Bedrock.
+
+This file (`AGENTS.md`) and `agent.md` are equivalent. Cursor rules under `.cursor/rules/` mirror these mandates.
+
+---
+
+## 1. Turn protocol (mandatory every turn)
+
+### Before doing work
+
+1. **RAG first** — Call MCP `crwa-rag` → `search_codebase` with a query that captures the full task context (and `rag_status` if the index looks stale). Prefer RAG over broad speculative greps.
+2. **Package MCP docs** — Before changing Angular, PrimeNG, Terraform, or AWS configuration/APIs, query the matching package MCP for **current** docs (do not rely on training memory alone):
+   - Angular → `angular-cli` MCP
+   - PrimeNG → `primeng` MCP
+   - Terraform / providers → `terraform` MCP (HashiCorp registry)
+   - AWS services / IAM / Bedrock / Cognito → `aws` MCP (and AWS knowledge tools when relevant)
+3. Only then implement.
+
+### After finishing work (end of every turn)
+
+4. **Reindex RAG** — Call MCP `crwa-rag` → `refresh_index` (incremental; `full: true` only if the index is missing or badly stale). CLI fallback: `npm run rag:index:incremental`.
+
+Skipping RAG start/end or package-MCP doc checks is a process failure for this repo.
+
+---
+
+## 2. Product & architecture guardrails
+
+- Multi-tenant isolation by `tenant_id` on every record and authorized request. Never trust client-supplied tenant overrides.
+- Spec Kit: `docs/SPEC.md`. Tickets: `docs/TICKETS.md`. Isolation: `docs/TENANT_ISOLATION.md`.
+- AI agent (product): cheapest option first, explain cost, require confirmation, multi-step confirm for deletes. No cross-tenant data in prompts.
+- Prefer reversible local edits. Confirm before push, shared deploys, or IAM mutations.
+- **AWS account (locked):** `570912405222` · CLI profile **`townofwiley`** · region **`us-east-2`** — see `docs/AWS_ACCOUNT.md`. Never use `codeplatoon` for this repo.
+
+## 3. Frontend conventions
+
+- Angular **22+**, standalone components, signals where appropriate, native control flow (`@if` / `@for`).
+- PrimeNG **22** with `@primeuix/themes` (Aura or project preset).
+- Rural-operator UX: calm, clear, low stress — see Spec §1.
+
+## 4. Infra conventions
+
+- Terraform under `infra/terraform`. No secrets in git (`.tfvars`, `.env`, state).
+- Serverless handlers under `backend/src` must resolve tenant from JWT claims.
+
+## 5. MCP inventory (this project)
+
+| Server        | Purpose                                                                 |
+| ------------- | ----------------------------------------------------------------------- |
+| `crwa-rag`    | Project codebase RAG (`search_codebase`, `rag_status`, `refresh_index`) |
+| `angular-cli` | Latest Angular CLI / framework guidance                                 |
+| `primeng`     | Latest PrimeNG configuration docs                                       |
+| `terraform`   | Terraform Registry / provider docs                                      |
+| `aws`         | AWS MCP (global) — live AWS + service guidance                          |
+
+Project MCP file: `.cursor/mcp.json`. Global AWS launcher remains in `~/.cursor/mcp.json`.
+
+## 6. Local commands
+
+```bash
+npm run rag:status
+npm run rag:index
+npm run rag:index:incremental
+npm run rag:query -- "tenant isolation alerts"
+cd frontend && npm start
+cd backend && npm test
+```

@@ -1,0 +1,42 @@
+<section class="page">
+  <h1>Alerts</h1>
+  <p class="lede">
+    Prioritized issues that help catch leaks early and protect customers from surprise high bills.
+  </p>
+
+  <p-card styleClass="table-card">
+    <p-table [value]="alerts" [tableStyle]="{ 'min-width': '40rem' }">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Priority</th>
+          <th>Meter</th>
+          <th>Summary</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-alert>
+        <tr>
+          <td>
+            <p-tag
+              [severity]="alert.priority === 'high' ? 'danger' : 'warn'"
+              [value]="alert.priority"
+            />
+          </td>
+          <td>{{ alert.meterId }}</td>
+          <td>{{ alert.summary }}</td>
+          <td>{{ alert.status }}</td>
+          <td>
+            @if (alert.status === 'open') {
+              <p-button
+                label="Acknowledge"
+                size="small"
+                (onClick)="acknowledge(alert)"
+              />
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</section>

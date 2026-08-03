@@ -1,0 +1,12 @@
+Meter ID,Read Date,Reading (gal),Account #,Customer,Service Address,Route,Diag
+1042,07/15/2026,128450,A-2201,A Rivera,112 N Main St Wiley CO,R3,
+1043,07/15/2026,98210,A-2202,M Lopez,45 County Rd 18 Wiley CO,R3,L
+1044,7/15/26,98210,A-2203,R Chen,8 Elm Ct Wiley CO,R3,
+1045,15-Jul-2026,0,A-2204,Empty Lot,210 Vacant Lot Rd Wiley CO,R4,NR
+1046,07/15/2026,445890,A-2205,Irrigation HOA,Park Loop Meter Pit Wiley CO,R1,
+1042,06/15/2026,125100,A-2201,J Smith,112 N Main St Wiley CO,R3,
+1043,06/15/2026,97100,A-2202,M Lopez,45 County Rd 18 Wiley CO,R3,
+1044,06/15/2026,96050,A-2203,R Chen,8 Elm Ct Wiley CO,R4,
+1045,06/15/2026,0,A-2204,Empty Lot,210 Vacant Lot Rd Wiley CO,R4,NR
+1046,06/15/2026,312000,A-2205,Irrigation HOA,Park Loop Meter Pit Wiley CO,R1,
+# Notes: address stays with meter; 1042 occupant changed J Smith -> A Rivera (sale/move-in). Route R4 mistype on 1044 Jun. NR = non-registering; L = leak flag.

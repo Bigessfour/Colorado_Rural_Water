@@ -1,0 +1,2 @@
+# S3 upload / drop zone with tenants/{tenant_id}/uploads/ prefix convention.
+# Implemented in ticket B2.
