@@ -63,7 +63,7 @@ jobs:
       - name: Terraform plan
         run: |
           terraform workspace select dev || terraform workspace new dev
-          terraform plan -var-file=environments/ci.tfvars -no-color -input=false
+          terraform plan -var-file=environments/ci.tfvars.example -no-color -input=false
 
   apply:
     name: terraform apply
@@ -91,4 +91,4 @@ jobs:
         run: |
           terraform init -input=false
           terraform workspace select dev || terraform workspace new dev
-          terraform apply -var-file=environments/ci.tfvars -auto-approve -input=false
+          terraform apply -var-file=environments/ci.tfvars.example -auto-approve -input=false

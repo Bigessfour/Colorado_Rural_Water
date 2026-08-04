@@ -1,6 +1,6 @@
 # Plan — Feature 006: GitHub Actions Advanced Bonuses
 
-**Status:** implementing — remove soft-fail; CI uses env AWS keys + `environments/ci.tfvars`.
+**Status:** implementing — remove soft-fail; CI uses env AWS keys + `environments/ci.tfvars.example`.
 
 ## Context
 

@@ -50,7 +50,7 @@ jobs:
         run: |
           terraform workspace select dev || terraform workspace new dev
           terraform plan -destroy \
-            -var-file=environments/ci.tfvars \
+            -var-file=environments/ci.tfvars.example \
             -no-color -input=false
       - name: Terraform destroy (real)
         if: ${{ !inputs.dry_run }}
@@ -58,7 +58,7 @@ jobs:
         run: |
           terraform workspace select dev || terraform workspace new dev
           terraform destroy \
-            -var-file=environments/ci.tfvars \
+            -var-file=environments/ci.tfvars.example \
             -auto-approve -no-color -input=false
       - name: Evidence note
         run: |

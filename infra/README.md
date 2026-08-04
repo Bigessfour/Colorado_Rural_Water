@@ -61,7 +61,7 @@ terraform plan -var-file=environments/dev.tfvars
 terraform apply -var-file=environments/dev.tfvars
 ```
 
-CI uses `environments/ci.tfvars` (`aws_profile=""`) with `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` from GitHub secrets.
+CI uses `environments/ci.tfvars.example` (`aws_profile=""`) with `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` from GitHub secrets.
 
 ## Destroy
 

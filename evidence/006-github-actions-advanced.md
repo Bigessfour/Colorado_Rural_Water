@@ -16,7 +16,7 @@
 ## Fixes vs soft-green theater
 
 - Removed all `continue-on-error` from terraform plan/apply steps
-- `aws_profile` empty in `environments/ci.tfvars` so CI uses GH env credentials (not missing `codeplatoon` profile)
+- `aws_profile` empty in `environments/ci.tfvars.example` so CI uses GH env credentials (not missing `codeplatoon` profile)
 - Plan/apply/destroy bundle Lambdas first (zip hash required)
 - Committed remote `backend.tf` for CI `terraform init`
 
