@@ -2,10 +2,10 @@
 
 ## Implementation checklist
 
-- [ ] T006-01: Conditional workflows/jobs (plan on PR, apply/deploy on main)
-- [ ] T006-02: Explicit destroy workflow (workflow_dispatch) that tears down assessment resourc
-- [ ] T006-03: Python unit tests integrated into the pipeline
-- [ ] T006-04: Ansible skipped (lightweight Compose path preferred)
+- [x] T006-01: Conditional workflows (plan on PR, apply on main) — hard fail
+- [x] T006-02: Destroy workflow_dispatch with dry_run default
+- [x] T006-03: Python unit tests in pipeline (Feature 005 ci.yml)
+- [x] T006-04: Ansible skipped
 
-- [ ] T006-EV: Record evidence path in RUBRIC_COVERAGE.md
-- [ ] T006-DOC: Update README / quickstart if operator-facing
+- [ ] T006-EV: Green plan run URL + destroy dry-run line in evidence
+- [x] T006-DOC: ci.tfvars + provider profile empty-in-CI

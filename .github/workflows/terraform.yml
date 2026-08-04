@@ -1,8 +1,7 @@
 name: Terraform
 
-# Conditional: plan on PR, apply on main (Feature 006).
-# Code Platoon account via GitHub Secrets — never hard-code keys.
-# Resources must be tagged Assessment-iii (Terraform default_tags).
+# Feature 006 — plan on PR / workflow_dispatch; apply on main only.
+# Hard fails (no continue-on-error). Account 388691194728 · Assessment-iii tag.
 
 on:
   pull_request:
@@ -10,11 +9,17 @@ on:
     paths:
       - "infra/terraform/**"
       - ".github/workflows/terraform.yml"
+      - "backend/src/**"
+      - "scripts/build-lambda-zip.mjs"
+      - "package.json"
   push:
     branches: [main]
     paths:
       - "infra/terraform/**"
       - ".github/workflows/terraform.yml"
+      - "backend/src/**"
+      - "scripts/build-lambda-zip.mjs"
+      - "package.json"
   workflow_dispatch:
 
 permissions:
@@ -46,21 +51,19 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-        continue-on-error: true
+      - name: Bundle Lambdas (plan needs zip hash)
+        working-directory: .
+        run: npm ci && npm run backend:bundle
       - name: Terraform fmt
         run: terraform fmt -check -recursive
-        continue-on-error: true
       - name: Terraform init
         run: terraform init -input=false
-        continue-on-error: true
       - name: Terraform validate
         run: terraform validate -no-color
-        continue-on-error: true
       - name: Terraform plan
         run: |
           terraform workspace select dev || terraform workspace new dev
-          terraform plan -var-file=environments/dev.tfvars.example -no-color -input=false
-        continue-on-error: true
+          terraform plan -var-file=environments/ci.tfvars -no-color -input=false
 
   apply:
     name: terraform apply
@@ -84,10 +87,8 @@ jobs:
       - name: Bundle Lambdas
         working-directory: .
         run: npm ci && npm run backend:bundle
-        continue-on-error: true
       - name: Terraform init + apply
         run: |
           terraform init -input=false
           terraform workspace select dev || terraform workspace new dev
-          terraform apply -var-file=environments/dev.tfvars.example -auto-approve -input=false
-        continue-on-error: true
+          terraform apply -var-file=environments/ci.tfvars -auto-approve -input=false

@@ -1,8 +1,17 @@
 # Plan — Feature 006: GitHub Actions Advanced Bonuses
 
+**Status:** implementing — remove soft-fail; CI uses env AWS keys + `environments/ci.tfvars`.
+
 ## Context
 
 Assessment III full-credit track layered on Water Saver. AWS account `388691194728` / `codeplatoon` / `us-east-1` (Assessment-iii tag required).
+
+## Approach
+
+1. Conditional Terraform: plan on PR / dispatch; apply only on `main`.
+2. Destroy via workflow_dispatch with `confirm=destroy` and default `dry_run=true`.
+3. Never `continue-on-error` on plan/apply/destroy auth or terraform steps.
+4. Empty `aws_profile` in CI tfvars so GH secrets drive the credential chain.
 
 ## Approach
 

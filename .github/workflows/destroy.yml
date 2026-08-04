@@ -1,15 +1,20 @@
 name: Destroy
 
-# Feature 006 — explicit teardown. Type confirm=destroy to run.
-# Account: 388691194728 / codeplatoon / us-east-1 · tag Assessment-iii
+# Feature 006 — explicit teardown. Prefer dry_run=true for evidence without deleting the stack.
+# Account: 388691194728 · us-east-1 · tag Assessment-iii
 
 on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: "Type destroy to confirm teardown"
+        description: "Type destroy to confirm"
         required: true
         type: string
+      dry_run:
+        description: "If true, only terraform plan -destroy (safe evidence)"
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   destroy:
@@ -34,17 +39,30 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+      - name: Bundle Lambdas
+        run: npm ci && npm run backend:bundle
       - name: Terraform Init
         working-directory: infra/terraform
         run: terraform init -input=false
-      - name: Terraform Destroy
+      - name: Terraform plan -destroy (dry run)
+        if: inputs.dry_run
+        working-directory: infra/terraform
+        run: |
+          terraform workspace select dev || terraform workspace new dev
+          terraform plan -destroy \
+            -var-file=environments/ci.tfvars \
+            -no-color -input=false
+      - name: Terraform destroy (real)
+        if: ${{ !inputs.dry_run }}
         working-directory: infra/terraform
         run: |
           terraform workspace select dev || terraform workspace new dev
           terraform destroy \
-            -var-file=environments/dev.tfvars.example \
+            -var-file=environments/ci.tfvars \
             -auto-approve -no-color -input=false
       - name: Evidence note
         run: |
           mkdir -p evidence
-          echo "Destroy completed at $(date -u +%Y-%m-%dT%H:%M:%SZ) on ${{ github.run_id }} (codeplatoon)" >> evidence/07-destroy.md
+          {
+            echo "- $(date -u +%Y-%m-%dT%H:%M:%SZ) run ${{ github.run_id }} dry_run=${{ inputs.dry_run }} actor=${{ github.actor }}"
+          } >> evidence/07-destroy.md

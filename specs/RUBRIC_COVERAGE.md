@@ -38,9 +38,9 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 | Dockerfiles + Compose three-tier | R    | [005](005-github-actions-compose/)  | done (verified) | same — `--wait` + hard `/health` `/ready` + frontend                                                     |
 | No hard-coded secrets            | R    | [005](005-github-actions-compose/)  | done (verified) | `.env.example`, GH secret names, `gh-secrets-example.sh`                                                 |
 | Testing, logging, health checks  | R    | [005](005-github-actions-compose/)  | done (verified) | node + pytest + `scripts/smoke.sh` (`SMOKE_REQUIRE_RAG` opt-in)                                          |
-| Conditional PR vs main           | B    | [006](006-github-actions-advanced/) | implementing    | `terraform.yml` — **not honest green** (`continue-on-error`; AWS profile fails in CI)                    |
-| Destroy workflow                 | B    | [006](006-github-actions-advanced/) | implementing    | `destroy.yml` — needs hard fails + working AWS env                                                       |
-| Python unit tests in pipeline    | B    | [006](006-github-actions-advanced/) | done (via 005)  | `backend/tests/` pytest job in `ci.yml`                                                                  |
+| Conditional PR vs main           | B    | [006](006-github-actions-advanced/) | implementing    | [`evidence/006-github-actions-advanced.md`](../evidence/006-github-actions-advanced.md) · hard-fail `terraform.yml` |
+| Destroy workflow                 | B    | [006](006-github-actions-advanced/) | implementing    | `destroy.yml` dry_run default · confirm=destroy                                                                      |
+| Python unit tests in pipeline    | B    | [006](006-github-actions-advanced/) | done (via 005)  | `ci.yml` pytest job                                                                                                  |
 | Ansible                          | B    | —                                   | **skip**        | Compose path preferred                                                                           |
 
 ## 4. Integrations (15%)

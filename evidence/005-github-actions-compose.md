@@ -65,8 +65,9 @@ SMOKE_FRONTEND_URL=http://127.0.0.1:8080 ./scripts/smoke.sh
 ## GitHub Actions
 
 - Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
-- Honest green example (pre–wait harden): https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865047452  
-- Post–harden run URL: fill after push of this evidence revision
+- Honest green (post–harden + secret-safe Compose): https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865517129
+  - backend node tests ✓ · pytest ✓ · docker compose build + health/ready/frontend smoke ✓
+- Earlier mid-fix run was cancelled by force-push after GitGuardian remediation (not a product failure).
 
 ## Explicit non-claims
 

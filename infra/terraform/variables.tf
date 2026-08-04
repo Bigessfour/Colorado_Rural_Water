@@ -17,8 +17,8 @@ variable "aws_region" {
 
 variable "aws_profile" {
   type        = string
-  description = "Named AWS CLI profile — use codeplatoon for account 388691194728"
-  default     = "codeplatoon"
+  description = "Optional named AWS CLI profile for local use (codeplatoon). Leave empty in CI so env credentials are used."
+  default     = ""
 }
 
 variable "environment" {
