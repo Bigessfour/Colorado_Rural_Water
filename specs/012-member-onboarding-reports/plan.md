@@ -12,11 +12,12 @@
 
 ## Phases
 
-| Phase | Deliverable |
-| ----- | ----------- |
-| A | Onboarding schema, API, wizard UI |
-| B | Work order CSV/XLS + Reports page |
-| C | HTML summary report + print flow |
+| Phase | Deliverable                                   |
+| ----- | --------------------------------------------- |
+| A     | Onboarding schema, API, wizard UI             |
+| B     | Work order CSV/XLS + Reports page             |
+| C     | HTML summary report + print flow              |
+| D     | Theme toggle, Settings page, Reports hub tabs |
 
 ## Dependencies
 

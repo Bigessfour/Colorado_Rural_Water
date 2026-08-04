@@ -6,6 +6,15 @@ import { ReportsPageComponent } from './reports-page.component';
 
 describe('ReportsPageComponent', () => {
   beforeEach(async () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+
     await TestBed.configureTestingModule({
       imports: [ReportsPageComponent],
       providers: [
@@ -21,9 +30,11 @@ describe('ReportsPageComponent', () => {
     }).compileComponents();
   });
 
-  it('renders work order and summary actions', () => {
+  it('renders report tabs and catalog', () => {
     const fixture = TestBed.createComponent(ReportsPageComponent);
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toMatch(/Reports|work order|summary/i);
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toMatch(/Reports|All report processes|Run reports|Recent activity/i);
+    expect(text).toMatch(/work order|summary/i);
   });
 });

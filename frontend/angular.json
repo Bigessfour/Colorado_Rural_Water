@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": "ffe65a6e-2e97-4aed-ae5c-f1cdf038cb7d"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -34,7 +35,8 @@
                 "output": "leaflet"
               }
             ],
-            "styles": ["src/styles.scss", "node_modules/leaflet/dist/leaflet.css"]
+            "styles": ["src/styles.scss", "node_modules/leaflet/dist/leaflet.css"],
+            "allowedCommonJsDependencies": ["leaflet"]
           },
           "configurations": {
             "production": {

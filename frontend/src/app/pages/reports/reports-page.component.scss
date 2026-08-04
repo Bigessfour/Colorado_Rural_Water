@@ -1,22 +1,14 @@
-.page h1 {
-  font-family: 'Fraunces', Georgia, serif;
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #0f3d42;
-  margin: 0 0 0.35rem;
-}
-
-.lede {
-  font-family: 'Source Sans 3', system-ui, sans-serif;
-  color: #4a6368;
-  max-width: 42rem;
-  margin: 0 0 1rem;
-}
-
 .card-lede {
   font-family: 'Source Sans 3', system-ui, sans-serif;
-  color: #4a6368;
+  color: var(--ws-muted);
   margin: 0 0 1rem;
+}
+
+.row-desc {
+  font-size: 0.85rem;
+  color: var(--ws-muted);
+  margin-top: 0.25rem;
+  max-width: 28rem;
 }
 
 .actions {
@@ -28,13 +20,18 @@
 
 .link {
   font-family: 'Source Sans 3', system-ui, sans-serif;
-  color: #0f6b5c;
+  color: var(--ws-teal);
 }
 
 :host ::ng-deep .block {
   margin-bottom: 1rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(15, 61, 66, 0.08);
+  background: color-mix(in srgb, var(--ws-card) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ws-teal) 10%, transparent);
+}
+
+:host ::ng-deep .table-card {
+  background: color-mix(in srgb, var(--ws-card) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ws-teal) 10%, transparent);
 }
 
 :host ::ng-deep .hint {

@@ -13,6 +13,10 @@
     "files.exclude": {
       "**/.DS_Store": true
     },
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "typescript.tsdk": "frontend/node_modules/typescript/lib",
+    "tailwindCSS.validate": false,
+    "trunk.showPreexistingIssues": false,
+    "trunk.inlineDecoratorsForAllExtensions": false
   }
 }

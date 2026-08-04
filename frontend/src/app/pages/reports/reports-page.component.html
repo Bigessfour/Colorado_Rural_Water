@@ -1,13 +1,13 @@
 <section class="page">
   <h1>Reports</h1>
   <p class="lede">
-    Download clerk-ready work orders for flagged meters (with map links when coordinates exist) or
-    print an operations summary for your water superintendent.
+    All report processes for your system — catalog, run actions, and recent activity from this
+    browser session.
   </p>
 
   @if (!auth.isLoggedIn()) {
     <p-message severity="warn" styleClass="hint">
-      <a routerLink="/login">Sign in</a> to generate reports for your system.
+      <a routerLink="/login">Sign in</a> to generate tenant-scoped reports.
     </p-message>
   }
 
@@ -18,48 +18,150 @@
     <p-message severity="success" styleClass="hint">{{ notice() }}</p-message>
   }
 
-  <p-card header="Flagged meters work order" styleClass="block">
-    <p class="card-lede">
-      Trouble-ticket style list for the clerk or field crew: meter ID, address, alert summary,
-      Confidence note, recommended action, latitude/longitude, and a link to the map pin.
-    </p>
-    <div class="actions">
-      <button
-        type="button"
-        pButton
-        label="Download CSV"
-        (click)="downloadWorkOrders('csv')"
-        [loading]="busy()"
-        [disabled]="!auth.isLoggedIn()"
-      ></button>
-      <button
-        type="button"
-        pButton
-        label="Download Excel (XLSX)"
-        severity="secondary"
-        (click)="downloadWorkOrders('xlsx')"
-        [loading]="busy()"
-        [disabled]="!auth.isLoggedIn()"
-      ></button>
-      <a routerLink="/alerts" class="link">View alerts feed</a>
-    </div>
-  </p-card>
+  <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
+    <p-tablist>
+      <p-tab value="catalog">All report processes</p-tab>
+      <p-tab value="run">Run reports</p-tab>
+      <p-tab value="activity">Recent activity</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <p-tabpanel value="catalog">
+        <p-card styleClass="table-card">
+          <p-table [value]="catalog" [tableStyle]="{ 'min-width': '52rem' }">
+            <ng-template #header>
+              <tr>
+                <th>Report</th>
+                <th>Category</th>
+                <th>Formats</th>
+                <th>Status</th>
+                <th>Last run (this device)</th>
+                <th></th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-row>
+              <tr>
+                <td>
+                  <strong>{{ row.name }}</strong>
+                  <div class="row-desc">{{ row.description }}</div>
+                </td>
+                <td>{{ categoryLabel(row.category) }}</td>
+                <td>{{ row.formats.join(', ') }}</td>
+                <td>
+                  <p-tag [value]="statusLabel(row)" [severity]="statusSeverity(row)" />
+                </td>
+                <td>{{ lastRun(row.id) }}</td>
+                <td>
+                  <button
+                    type="button"
+                    pButton
+                    label="Run"
+                    size="small"
+                    (click)="runReport(row)"
+                    [loading]="busy()"
+                    [disabled]="row.requiresAuth && !auth.isLoggedIn()"
+                  ></button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-card>
+      </p-tabpanel>
 
-  <p-card header="Monthly operations summary" styleClass="block">
-    <p class="card-lede">
-      KPI snapshot: Data Confidence, open alerts, water balance In/Out, and top flagged meters.
-      Opens in a new tab — use Print → Save as PDF.
-    </p>
-    <div class="actions">
-      <button
-        type="button"
-        pButton
-        label="Open printable summary"
-        (click)="openSummaryReport()"
-        [loading]="busy()"
-        [disabled]="!auth.isLoggedIn()"
-      ></button>
-      <a routerLink="/dashboard" class="link">Dashboard charts</a>
-    </div>
-  </p-card>
+      <p-tabpanel value="run">
+        <p-card header="Flagged meters work order" styleClass="block">
+          <p class="card-lede">
+            Trouble-ticket export for field crews — includes map links when coordinates exist.
+          </p>
+          <div class="actions">
+            <button
+              type="button"
+              pButton
+              label="Download CSV"
+              (click)="downloadWorkOrders('csv')"
+              [loading]="busy()"
+              [disabled]="!auth.isLoggedIn()"
+            ></button>
+            <button
+              type="button"
+              pButton
+              label="Download Excel (XLSX)"
+              severity="secondary"
+              (click)="downloadWorkOrders('xlsx')"
+              [loading]="busy()"
+              [disabled]="!auth.isLoggedIn()"
+            ></button>
+            <a routerLink="/alerts" class="link">View alerts feed</a>
+          </div>
+        </p-card>
+
+        <p-card header="Monthly operations summary" styleClass="block">
+          <p class="card-lede">
+            KPI snapshot for superintendents — open in a new tab, then Print → Save as PDF.
+          </p>
+          <div class="actions">
+            <button
+              type="button"
+              pButton
+              label="Open printable summary"
+              (click)="openSummaryReport()"
+              [loading]="busy()"
+              [disabled]="!auth.isLoggedIn()"
+            ></button>
+            <a routerLink="/dashboard" class="link">Dashboard charts</a>
+          </div>
+        </p-card>
+
+        <p-card header="Legacy flagged CSV (Alerts API)" styleClass="block">
+          <p class="card-lede">
+            Original C4 export path — same data as Alerts → Export flagged CSV.
+          </p>
+          <div class="actions">
+            <button
+              type="button"
+              pButton
+              label="Download flagged CSV"
+              severity="secondary"
+              (click)="downloadAlertsCsv()"
+              [loading]="busy()"
+              [disabled]="!auth.isLoggedIn()"
+            ></button>
+          </div>
+        </p-card>
+      </p-tabpanel>
+
+      <p-tabpanel value="activity">
+        <p-card styleClass="table-card">
+          @if (activity().length === 0) {
+            <p class="muted">No report runs yet this session. Use the catalog or Run tabs.</p>
+          } @else {
+            <p-table [value]="activity()" [tableStyle]="{ 'min-width': '40rem' }">
+              <ng-template #header>
+                <tr>
+                  <th>When</th>
+                  <th>Report</th>
+                  <th>Format</th>
+                  <th>Status</th>
+                  <th>Detail</th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-row>
+                <tr>
+                  <td>{{ row.at | date: 'short' }}</td>
+                  <td>{{ row.name }}</td>
+                  <td>{{ row.format }}</td>
+                  <td>
+                    <p-tag
+                      [value]="row.status"
+                      [severity]="row.status === 'success' ? 'success' : 'danger'"
+                    />
+                  </td>
+                  <td>{{ row.detail }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          }
+        </p-card>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
 </section>

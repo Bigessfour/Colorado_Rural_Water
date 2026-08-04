@@ -13,10 +13,7 @@ import Aura from '@primeuix/themes/aura';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
-import {
-  ClientErrorReporter,
-  installBrowserErrorBridge,
-} from './core/client-error-reporter';
+import { ClientErrorReporter, installBrowserErrorBridge } from './core/client-error-reporter';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -37,12 +34,10 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: Aura,
         options: {
-          darkModeSelector: false,
+          darkModeSelector: '.app-dark',
         },
       },
-      ...(environment.primeNgLicense
-        ? { license: environment.primeNgLicense }
-        : {}),
+      ...(environment.primeNgLicense ? { license: environment.primeNgLicense } : {}),
     }),
   ],
 };

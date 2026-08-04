@@ -12,6 +12,7 @@ import { BillingPageComponent } from './pages/billing/billing-page.component';
 import { AccountPageComponent } from './pages/account/account-page.component';
 import { AgentPageComponent } from './pages/agent/agent-page.component';
 import { ReviewHowtoPageComponent } from './pages/review/review-howto-page.component';
+import { SettingsPageComponent } from './pages/settings/settings-page.component';
 import { OnboardingPageComponent } from './pages/onboarding/onboarding-page.component';
 import { ReportsPageComponent } from './pages/reports/reports-page.component';
 
@@ -29,6 +30,7 @@ export const routes: Routes = [
       { path: 'alerts', component: AlertsPageComponent },
       { path: 'onboarding', component: OnboardingPageComponent },
       { path: 'reports', component: ReportsPageComponent },
+      { path: 'settings', component: SettingsPageComponent },
       { path: 'assistant', component: AgentPageComponent },
       { path: 'account', component: AccountPageComponent },
       { path: 'admin', component: AdminPageComponent },

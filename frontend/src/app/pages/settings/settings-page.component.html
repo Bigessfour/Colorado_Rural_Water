@@ -1,0 +1,67 @@
+<section class="page">
+  <h1>Settings</h1>
+  <p class="lede">
+    Display preferences stay on this device. Account password and MFA live under Account; system
+    provisioning stays with CRWA Admin.
+  </p>
+
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+
+  <p-card header="Display" styleClass="block">
+    <p class="card-lede">Choose light or dark chrome. Saved in this browser only.</p>
+    <p-selectbutton
+      [options]="themeOptions"
+      [ngModel]="theme.mode()"
+      (ngModelChange)="onThemeChange($event)"
+      optionLabel="label"
+      optionValue="value"
+      ariaLabelledBy="settings-theme"
+    />
+  </p-card>
+
+  @if (auth.isLoggedIn()) {
+    <p-card header="Your session" styleClass="block">
+      @if (profile(); as p) {
+        <dl class="meta">
+          <div>
+            <dt>Email</dt>
+            <dd>{{ p.email ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>System</dt>
+            <dd>{{ p.displayName ?? p.tenantId ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Tenant id</dt>
+            <dd>
+              <code>{{ p.tenantId ?? '—' }}</code>
+            </dd>
+          </div>
+          <div>
+            <dt>Roles</dt>
+            <dd class="roles">
+              @for (role of p.roles; track role) {
+                <p-tag [value]="role" severity="secondary" />
+              } @empty {
+                —
+              }
+            </dd>
+          </div>
+        </dl>
+      } @else if (busy()) {
+        <p class="muted">Loading profile…</p>
+      }
+      <div class="links">
+        <a routerLink="/account">Account &amp; MFA</a>
+        <a routerLink="/onboarding">Member intake</a>
+        <a routerLink="/reports">Reports</a>
+      </div>
+    </p-card>
+  } @else {
+    <p-message severity="warn" styleClass="hint">
+      <a routerLink="/login">Sign in</a> to see your system profile and quick links.
+    </p-message>
+  }
+</section>

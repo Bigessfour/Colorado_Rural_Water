@@ -8,12 +8,12 @@
 
 ## User value
 
-| Actor | Value |
-| ----- | ----- |
-| New municipality operator | Guided intake collects system parameters before first upload; Q&A sets Confidence expectations |
-| City clerk | Download work-order spreadsheets/PDF-ready summary for flagged meters with addresses and map links |
-| CRWA Admin | Member provision (D3) remains separate; intake completes what CRWA cannot know at signup |
-| Rural operator | Reports package dashboard KPIs + alerts for sharing with water superintendent |
+| Actor                     | Value                                                                                              |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| New municipality operator | Guided intake collects system parameters before first upload; Q&A sets Confidence expectations     |
+| City clerk                | Download work-order spreadsheets/PDF-ready summary for flagged meters with addresses and map links |
+| CRWA Admin                | Member provision (D3) remains separate; intake completes what CRWA cannot know at signup           |
+| Rural operator            | Reports package dashboard KPIs + alerts for sharing with water superintendent                      |
 
 ## Acceptance criteria
 
@@ -21,8 +21,10 @@
 - [x] **Assistant alignment**: onboarding keywords route to structured intake + Confidence coaching (Epic E2 thin → structured)
 - [x] **Work orders**: `GET /reports/work-orders?format=csv|xlsx` — flagged meters with lat/lng, map deep link, confidence note, recommended action
 - [x] **Operations summary**: `GET /reports/summary?format=html` — printable HTML (browser → PDF) with KPIs, balance, confidence, top alerts
-- [x] **Reports UI** (`/reports`): download CSV/XLS work orders; open/print summary
-- [x] **Nav**: Shell links to Onboarding and Reports for logged-in operators
+- [x] **Reports UI** (`/reports`): download CSV/XLS work orders; open/print summary; **catalog + activity tabs**
+- [x] **Settings UI** (`/settings`): display theme + session profile + quick links
+- [x] **Theme**: light/dark toggle in shell (localStorage, PrimeNG `.app-dark`)
+- [x] **Nav**: Shell links to Onboarding, Reports, and Settings for logged-in operators
 - [x] Tenant isolation on all APIs; no cross-tenant intake or report data
 
 ## Non-goals (this feature)
