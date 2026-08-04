@@ -27,6 +27,8 @@ const entryPoints = {
   admin: join(backend, 'src/handlers/admin.ts'),
   agent: join(backend, 'src/handlers/agent.ts'),
   review: join(backend, 'src/handlers/review.ts'),
+  onboarding: join(backend, 'src/handlers/onboarding.ts'),
+  reports: join(backend, 'src/handlers/reports.ts'),
 };
 
 rmSync(outDir, { recursive: true, force: true });

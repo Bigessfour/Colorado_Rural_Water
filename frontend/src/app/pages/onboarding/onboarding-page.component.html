@@ -1,0 +1,261 @@
+<section class="page">
+  <h1>Member intake</h1>
+  <p class="lede">
+    Tell Water Saver about your system so we can tailor uploads, Confidence coaching, and reports.
+    This is separate from CRWA membership billing — we are asking about your meter-read exports.
+  </p>
+
+  @if (!auth.isLoggedIn()) {
+    <p-message severity="warn" styleClass="hint">
+      <a routerLink="/login">Sign in</a> to complete intake for your municipality.
+    </p-message>
+  }
+
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+  @if (status()) {
+    <p-message severity="success" styleClass="hint">{{ status() }}</p-message>
+  }
+  @if (complete()) {
+    <p-message severity="info" styleClass="hint">
+      Intake already complete. You can update answers here or go to
+      <a routerLink="/upload">Upload</a> / <a routerLink="/reports">Reports</a>.
+    </p-message>
+  }
+
+  @if (auth.isLoggedIn() && intake(); as data) {
+    <p class="step-label">Step {{ step() + 1 }} of {{ steps.length }} — {{ steps[step()] }}</p>
+
+    <p-card styleClass="block">
+      @switch (step()) {
+        @case (0) {
+          <p>
+            Welcome to Water Saver. CRWA signed up your municipality — this short Q&amp;A helps us
+            align with how you export meter readings today (CSV/Excel is fine).
+          </p>
+          <p>
+            You can also ask the <a routerLink="/assistant">Assistant</a> about onboarding paths
+            (Thin → Strong Confidence) anytime.
+          </p>
+        }
+        @case (1) {
+          <div class="form">
+            <label>
+              System / town name
+              <input pInputText [(ngModel)]="data.systemName" (ngModelChange)="patch({ systemName: $event })" />
+            </label>
+            <label>
+              Service territory address
+              <input
+                pInputText
+                [(ngModel)]="data.serviceTerritoryAddress"
+                (ngModelChange)="patch({ serviceTerritoryAddress: $event })"
+                placeholder="Mailing or office address"
+              />
+            </label>
+            <label>
+              Map center town (Colorado)
+              <input
+                pInputText
+                [(ngModel)]="data.mapTown"
+                (ngModelChange)="patch({ mapTown: $event })"
+                placeholder="Wiley, CO"
+              />
+            </label>
+          </div>
+        }
+        @case (2) {
+          <div class="form">
+            <label>
+              Primary operator name
+              <input
+                pInputText
+                [(ngModel)]="data.primaryContactName"
+                (ngModelChange)="patch({ primaryContactName: $event })"
+              />
+            </label>
+            <label>
+              Primary email
+              <input
+                pInputText
+                type="email"
+                [(ngModel)]="data.primaryContactEmail"
+                (ngModelChange)="patch({ primaryContactEmail: $event })"
+              />
+            </label>
+            <label>
+              Primary phone
+              <input
+                pInputText
+                [(ngModel)]="data.primaryContactPhone"
+                (ngModelChange)="patch({ primaryContactPhone: $event })"
+              />
+            </label>
+            <label>
+              Billing clerk name (optional)
+              <input
+                pInputText
+                [(ngModel)]="data.billingClerkName"
+                (ngModelChange)="patch({ billingClerkName: $event })"
+              />
+            </label>
+            <label>
+              Billing clerk phone (optional)
+              <input
+                pInputText
+                [(ngModel)]="data.billingClerkPhone"
+                (ngModelChange)="patch({ billingClerkPhone: $event })"
+              />
+            </label>
+          </div>
+        }
+        @case (3) {
+          <div class="form">
+            <label>
+              Approximate meter count
+              <input pInputText [ngModel]="meterCountStr()" (ngModelChange)="setMeterCount($event)" />
+            </label>
+            <label>
+              Wells / sources count
+              <input pInputText [ngModel]="sourceCountStr()" (ngModelChange)="setSourceCount($event)" />
+            </label>
+            <label>
+              Read schedule
+              <p-select
+                [options]="scheduleOptions"
+                [ngModel]="data.readSchedule"
+                (ngModelChange)="patch({ readSchedule: $event })"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="wide"
+              />
+            </label>
+            <label>
+              Preferred units
+              <p-select
+                [options]="unitOptions"
+                [ngModel]="data.preferredUnit"
+                (ngModelChange)="patch({ preferredUnit: $event })"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="wide"
+              />
+            </label>
+            <label>
+              Billing / reading cycle notes
+              <textarea
+                pTextarea
+                rows="2"
+                [(ngModel)]="data.billingCycleNote"
+                (ngModelChange)="patch({ billingCycleNote: $event })"
+                placeholder="e.g. calendar month, mid-month to mid-month"
+              ></textarea>
+            </label>
+          </div>
+        }
+        @case (4) {
+          <div class="form">
+            <label>
+              Municipal billing / read export system
+              <p-select
+                [options]="cisOptions"
+                [ngModel]="data.municipalBillingSystem"
+                (ngModelChange)="patch({ municipalBillingSystem: $event })"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="wide"
+                [editable]="true"
+              />
+            </label>
+            <label>
+              Typical export format
+              <p-select
+                [options]="exportOptions"
+                [ngModel]="data.exportFormat"
+                (ngModelChange)="patch({ exportFormat: $event })"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="wide"
+              />
+            </label>
+            <label>
+              Column names you recognize (optional)
+              <textarea
+                pTextarea
+                rows="3"
+                [(ngModel)]="data.exportColumnHints"
+                (ngModelChange)="patch({ exportColumnHints: $event })"
+                placeholder="Meter ID, Read Date, Current Read, …"
+              ></textarea>
+            </label>
+          </div>
+        }
+        @case (5) {
+          <div class="form">
+            <label>
+              Data inventory path
+              <p-select
+                [options]="pathOptions"
+                [ngModel]="data.onboardingPath"
+                (ngModelChange)="patch({ onboardingPath: $event })"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="wide"
+              />
+            </label>
+            <label class="check">
+              <input
+                type="checkbox"
+                [ngModel]="data.hasHistoricalExport"
+                (ngModelChange)="patch({ hasHistoricalExport: $event })"
+              />
+              We can export historical readings (months or years)
+            </label>
+            <label>
+              Notes on what you can provide now
+              <textarea
+                pTextarea
+                rows="4"
+                [(ngModel)]="data.historyNotes"
+                (ngModelChange)="patch({ historyNotes: $event })"
+                placeholder="e.g. 2024–2025 billing exports on request"
+              ></textarea>
+            </label>
+          </div>
+        }
+      }
+
+      <div class="actions">
+        @if (step() > 0) {
+          <button type="button" pButton label="Back" severity="secondary" (click)="back()" [disabled]="busy()"></button>
+        }
+        @if (step() < steps.length - 1) {
+          <button
+            type="button"
+            pButton
+            label="Save & continue"
+            (click)="save(true)"
+            [loading]="busy()"
+          ></button>
+        } @else {
+          <button
+            type="button"
+            pButton
+            label="Finish intake"
+            (click)="save(false, true)"
+            [loading]="busy()"
+          ></button>
+        }
+        <button
+          type="button"
+          pButton
+          label="Save draft"
+          severity="secondary"
+          (click)="save(false)"
+          [disabled]="busy()"
+        ></button>
+      </div>
+    </p-card>
+  }
+</section>

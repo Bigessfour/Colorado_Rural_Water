@@ -110,7 +110,7 @@ export function templateAgentReply(input: AgentTurnInput): AgentReply {
 
   let reply: string;
   if (/\b(onboard|getting started|new system|inventory|history do i need)\b/i.test(input.message)) {
-    reply = `${onboardingInventoryReply()}\n\n${coaching}`;
+    reply = `${onboardingInventoryReply()}\n\nFor a guided setup wizard with your town, contacts, meter counts, and export habits, open **Onboarding** in the main menu (or /onboarding).\n\n${coaching}`;
   } else if (/\b(confidence|watch|actionable|thin|solid)\b/i.test(input.message)) {
     reply = coaching;
   } else if (/\bcost|billing|price|expensive\b/i.test(lower)) {

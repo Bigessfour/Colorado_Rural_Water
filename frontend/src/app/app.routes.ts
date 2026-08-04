@@ -12,6 +12,8 @@ import { BillingPageComponent } from './pages/billing/billing-page.component';
 import { AccountPageComponent } from './pages/account/account-page.component';
 import { AgentPageComponent } from './pages/agent/agent-page.component';
 import { ReviewHowtoPageComponent } from './pages/review/review-howto-page.component';
+import { OnboardingPageComponent } from './pages/onboarding/onboarding-page.component';
+import { ReportsPageComponent } from './pages/reports/reports-page.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -25,6 +27,8 @@ export const routes: Routes = [
       { path: 'meters', component: MetersPageComponent },
       { path: 'sources', component: SourcesPageComponent },
       { path: 'alerts', component: AlertsPageComponent },
+      { path: 'onboarding', component: OnboardingPageComponent },
+      { path: 'reports', component: ReportsPageComponent },
       { path: 'assistant', component: AgentPageComponent },
       { path: 'account', component: AccountPageComponent },
       { path: 'admin', component: AdminPageComponent },

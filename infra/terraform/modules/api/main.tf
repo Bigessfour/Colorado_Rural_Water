@@ -304,6 +304,33 @@ resource "aws_lambda_function" "review" {
   }
 }
 
+resource "aws_lambda_function" "onboarding" {
+  function_name    = "${local.name_prefix}-onboarding"
+  role             = aws_iam_role.lambda.arn
+  handler          = "onboarding.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 15
+  environment {
+    variables = local.lambda_env
+  }
+}
+
+resource "aws_lambda_function" "reports" {
+  function_name    = "${local.name_prefix}-reports"
+  role             = aws_iam_role.lambda.arn
+  handler          = "reports.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 30
+  memory_size      = 512
+  environment {
+    variables = local.lambda_env
+  }
+}
+
 # Optional SES identity so REVIEW_FROM_EMAIL can send (sandbox: verify To as well).
 resource "aws_ses_email_identity" "review_from" {
   count = var.review_from_email != "" ? 1 : 0
@@ -420,6 +447,20 @@ resource "aws_apigatewayv2_integration" "review" {
   api_id                 = aws_apigatewayv2_api.http.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.review.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "onboarding" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.onboarding.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "reports" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.reports.invoke_arn
   payload_format_version = "2.0"
 }
 
@@ -693,6 +734,38 @@ resource "aws_apigatewayv2_route" "review_submit_post" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "onboarding_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /onboarding"
+  target             = "integrations/${aws_apigatewayv2_integration.onboarding.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "onboarding_put" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "PUT /onboarding"
+  target             = "integrations/${aws_apigatewayv2_integration.onboarding.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "reports_work_orders_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /reports/work-orders"
+  target             = "integrations/${aws_apigatewayv2_integration.reports.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "reports_summary_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /reports/summary"
+  target             = "integrations/${aws_apigatewayv2_integration.reports.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
@@ -791,6 +864,22 @@ resource "aws_lambda_permission" "review_apigw" {
   statement_id  = "AllowAPIGatewayInvokeReview"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.review.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "onboarding_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeOnboarding"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.onboarding.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "reports_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeReports"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.reports.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }

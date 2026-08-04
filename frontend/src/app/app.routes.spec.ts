@@ -30,6 +30,8 @@ describe('app.routes', () => {
       '/meters',
       '/sources',
       '/alerts',
+      '/onboarding',
+      '/reports',
       '/assistant',
       '/account',
       '/admin',

@@ -16,6 +16,8 @@
       <a routerLink="/assistant" routerLinkActive="active">Assistant</a>
     }
     @if (auth.isLoggedIn()) {
+      <a routerLink="/onboarding" routerLinkActive="active">Onboarding</a>
+      <a routerLink="/reports" routerLinkActive="active">Reports</a>
       <a routerLink="/account" routerLinkActive="active">Account</a>
     }
     @if (auth.canManageUsers()) {

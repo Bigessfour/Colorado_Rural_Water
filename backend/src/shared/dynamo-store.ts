@@ -34,6 +34,10 @@ import type {
 } from './conversation.js';
 import { conversationSk } from './conversation.js';
 import type {
+  OnboardingIntake,
+  OnboardingStore,
+} from './onboarding-intake.js';
+import type {
   TenantProfile,
   TenantStore,
   TenantUserRecord,
@@ -76,6 +80,7 @@ function alertStatusSk(alertId: string): string {
 
 const BALANCE_THRESHOLDS_SK = 'CFG#balance_thresholds';
 const META_PROFILE_SK = 'META#profile';
+const META_ONBOARDING_SK = 'META#onboarding';
 /** Synthetic tenant partition for CRWA tenant registry (stays under TENANT#* IAM). */
 const REGISTRY_TENANT_ID = '_registry';
 
@@ -121,6 +126,7 @@ export class DynamoMeterStore
     AlertStatusStore,
     BalanceThresholdStore,
     TenantStore,
+    OnboardingStore,
     ConversationStore
 {
   constructor(private readonly tableName: string) {}
@@ -679,6 +685,31 @@ export class DynamoMeterStore
     );
   }
 
+  async getOnboardingIntake(tenantId: string): Promise<OnboardingIntake | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: META_ONBOARDING_SK },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToOnboardingIntake(res.Item);
+  }
+
+  async putOnboardingIntake(intake: OnboardingIntake): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(intake.tenantId),
+          sk: META_ONBOARDING_SK,
+          entityType: 'onboarding_intake',
+          ...intake,
+        },
+      }),
+    );
+  }
+
   async listTenantProfiles(): Promise<TenantProfile[]> {
     const res = await client.send(
       new QueryCommand({
@@ -1037,6 +1068,61 @@ function itemToTenantProfile(item: Record<string, unknown>): TenantProfile | nul
   };
 }
 
+function itemToOnboardingIntake(item: Record<string, unknown>): OnboardingIntake | null {
+  const tenantId = item.tenantId;
+  if (typeof tenantId !== 'string') return null;
+  const path = item.onboardingPath;
+  const onboardingPath =
+    path === 'A' || path === 'B' || path === 'C' || path === 'D' ? path : 'A';
+  const unit = item.preferredUnit;
+  const preferredUnit = unit === 'cf' ? 'cf' : 'gal';
+  const sched = item.readSchedule;
+  const readSchedule =
+    sched === 'ami' || sched === 'mixed' ? sched : 'manual';
+  const fmt = item.exportFormat;
+  const exportFormat =
+    fmt === 'csv' || fmt === 'xlsx' || fmt === 'both' ? fmt : 'unknown';
+  const stepRaw = item.currentStep;
+  const currentStep =
+    typeof stepRaw === 'number' && Number.isFinite(stepRaw) ? Math.max(0, Math.floor(stepRaw)) : 0;
+
+  return {
+    tenantId,
+    currentStep,
+    completedAt: typeof item.completedAt === 'string' ? item.completedAt : null,
+    systemName: typeof item.systemName === 'string' ? item.systemName : '',
+    serviceTerritoryAddress:
+      typeof item.serviceTerritoryAddress === 'string' ? item.serviceTerritoryAddress : '',
+    mapTown: typeof item.mapTown === 'string' ? item.mapTown : '',
+    primaryContactName: typeof item.primaryContactName === 'string' ? item.primaryContactName : '',
+    primaryContactEmail:
+      typeof item.primaryContactEmail === 'string' ? item.primaryContactEmail : '',
+    primaryContactPhone:
+      typeof item.primaryContactPhone === 'string' ? item.primaryContactPhone : '',
+    billingClerkName: typeof item.billingClerkName === 'string' ? item.billingClerkName : '',
+    billingClerkPhone: typeof item.billingClerkPhone === 'string' ? item.billingClerkPhone : '',
+    meterCountEstimate:
+      typeof item.meterCountEstimate === 'number' && Number.isFinite(item.meterCountEstimate)
+        ? Math.floor(item.meterCountEstimate)
+        : null,
+    sourceCountEstimate:
+      typeof item.sourceCountEstimate === 'number' && Number.isFinite(item.sourceCountEstimate)
+        ? Math.floor(item.sourceCountEstimate)
+        : null,
+    readSchedule,
+    preferredUnit,
+    billingCycleNote: typeof item.billingCycleNote === 'string' ? item.billingCycleNote : '',
+    municipalBillingSystem:
+      typeof item.municipalBillingSystem === 'string' ? item.municipalBillingSystem : '',
+    exportFormat,
+    exportColumnHints: typeof item.exportColumnHints === 'string' ? item.exportColumnHints : '',
+    onboardingPath,
+    hasHistoricalExport: Boolean(item.hasHistoricalExport),
+    historyNotes: typeof item.historyNotes === 'string' ? item.historyNotes : '',
+    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+  };
+}
+
 function itemToBillingEvent(item: Record<string, unknown>): BillingEvent | null {
   const tenantId = item.tenantId;
   const eventId = item.eventId;
@@ -1149,6 +1235,14 @@ export function createBalanceThresholdStoreFromEnv(): BalanceThresholdStore {
 }
 
 export function createTenantStoreFromEnv(): TenantStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error('DATA_TABLE env is not configured');
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createOnboardingStoreFromEnv(): OnboardingStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
     throw new Error('DATA_TABLE env is not configured');

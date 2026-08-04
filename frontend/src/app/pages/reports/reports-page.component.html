@@ -1,0 +1,65 @@
+<section class="page">
+  <h1>Reports</h1>
+  <p class="lede">
+    Download clerk-ready work orders for flagged meters (with map links when coordinates exist) or
+    print an operations summary for your water superintendent.
+  </p>
+
+  @if (!auth.isLoggedIn()) {
+    <p-message severity="warn" styleClass="hint">
+      <a routerLink="/login">Sign in</a> to generate reports for your system.
+    </p-message>
+  }
+
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+  @if (notice()) {
+    <p-message severity="success" styleClass="hint">{{ notice() }}</p-message>
+  }
+
+  <p-card header="Flagged meters work order" styleClass="block">
+    <p class="card-lede">
+      Trouble-ticket style list for the clerk or field crew: meter ID, address, alert summary,
+      Confidence note, recommended action, latitude/longitude, and a link to the map pin.
+    </p>
+    <div class="actions">
+      <button
+        type="button"
+        pButton
+        label="Download CSV"
+        (click)="downloadWorkOrders('csv')"
+        [loading]="busy()"
+        [disabled]="!auth.isLoggedIn()"
+      ></button>
+      <button
+        type="button"
+        pButton
+        label="Download Excel (XLSX)"
+        severity="secondary"
+        (click)="downloadWorkOrders('xlsx')"
+        [loading]="busy()"
+        [disabled]="!auth.isLoggedIn()"
+      ></button>
+      <a routerLink="/alerts" class="link">View alerts feed</a>
+    </div>
+  </p-card>
+
+  <p-card header="Monthly operations summary" styleClass="block">
+    <p class="card-lede">
+      KPI snapshot: Data Confidence, open alerts, water balance In/Out, and top flagged meters.
+      Opens in a new tab — use Print → Save as PDF.
+    </p>
+    <div class="actions">
+      <button
+        type="button"
+        pButton
+        label="Open printable summary"
+        (click)="openSummaryReport()"
+        [loading]="busy()"
+        [disabled]="!auth.isLoggedIn()"
+      ></button>
+      <a routerLink="/dashboard" class="link">Dashboard charts</a>
+    </div>
+  </p-card>
+</section>

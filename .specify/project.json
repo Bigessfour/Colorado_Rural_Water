@@ -16,7 +16,8 @@
     "008-system-ui-browser-demo",
     "009-docs-reproducibility",
     "010-docs-ops-bonuses",
-    "011-meter-map"
+    "011-meter-map",
+    "012-member-onboarding-reports"
   ],
   "notes": "Assessment III rubric features verified. Active Spec Kit pointer: .specify/feature.json (feature_directory). Project metadata lives here only — /speckit-specify overwrites feature.json with feature_directory alone."
 }
