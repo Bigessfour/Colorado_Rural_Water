@@ -38,8 +38,8 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 | Dockerfiles + Compose three-tier | R    | [005](005-github-actions-compose/)  | done (verified) | same — `--wait` + hard `/health` `/ready` + frontend                                                     |
 | No hard-coded secrets            | R    | [005](005-github-actions-compose/)  | done (verified) | `.env.example`, GH secret names, `gh-secrets-example.sh`                                                 |
 | Testing, logging, health checks  | R    | [005](005-github-actions-compose/)  | done (verified) | node + pytest + `scripts/smoke.sh` (`SMOKE_REQUIRE_RAG` opt-in)                                          |
-| Conditional PR vs main           | B    | [006](006-github-actions-advanced/) | implementing    | [`evidence/006-github-actions-advanced.md`](../evidence/006-github-actions-advanced.md) · hard-fail `terraform.yml` |
-| Destroy workflow                 | B    | [006](006-github-actions-advanced/) | implementing    | `destroy.yml` dry_run default · confirm=destroy                                                                      |
+| Conditional PR vs main           | B    | [006](006-github-actions-advanced/) | done (verified) | [plan 30865855551](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865855551) · hard-fail `terraform.yml` |
+| Destroy workflow                 | B    | [006](006-github-actions-advanced/) | done (verified) | `destroy.yml` dry_run; local plan -destroy (92) until file on `main`                                                  |
 | Python unit tests in pipeline    | B    | [006](006-github-actions-advanced/) | done (via 005)  | `ci.yml` pytest job                                                                                                  |
 | Ansible                          | B    | —                                   | **skip**        | Compose path preferred                                                                           |
 
@@ -72,7 +72,7 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 - [x] RAG + Mem0 path works and is tenant-safe
 - [ ] Bedrock reachable from backend and usable from frontend
 - [ ] Terraform plan/apply + remote state documented
-- [ ] GitHub Actions: PR path + main path; destroy workflow exists
+- [x] GitHub Actions: PR path + main path; destroy workflow exists
 - [ ] ≥2 diagrams + reproducible README
 - [ ] This matrix shows every required line and claimed bonus with evidence links
 - [ ] 1-on-1 demo script walks rubric then Water Saver product value

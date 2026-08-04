@@ -9,7 +9,7 @@
 
 **In:** PR/main CI that builds Compose images, runs Node + pytest, brings up fe/be/db, hard-checks `/health` + `/ready` (+ frontend), keeps secrets out of git.
 
-**Out (do not claim under 005):** ECR push, live Bedrock/Mem0 in Actions, Terraform plan/apply (Feature **006** — currently soft-fail / `continue-on-error`).
+**Out (do not claim under 005):** ECR push, live Bedrock/Mem0 in Actions, Terraform plan/apply (Feature **006**).
 
 ## Secrets note
 

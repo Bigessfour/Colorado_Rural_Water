@@ -1,6 +1,6 @@
 # Plan — Feature 006: GitHub Actions Advanced Bonuses
 
-**Status:** implementing — remove soft-fail; CI uses env AWS keys + `environments/ci.tfvars.example`.
+**Status:** CLOSED 2026-08-04 — green plan Actions; destroy dry-run local until `destroy.yml` on `main`.
 
 ## Context
 

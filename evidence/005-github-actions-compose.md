@@ -12,7 +12,7 @@
 | Pytest RAG *isolation* (no live Bedrock) | Yes | Live Mem0/Bedrock answers in CI |
 | `docker compose build` on GH | Yes | Push images to ECR/registry |
 | Three-tier up + health | Yes — `/health`, `/ready`, frontend `:8080` | Operator Cognito SPA walkthrough |
-| Secrets not in git | Yes | Terraform plan/apply (Feature **006**; still soft-fail today) |
+| Secrets not in git | Yes | Terraform plan/apply (Feature **006**) |
 | PR triggers CI | Yes | Auto-deploy to AWS on merge |
 
 ## Rubric → implementation
