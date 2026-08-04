@@ -40,7 +40,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - name: Bundle Lambdas
-        run: npm ci && npm run backend:bundle
+        run: |
+          npm ci
+          npm --prefix backend ci
+          npm run backend:bundle
       - name: Terraform Init
         working-directory: infra/terraform
         run: terraform init -input=false

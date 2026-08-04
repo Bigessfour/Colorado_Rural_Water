@@ -53,7 +53,10 @@ jobs:
           aws-region: us-east-1
       - name: Bundle Lambdas (plan needs zip hash)
         working-directory: .
-        run: npm ci && npm run backend:bundle
+        run: |
+          npm ci
+          npm --prefix backend ci
+          npm run backend:bundle
       - name: Terraform fmt
         run: terraform fmt -check -recursive
       - name: Terraform init
@@ -86,7 +89,10 @@ jobs:
           aws-region: us-east-1
       - name: Bundle Lambdas
         working-directory: .
-        run: npm ci && npm run backend:bundle
+        run: |
+          npm ci
+          npm --prefix backend ci
+          npm run backend:bundle
       - name: Terraform init + apply
         run: |
           terraform init -input=false
