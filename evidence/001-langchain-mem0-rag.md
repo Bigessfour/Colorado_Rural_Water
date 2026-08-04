@@ -27,16 +27,51 @@ API response includes a `langchain` fingerprint for demos:
 }
 ```
 
+## Mem0 platform — live connection proof (2026-08-04)
+
+Honest check: earlier multi-turn “Cedar Fork” recall proved **LangChain session history** (`RunnableWithMessageHistory`). This section proves **Mem0 platform** separately (cross-session).
+
+| Check                          | Result                                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `MEM0_API_KEY` in Compose      | Present (`container_MEM0_len=43`)                                                                            |
+| `MemoryClient` init            | OK inside backend container                                                                                  |
+| Write via `POST /api/rag`      | Taught unique fact: `Willow Bend Meter WB-1785805726` on Route 9                                             |
+| `GET /api/history?q=Willow`    | Returned Mem0 rows with `user_id=town-wiley:mem0-prove` and memory text including meter id + Route 9         |
+| Recall in **new** `session_id` | RAG answer cited Willow Bend + Route 9 (InMemory history empty for that session → Mem0 context)              |
+| Cross-tenant isolation         | `town-steve` + same `user_id` → **0** Mem0 hits; `town-wiley:mem0-prove` vs `town-steve:mem0-prove` distinct |
+
+Commands:
+
+```bash
+UNIQUE="Willow Bend Meter WB-$(date +%s)"
+USER=mem0-prove
+# 1) teach (session A)
+curl -sS -H 'Content-Type: application/json' \
+  -H 'X-Tenant-Id: town-wiley' -H "X-User-Id: $USER" \
+  -d "{\"question\":\"Please remember that $UNIQUE is on Route 9 for town-wiley only.\",\"session_id\":\"mem0-write\",\"tenant_id\":\"town-wiley\",\"user_id\":\"$USER\"}" \
+  http://127.0.0.1:3000/api/rag
+# 2) Mem0 search API
+curl -sS -H 'X-Tenant-Id: town-wiley' -H "X-User-Id: $USER" \
+  'http://127.0.0.1:3000/api/history?q=Willow%20Bend'
+# 3) recall in session B (different session_id)
+curl -sS -H 'Content-Type: application/json' \
+  -H 'X-Tenant-Id: town-wiley' -H "X-User-Id: $USER" \
+  -d "{\"question\":\"Which Willow Bend meter and route did I ask you to remember?\",\"session_id\":\"mem0-read\",\"tenant_id\":\"town-wiley\",\"user_id\":\"$USER\"}" \
+  http://127.0.0.1:3000/api/rag
+```
+
+Artifacts (local): `/tmp/ws-mem0-turn1.json`, `/tmp/ws-mem0-history.json`, `/tmp/ws-mem0-turn2.json`.
+
 ## What was proven
 
-| Check                                       | Result                                                                        |
-| ------------------------------------------- | ----------------------------------------------------------------------------- |
-| Documented LangChain unit tests             | **13 passed** (`test_isolation.py` + `test_langchain_apis.py`)                |
-| `GET /health`                               | 200 — `runtime: compose`                                                      |
-| `GET /ready`                                | 200 — db + rag ok                                                             |
-| `POST /api/rag` Watch vs Actionable         | **200** — cites `runbook.md` + `alerts.md`; `langchain` fingerprint present   |
-| Session memory (RunnableWithMessageHistory) | **200** — turn 3 recalled **Cedar Fork** + **Route 3** from same `session_id` |
-| Mem0 platform                               | configured via `.env` `MEM0_API_KEY`; `MemoryClient` add on each turn         |
+| Check                                       | Result                                                                                                    |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Documented LangChain unit tests             | **13 passed** (`test_isolation.py` + `test_langchain_apis.py`)                                            |
+| `GET /health`                               | 200 — `runtime: compose`                                                                                  |
+| `GET /ready`                                | 200 — db + rag ok                                                                                         |
+| `POST /api/rag` Watch vs Actionable         | **200** — cites `runbook.md` + `alerts.md`; `langchain` fingerprint present                               |
+| Session memory (RunnableWithMessageHistory) | **200** — turn 3 recalled **Cedar Fork** + **Route 3** from same `session_id`                             |
+| Mem0 platform                               | **Live verified 2026-08-04** — add + search + cross-session recall + tenant isolation (see section above) |
 
 ## Fixes locked during verify
 

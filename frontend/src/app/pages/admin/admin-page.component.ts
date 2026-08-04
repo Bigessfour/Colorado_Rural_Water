@@ -11,6 +11,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { AuthService, type TenantRole } from '../../core/auth.service';
+import { geocodeServiceAddress } from '../../shared/geocode.service';
 import { environment } from '../../../environments/environment';
 
 type AssignableRole = 'operator' | 'system_admin';
@@ -102,6 +103,8 @@ export class AdminPageComponent implements OnInit {
   // D3 + I0 provision
   tenantId = '';
   displayName = '';
+  /** Town/city for map center (defaults to display name when empty). */
+  mapTown = '';
   initialUserEmail = '';
   initialUserRole: AssignableRole = 'system_admin';
   pilotOrPaid: PilotOrPaid = 'pilot';
@@ -208,9 +211,11 @@ export class AdminPageComponent implements OnInit {
     this.error.set('');
     this.tempPassword.set('');
     try {
+      const mapTown = (this.mapTown.trim() || this.displayName).trim();
       const payload: Record<string, unknown> = {
         tenantId: this.tenantId,
         displayName: this.displayName,
+        mapTown,
         initialUserEmail: this.initialUserEmail,
         initialUserRole: this.initialUserRole,
         pilotOrPaid: this.pilotOrPaid,
@@ -229,6 +234,23 @@ export class AdminPageComponent implements OnInit {
         payload['billingNotes'] = this.billingNotes.trim();
       }
 
+      let geocodeNote = '';
+      try {
+        const hit = await geocodeServiceAddress(mapTown);
+        if (hit) {
+          payload['mapCenterLat'] = Math.round(hit.latitude * 1e6) / 1e6;
+          payload['mapCenterLng'] = Math.round(hit.longitude * 1e6) / 1e6;
+          payload['mapZoom'] = 12;
+          geocodeNote = ` Map centered near ${hit.label}.`;
+        } else {
+          geocodeNote =
+            ' Map town saved without coordinates (geocoder found no Colorado match) — operators still see statewide default until coords are set.';
+        }
+      } catch {
+        geocodeNote =
+          ' Map town saved without coordinates (geocoder unavailable) — retry later or seed coords.';
+      }
+
       const res = await fetch(`${environment.apiBaseUrl}/admin/tenants`, {
         method: 'POST',
         headers: {
@@ -244,10 +266,11 @@ export class AdminPageComponent implements OnInit {
       }
       this.tempPassword.set(body.initialUser?.temporaryPassword ?? '');
       this.status.set(
-        `Provisioned ${body.tenant?.displayName ?? this.displayName} (${body.tenant?.billingStatus ?? this.pilotOrPaid}). Share the temporary password securely.`,
+        `Provisioned ${body.tenant?.displayName ?? this.displayName} (${body.tenant?.billingStatus ?? this.pilotOrPaid}). Share the temporary password securely.${geocodeNote}`,
       );
       this.tenantId = '';
       this.displayName = '';
+      this.mapTown = '';
       this.initialUserEmail = '';
       this.initialUserRole = 'system_admin';
       this.pilotOrPaid = 'pilot';

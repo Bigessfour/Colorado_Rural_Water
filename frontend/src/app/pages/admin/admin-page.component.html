@@ -56,6 +56,19 @@
           <input pInputText name="displayName" [(ngModel)]="displayName" placeholder="Town of Wiley" required />
         </label>
         <label>
+          Map town (Colorado)
+          <input
+            pInputText
+            name="mapTown"
+            [(ngModel)]="mapTown"
+            placeholder="Wiley, CO (defaults to display name)"
+          />
+        </label>
+        <p class="field-hint">
+          Used to center the meters map for this system. On create we geocode this town (OSM) and store lat/lng on
+          the tenant profile. Fine-tune meter pins later on /meters.
+        </p>
+        <label>
           Initial user email
           <input
             pInputText

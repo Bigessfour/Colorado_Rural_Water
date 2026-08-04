@@ -1,11 +1,16 @@
 <section class="page">
-  <h1>Upload meter readings</h1>
-  <p class="lede">
-    Drop a messy CSV or Excel export. We guess columns in everyday language — address stays with the
-    meter; occupant name can change. Choose multiple files for a bulk historical load (H2).
-  </p>
+  <header class="page-head">
+    <h1>Upload meter readings</h1>
+    <p class="lede">
+      Drop a messy CSV or Excel export. We guess columns in everyday language — address stays with the
+      meter; occupant name can change. Choose multiple files for a bulk historical load (H2).
+    </p>
+  </header>
 
   <p-message severity="info" styleClass="hint">{{ sampleHint }}</p-message>
+  @if (!auth.isLoggedIn()) {
+    <p class="signin-hint"><a routerLink="/login">Sign in</a> to ingest readings for your tenant.</p>
+  }
 
   <p-card header="Ingestion status" styleClass="status-card">
     <ol class="phase-list">

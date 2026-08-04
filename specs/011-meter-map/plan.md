@@ -1,15 +1,15 @@
 # Plan — Feature 011: Meter Map
 
-**Status:** planned / deferred — implement after 001–010 smoke.
+**Status:** verified (MVP shipped).
 
-## Approach
+## Approach (done)
 
-1. Scaffold Spec-Kit only (this folder) while Assessment III CI/IaC finishes.
-2. When green-lit: extend `MeterLocation` with optional WGS84; Dynamo put/get; Leaflet component on Meters page.
-3. Full design: Cursor plan `feature_011_meter_map` + draft in conversation (AC-1…AC-11).
+1. Spec-Kit scaffold while Assessment III CI/IaC finished.
+2. Extended `MeterLocation` with optional WGS84; Dynamo put/get; Leaflet on Meters page.
+3. Seed script + browser prove; docs in `docs/meter-map.md`.
 
 ## Dependencies
 
 - Existing `GET /meters` JWT tenant isolation
-- PrimeNG MCP for SelectButton/Card chrome
+- PrimeNG SelectButton / Card chrome (MCP-checked)
 - No paid tile keys

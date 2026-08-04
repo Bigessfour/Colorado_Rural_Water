@@ -107,6 +107,10 @@ function profileItemFields(profile: TenantProfile): Record<string, unknown> {
     lastPaymentAt: profile.lastPaymentAt,
     billingNotes: profile.billingNotes,
     paymentProvider: profile.paymentProvider,
+    mapTown: profile.mapTown ?? null,
+    mapCenterLat: profile.mapCenterLat ?? null,
+    mapCenterLng: profile.mapCenterLng ?? null,
+    mapZoom: profile.mapZoom ?? null,
   };
 }
 
@@ -156,6 +160,8 @@ export class DynamoMeterStore
           radioId: location.radioId,
           lastTestedAt: location.lastTestedAt,
           notes: location.notes,
+          latitude: location.latitude,
+          longitude: location.longitude,
           updatedAt: location.updatedAt,
         },
       }),
@@ -845,8 +851,16 @@ function itemToLocation(item: Record<string, unknown>): MeterLocation {
     radioId: (item.radioId as string | null) ?? null,
     lastTestedAt: (item.lastTestedAt as string | null) ?? null,
     notes: (item.notes as string | null) ?? null,
+    latitude: coerceStoredCoordinate(item.latitude),
+    longitude: coerceStoredCoordinate(item.longitude),
     updatedAt: String(item.updatedAt ?? new Date().toISOString()),
   };
+}
+
+function coerceStoredCoordinate(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 function itemToReading(item: Record<string, unknown>): MeterReading {
@@ -1008,6 +1022,18 @@ function itemToTenantProfile(item: Record<string, unknown>): TenantProfile | nul
     lastPaymentAt: typeof item.lastPaymentAt === 'string' ? item.lastPaymentAt : undefined,
     billingNotes: typeof item.billingNotes === 'string' ? item.billingNotes : undefined,
     paymentProvider,
+    mapTown: typeof item.mapTown === 'string' ? item.mapTown : null,
+    mapCenterLat: coerceStoredCoordinate(item.mapCenterLat),
+    mapCenterLng: coerceStoredCoordinate(item.mapCenterLng),
+    mapZoom:
+      typeof item.mapZoom === 'number' && Number.isFinite(item.mapZoom)
+        ? Math.round(item.mapZoom)
+        : item.mapZoom != null && item.mapZoom !== ''
+          ? (() => {
+              const z = Number(item.mapZoom);
+              return Number.isFinite(z) ? Math.round(z) : null;
+            })()
+          : null,
   };
 }
 

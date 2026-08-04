@@ -32,59 +32,124 @@
       (onClick)="refresh()"
       [disabled]="!auth.isLoggedIn()"
     />
+    <p-selectbutton
+      [options]="viewOptions"
+      [ngModel]="viewMode()"
+      (ngModelChange)="onViewModeChange($event)"
+      optionLabel="label"
+      optionValue="value"
+      ariaLabelledBy="meters-view-mode"
+    />
+    <p-button
+      [label]="fineTune() ? 'Fine-tune on' : 'Fine-tune pin'"
+      [severity]="fineTune() ? 'warn' : 'secondary'"
+      [outlined]="!fineTune()"
+      icon="pi pi-map-marker"
+      (onClick)="toggleFineTune()"
+      [disabled]="!auth.isLoggedIn() || !meters().length"
+    />
   </div>
 
-  <p-card styleClass="table-card">
-    <p-table [value]="meters()" [tableStyle]="{ 'min-width': '44rem' }">
-      <ng-template #header>
-        <tr>
-          <th>Meter ID</th>
-          <th>Service address</th>
-          <th>Occupant</th>
-          <th>Account</th>
-          <th>Route</th>
-          <th>Readings</th>
-          <th></th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-row>
-        <tr>
-          <td class="mono">{{ row.meterId }}</td>
-          <td>{{ row.serviceAddress }}</td>
-          <td>{{ row.occupantName || '—' }}</td>
-          <td>{{ row.accountNumber || '—' }}</td>
-          <td>{{ row.route || '—' }}</td>
-          <td>{{ row.readingCount ?? 0 }}</td>
-          <td class="row-actions">
-            <p-button
-              label="Stats"
-              size="small"
-              severity="secondary"
-              [outlined]="true"
-              (onClick)="openStats(row)"
-            />
-            <p-button
-              label="History"
-              size="small"
-              severity="secondary"
-              (onClick)="openHistory(row)"
-            />
-            <p-button label="Edit" size="small" severity="secondary" (onClick)="openEdit(row)" />
-            <p-button label="Remove" size="small" severity="danger" (onClick)="remove(row)" />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="7">
-            No meters yet — add one here, or upload a customer readings file to create them from
-            ingest.
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
-  </p-card>
+  @if (auth.isLoggedIn() && meters().length) {
+    <p-message severity="info" styleClass="hint map-status">
+      Plotted {{ plottedCount() }} of {{ meters().length }} meters
+      @if (missingCoordsCount() > 0) {
+        ({{ missingCoordsCount() }} missing location)
+      }
+      — use Edit → Suggest from address, then Fine-tune pin on the map.
+    </p-message>
+  }
+  @if (fineTune()) {
+    <p-message severity="warn" styleClass="hint map-status">
+      Fine-tune mode: select a meter, then drag its pin or click the map. Location saves when you
+      release / click.
+    </p-message>
+  }
 
+  <div class="meters-layout" [class.both]="viewMode() === 'both'">
+    @if (showTable()) {
+      <p-card styleClass="table-card">
+        <p-table
+          [value]="meters()"
+          [tableStyle]="{ 'min-width': '44rem' }"
+          selectionMode="single"
+          dataKey="meterId"
+          [rowHover]="true"
+        >
+          <ng-template #header>
+            <tr>
+              <th>Meter ID</th>
+              <th>Service address</th>
+              <th>Occupant</th>
+              <th>Account</th>
+              <th>Route</th>
+              <th>Map</th>
+              <th>Readings</th>
+              <th></th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-row>
+            <tr
+              [class.row-selected]="selectedMeterId() === row.meterId"
+              (click)="selectMeter(row.meterId)"
+            >
+              <td class="mono">{{ row.meterId }}</td>
+              <td>{{ row.serviceAddress }}</td>
+              <td>{{ row.occupantName || '—' }}</td>
+              <td>{{ row.accountNumber || '—' }}</td>
+              <td>{{ row.route || '—' }}</td>
+              <td>
+                @if (row.latitude != null && row.longitude != null) {
+                  <span class="mono pin-ok">pin</span>
+                } @else {
+                  <span class="muted-inline">—</span>
+                }
+              </td>
+              <td>{{ row.readingCount ?? 0 }}</td>
+              <td class="row-actions" (click)="$event.stopPropagation()">
+                <p-button
+                  label="Stats"
+                  size="small"
+                  severity="secondary"
+                  [outlined]="true"
+                  (onClick)="openStats(row)"
+                />
+                <p-button
+                  label="History"
+                  size="small"
+                  severity="secondary"
+                  (onClick)="openHistory(row)"
+                />
+                <p-button label="Edit" size="small" severity="secondary" (onClick)="openEdit(row)" />
+                <p-button label="Remove" size="small" severity="danger" (onClick)="remove(row)" />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="8">
+                No meters yet — add one here, or upload a customer readings file to create them from
+                ingest.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    }
+
+    @if (showMap()) {
+      <p-card styleClass="map-card">
+        <app-meter-map
+          [meters]="meters()"
+          [selectedMeterId]="selectedMeterId()"
+          [fineTune]="fineTune()"
+          [defaultCenter]="auth.mapCenter()"
+          (markerSelect)="selectMeter($event)"
+          (locationPicked)="onMapLocationPicked($event)"
+        />
+      </p-card>
+    }
+  </div>
   <p-dialog
     header="Add meter"
     [modal]="true"
@@ -192,6 +257,45 @@
             placeholder="e.g. 5/8"
           />
         </label>
+        <label>
+          Latitude (WGS84)
+          <input
+            pInputText
+            name="latitude"
+            [ngModel]="form.latitude"
+            (ngModelChange)="updateAddField('latitude', $event)"
+            fluid
+            placeholder="e.g. 38.154"
+            inputmode="decimal"
+          />
+        </label>
+        <label>
+          Longitude (WGS84)
+          <input
+            pInputText
+            name="longitude"
+            [ngModel]="form.longitude"
+            (ngModelChange)="updateAddField('longitude', $event)"
+            fluid
+            placeholder="e.g. -102.72"
+            inputmode="decimal"
+          />
+        </label>
+        <div class="geo-actions span-2">
+          <p-button
+            type="button"
+            label="Suggest from address"
+            icon="pi pi-search"
+            severity="secondary"
+            [outlined]="true"
+            [loading]="geocoding()"
+            [disabled]="geocoding() || !form.serviceAddress.trim()"
+            (onClick)="suggestAddFromAddress()"
+          />
+          @if (geocodeHint()) {
+            <p class="muted geo-hint">{{ geocodeHint() }}</p>
+          }
+        </div>
         <label>
           Notes
           <textarea
@@ -363,6 +467,45 @@
             fluid
           />
         </label>
+        <label>
+          Latitude (WGS84)
+          <input
+            pInputText
+            name="latitude"
+            [ngModel]="form.latitude"
+            (ngModelChange)="updateEditField('latitude', $event)"
+            fluid
+            placeholder="e.g. 38.154"
+            inputmode="decimal"
+          />
+        </label>
+        <label>
+          Longitude (WGS84)
+          <input
+            pInputText
+            name="longitude"
+            [ngModel]="form.longitude"
+            (ngModelChange)="updateEditField('longitude', $event)"
+            fluid
+            placeholder="e.g. -102.72"
+            inputmode="decimal"
+          />
+        </label>
+        <div class="geo-actions span-2">
+          <p-button
+            type="button"
+            label="Suggest from address"
+            icon="pi pi-search"
+            severity="secondary"
+            [outlined]="true"
+            [loading]="geocoding()"
+            [disabled]="geocoding() || !editingAddress().trim()"
+            (onClick)="suggestEditFromAddress()"
+          />
+          @if (geocodeHint()) {
+            <p class="muted geo-hint">{{ geocodeHint() }}</p>
+          }
+        </div>
         <label class="span-2">
           Notes
           <textarea

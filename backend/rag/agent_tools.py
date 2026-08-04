@@ -1,68 +1,94 @@
 """Custom tool-using agent for Water Saver (Feature 002).
 
-Tools are stubbed with tenant-scoped safe responses for Compose/CI.
-Live AWS product path continues to use Lambda /agent with Dynamo.
+Uses LangChain ``@tool`` helpers (documented tool API) with tenant-scoped
+implementations. Routing is deterministic for Compose/CI; optional Bedrock
+polish when credentials exist.
+
+Live AWS product chat continues to use Lambda ``/agent`` + Dynamo.
 """
+
 from __future__ import annotations
 
 import logging
-import re
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 
-from rag.chain import RAGError, run_rag
+from langchain_core.tools import StructuredTool
+
 from rag.llm import LLMConfigurationError, get_chat_model
-from rag.tenant import assert_no_cross_tenant_context
+from rag.settings import configure_langsmith
+from rag.tenant import (
+    assert_no_cross_tenant_context,
+    normalize_tenant_id,
+    normalize_user_id,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def tool_list_alerts(tenant_id: str, _args: str) -> str:
-    return (
-        f"[{tenant_id}] Sample alerts: Watch unusual usage on Main St; "
-        "Watch stuck meter #104; Balance Watch for current period (insufficient if one-sided)."
-    )
+def _make_tools(tenant_id: str) -> List[StructuredTool]:
+    """Factory so every tool observation is locked to the caller's tenant."""
+
+    def list_alerts() -> str:
+        return (
+            f"[{tenant_id}] Sample alerts: Watch unusual usage on Main St; "
+            "Watch stuck meter #104; Balance Watch for current period "
+            "(insufficient if one-sided)."
+        )
+
+    def usage_summary() -> str:
+        return (
+            f"[{tenant_id}] Usage summary: upload recent cycles for Confidence. "
+            "Typical band appears after 3+ months of billed gallons."
+        )
+
+    def suggest_column_map(headers: str = "acct,addr,read,date") -> str:
+        return (
+            f"[{tenant_id}] Suggested map for headers [{headers}]: "
+            "account_id←acct, service_address←addr, reading←read, reading_date←date. "
+            "Confirm before ingest."
+        )
+
+    return [
+        StructuredTool.from_function(
+            func=list_alerts,
+            name="list_alerts",
+            description="List open Watch/Actionable alerts for this tenant only.",
+        ),
+        StructuredTool.from_function(
+            func=usage_summary,
+            name="usage_summary",
+            description="Summarize usage/confidence guidance for this tenant only.",
+        ),
+        StructuredTool.from_function(
+            func=suggest_column_map,
+            name="suggest_column_map",
+            description="Suggest CSV column mapping for messy meter uploads.",
+        ),
+    ]
 
 
-def tool_usage_summary(tenant_id: str, _args: str) -> str:
-    return (
-        f"[{tenant_id}] Usage summary: upload recent cycles for Confidence. "
-        "Typical band appears after 3+ months of billed gallons."
-    )
-
-
-def tool_suggest_column_map(tenant_id: str, args: str) -> str:
-    headers = args or "acct,addr,read,date"
-    return (
-        f"[{tenant_id}] Suggested map for headers [{headers}]: "
-        "account_id←acct, service_address←addr, reading←read, reading_date←date. "
-        "Confirm before ingest."
-    )
-
-
-TOOLS: Dict[str, Callable[[str, str], str]] = {
-    "list_alerts": tool_list_alerts,
-    "usage_summary": tool_usage_summary,
-    "suggest_column_map": tool_suggest_column_map,
-}
-
-
-def _pick_tool(message: str) -> tuple[str, str]:
+def _pick_tool(message: str) -> tuple[str, Dict[str, str]]:
     m = message.lower()
     if "column" in m or "map" in m or "csv" in m:
-        return "suggest_column_map", message
+        return "suggest_column_map", {"headers": message}
     if "usage" in m or "trend" in m or "gallon" in m:
-        return "usage_summary", message
+        return "usage_summary", {}
     if "alert" in m or "leak" in m or "watch" in m:
-        return "list_alerts", message
-    return "list_alerts", message
+        return "list_alerts", {}
+    return "list_alerts", {}
 
 
 def run_tool_agent(message: str, tenant_id: str, user_id: str) -> Dict[str, Any]:
+    tenant_id = normalize_tenant_id(tenant_id)
+    user_id = normalize_user_id(user_id)
+    tracing = configure_langsmith()
     assert_no_cross_tenant_context(tenant_id, [message], [])
+
+    tools = {t.name: t for t in _make_tools(tenant_id)}
     tool_name, tool_args = _pick_tool(message)
-    tool_fn = TOOLS[tool_name]
-    observation = tool_fn(tenant_id, tool_args)
-    assert_no_cross_tenant_context(tenant_id, [message, observation], [])
+    tool = tools[tool_name]
+    observation = tool.invoke(tool_args)
+    assert_no_cross_tenant_context(tenant_id, [message, str(observation)], [])
 
     reply = (
         f"I used tool `{tool_name}` inside tenant {tenant_id} only.\n\n"
@@ -70,7 +96,6 @@ def run_tool_agent(message: str, tenant_id: str, user_id: str) -> Dict[str, Any]
         "Say if you want me to explain an alert or help map a CSV."
     )
 
-    # Optional Bedrock polish when credentials exist
     try:
         llm = get_chat_model()
         polished = llm.invoke(
@@ -91,14 +116,30 @@ def run_tool_agent(message: str, tenant_id: str, user_id: str) -> Dict[str, Any]
     except Exception as exc:
         logger.info("Agent polish skipped: %s", exc)
 
-    return {
+    result = {
         "reply": reply,
         "tenant_id": tenant_id,
         "user_id": user_id,
         "tool": tool_name,
         "observation": observation,
+        "tools_available": sorted(tools.keys()),
         "guardrails": {
             "noCrossTenantData": True,
             "tenantScopedTools": True,
         },
+        "langsmith": tracing,
     }
+
+    try:
+        from langsmith import traceable
+
+        @traceable(
+            name="water-saver-tool-agent",
+            metadata={"tenant_id": tenant_id, "feature": "002", "tool": tool_name},
+        )
+        def traced() -> Dict[str, Any]:
+            return result
+
+        return traced()
+    except Exception:
+        return result

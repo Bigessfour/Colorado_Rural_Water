@@ -1,5 +1,7 @@
 # Plan — Feature 004: Terraform Best-Practice Bonuses
 
+**Status:** CLOSED (verified 2026-08-03) — see `evidence/004-terraform-best-practices.md`.
+
 ## Context
 
 Assessment III full-credit track layered on Water Saver. AWS account `388691194728` / `codeplatoon` / `us-east-1` (Assessment-iii tag required).

@@ -26,6 +26,11 @@ export interface MeProfile {
   email: string;
   tenantId: string | null;
   roles: TenantRole[];
+  displayName?: string | null;
+  mapTown?: string | null;
+  mapCenterLat?: number | null;
+  mapCenterLng?: number | null;
+  mapZoom?: number | null;
 }
 
 export interface PendingAuthChallenge {
@@ -87,6 +92,24 @@ export class AuthService {
   readonly isSystemAdmin = computed(() => this.roles().includes('system_admin'));
   readonly isCrwaAdmin = computed(() => this.roles().includes('crwa_admin'));
   readonly canManageUsers = computed(() => this.isSystemAdmin() || this.isCrwaAdmin());
+  readonly mapCenter = computed(() => {
+    const p = this.profile();
+    if (
+      p &&
+      typeof p.mapCenterLat === 'number' &&
+      typeof p.mapCenterLng === 'number' &&
+      Number.isFinite(p.mapCenterLat) &&
+      Number.isFinite(p.mapCenterLng)
+    ) {
+      return {
+        lat: p.mapCenterLat,
+        lng: p.mapCenterLng,
+        zoom: typeof p.mapZoom === 'number' ? p.mapZoom : 12,
+        town: p.mapTown ?? p.displayName ?? null,
+      };
+    }
+    return null;
+  });
 
   async login(email: string, password: string): Promise<LoginResult> {
     const body = await this.cognito('InitiateAuth', {
@@ -348,6 +371,11 @@ export class AuthService {
         email: body.email ?? this.email() ?? '',
         tenantId: body.tenantId ?? null,
         roles: Array.isArray(body.roles) ? body.roles : ['operator'],
+        displayName: body.displayName ?? null,
+        mapTown: body.mapTown ?? null,
+        mapCenterLat: typeof body.mapCenterLat === 'number' ? body.mapCenterLat : null,
+        mapCenterLng: typeof body.mapCenterLng === 'number' ? body.mapCenterLng : null,
+        mapZoom: typeof body.mapZoom === 'number' ? body.mapZoom : null,
       };
       this.profile.set(next);
       return next;

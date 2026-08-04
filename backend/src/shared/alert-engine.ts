@@ -148,6 +148,8 @@ function buildSeries(
         radioId: null,
         lastTestedAt: null,
         notes: null,
+        latitude: null,
+        longitude: null,
         updatedAt: new Date().toISOString(),
       } satisfies MeterLocation);
 

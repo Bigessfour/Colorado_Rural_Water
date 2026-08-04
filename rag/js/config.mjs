@@ -1,10 +1,10 @@
 /**
  * Paths, include/exclude rules for Colorado Rural Water (Water Saver) JS codebase RAG.
  */
-import { createHash } from 'node:crypto';
-import { existsSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createHash } from "node:crypto";
+import { existsSync, statSync } from "node:fs";
+import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const CHUNK_LINES = 80;
 export const CHUNK_OVERLAP = 15;
@@ -13,72 +13,72 @@ export const INDEX_VERSION = 1;
 
 /** Globs relative to repo root (forward slashes). */
 export const INCLUDE_GLOBS = [
-  'frontend/src/**/*.ts',
-  'frontend/src/**/*.html',
-  'frontend/src/**/*.scss',
-  'frontend/angular.json',
-  'frontend/package.json',
-  'backend/src/**/*.ts',
-  'backend/package.json',
-  'backend/README.md',
-  'backend/rag/**/*.py',
-  'backend/knowledge/**/*.md',
-  'backend/requirements.txt',
-  'infra/**/*.tf',
-  'infra/**/*.md',
-  'infra/**/*.example',
-  'docs/**/*.md',
-  'docs/diagrams/**/*.mmd',
-  'specs/**/*.md',
-  'sample-data/**/*.md',
-  'sample-data/**/*.csv',
-  'scripts/**/*.mjs',
-  'scripts/**/*.sh',
-  'docker-compose.yml',
-  '.github/workflows/**/*.yml',
-  'rag/js/**/*.mjs',
-  'rag/*.md',
-  '.cursor/rules/**/*.mdc',
-  '.specify/**/*.md',
-  'AGENTS.md',
-  'Agents.md',
-  'agent.md',
-  'README.md',
-  'GETTING_STARTED_ASSESSMENT.md',
-  'PRESENTATION_NOTES.md',
-  'evidence/**/*.md',
-  'package.json',
+  "frontend/src/**/*.ts",
+  "frontend/src/**/*.html",
+  "frontend/src/**/*.scss",
+  "frontend/angular.json",
+  "frontend/package.json",
+  "backend/src/**/*.ts",
+  "backend/package.json",
+  "backend/README.md",
+  "backend/rag/**/*.py",
+  "backend/knowledge/**/*.md",
+  "backend/requirements.txt",
+  "infra/**/*.tf",
+  "infra/**/*.md",
+  "infra/**/*.example",
+  "docs/**/*.md",
+  "docs/diagrams/**/*.mmd",
+  "specs/**/*.md",
+  "sample-data/**/*.md",
+  "sample-data/**/*.csv",
+  "scripts/**/*.mjs",
+  "scripts/**/*.sh",
+  "docker-compose.yml",
+  ".github/workflows/**/*.yml",
+  "rag/js/**/*.mjs",
+  "rag/*.md",
+  ".cursor/rules/**/*.mdc",
+  ".specify/**/*.md",
+  "AGENTS.md",
+  "Agents.md",
+  "agent.md",
+  "README.md",
+  "GETTING_STARTED_ASSESSMENT.md",
+  "PRESENTATION_NOTES.md",
+  "evidence/**/*.md",
+  "package.json",
 ];
 
 export const EXCLUDE_DIR_NAMES = new Set([
-  'node_modules',
-  'dist',
-  '.angular',
-  'coverage',
-  'secrets',
-  '.aws',
-  '.rag',
-  '__pycache__',
-  '.git',
-  '.venv',
-  'mcp',
+  "node_modules",
+  "dist",
+  ".angular",
+  "coverage",
+  "secrets",
+  ".aws",
+  ".rag",
+  "__pycache__",
+  ".git",
+  ".venv",
+  "mcp",
 ]);
 
 export const EXCLUDE_FILE_GLOBS = [
-  '**/package-lock.json',
-  '**/*.pdf',
-  '**/*.zip',
-  '**/*.png',
-  '**/*.jpg',
-  '**/*.jpeg',
-  '**/*.gif',
-  '**/*.webp',
-  '**/*.log',
-  '**/.env',
-  '**/.env.*',
-  '**/*.tfstate',
-  '**/*.tfstate.*',
-  '**/*.tfvars',
+  "**/package-lock.json",
+  "**/*.pdf",
+  "**/*.zip",
+  "**/*.png",
+  "**/*.jpg",
+  "**/*.jpeg",
+  "**/*.gif",
+  "**/*.webp",
+  "**/*.log",
+  "**/.env",
+  "**/.env.*",
+  "**/*.tfstate",
+  "**/*.tfstate.*",
+  "**/*.tfvars",
 ];
 
 /**
@@ -87,25 +87,25 @@ export const EXCLUDE_FILE_GLOBS = [
  */
 export function globToRegExp(pattern) {
   let i = 0;
-  let out = '^';
+  let out = "^";
   while (i < pattern.length) {
-    if (pattern[i] === '*' && pattern[i + 1] === '*') {
-      if (pattern[i + 2] === '/') {
-        out += '(?:.*/)?';
+    if (pattern[i] === "*" && pattern[i + 1] === "*") {
+      if (pattern[i + 2] === "/") {
+        out += "(?:.*/)?";
         i += 3;
       } else {
-        out += '.*';
+        out += ".*";
         i += 2;
       }
       continue;
     }
-    if (pattern[i] === '*') {
-      out += '[^/]*';
+    if (pattern[i] === "*") {
+      out += "[^/]*";
       i += 1;
       continue;
     }
-    if (pattern[i] === '?') {
-      out += '[^/]';
+    if (pattern[i] === "?") {
+      out += "[^/]";
       i += 1;
       continue;
     }
@@ -117,12 +117,18 @@ export function globToRegExp(pattern) {
     }
     i += 1;
   }
-  out += '$';
+  out += "$";
   return new RegExp(out);
 }
 
-const includeRes = INCLUDE_GLOBS.map((g) => ({ pattern: g, re: globToRegExp(g) }));
-const excludeRes = EXCLUDE_FILE_GLOBS.map((g) => ({ pattern: g, re: globToRegExp(g) }));
+const includeRes = INCLUDE_GLOBS.map((g) => ({
+  pattern: g,
+  re: globToRegExp(g),
+}));
+const excludeRes = EXCLUDE_FILE_GLOBS.map((g) => ({
+  pattern: g,
+  re: globToRegExp(g),
+}));
 
 /**
  * @param {string} relPosix
@@ -138,33 +144,34 @@ export function pathMatchesGlob(relPosix, pattern) {
  */
 export function findRepoRoot(startDir = process.cwd()) {
   const envRoot = process.env.CRWA_RAG_ROOT || process.env.WATER_SAVER_ROOT;
-  if (envRoot && existsSync(join(envRoot, 'package.json'))) {
+  if (envRoot && existsSync(join(envRoot, "package.json"))) {
     return envRoot;
   }
 
   let current = startDir;
   for (let depth = 0; depth < 12; depth++) {
     if (
-      existsSync(join(current, 'package.json')) &&
-      (existsSync(join(current, 'rag', 'js')) || existsSync(join(current, 'docs', 'SPEC.md')))
+      existsSync(join(current, "package.json")) &&
+      (existsSync(join(current, "rag", "js")) ||
+        existsSync(join(current, "docs", "SPEC.md")))
     ) {
       return current;
     }
-    const parent = join(current, '..');
+    const parent = join(current, "..");
     if (parent === current) {
       break;
     }
     current = parent;
   }
 
-  const here = fileURLToPath(new URL('.', import.meta.url));
-  const fromModule = join(here, '..', '..');
-  if (existsSync(join(fromModule, 'package.json'))) {
+  const here = fileURLToPath(new URL(".", import.meta.url));
+  const fromModule = join(here, "..", "..");
+  if (existsSync(join(fromModule, "package.json"))) {
     return fromModule;
   }
 
   throw new Error(
-    'Could not find Colorado Rural Water repo root (set CRWA_RAG_ROOT or run from the repo).',
+    "Could not find Colorado Rural Water repo root (set CRWA_RAG_ROOT or run from the repo).",
   );
 }
 
@@ -172,21 +179,21 @@ export function findRepoRoot(startDir = process.cwd()) {
  * @param {string} repoRoot
  */
 export function ragDir(repoRoot) {
-  return join(repoRoot, '.rag');
+  return join(repoRoot, ".rag");
 }
 
 /**
  * @param {string} repoRoot
  */
 export function indexPath(repoRoot) {
-  return join(ragDir(repoRoot), 'js-index.json');
+  return join(ragDir(repoRoot), "js-index.json");
 }
 
 /**
  * @param {string} repoRoot
  */
 export function manifestPath(repoRoot) {
-  return join(ragDir(repoRoot), 'js-manifest.json');
+  return join(ragDir(repoRoot), "js-manifest.json");
 }
 
 /**
@@ -194,7 +201,7 @@ export function manifestPath(repoRoot) {
  * @param {string} absPath
  */
 export function toRelPosix(repoRoot, absPath) {
-  return relative(repoRoot, absPath).split(sep).join('/');
+  return relative(repoRoot, absPath).split(sep).join("/");
 }
 
 /**
@@ -208,11 +215,11 @@ export function shouldIndexFile(repoRoot, absPath) {
   } catch {
     return false;
   }
-  if (rel.startsWith('..')) {
+  if (rel.startsWith("..")) {
     return false;
   }
 
-  const parts = rel.split('/');
+  const parts = rel.split("/");
   if (parts.some((p) => EXCLUDE_DIR_NAMES.has(p))) {
     return false;
   }
@@ -244,23 +251,23 @@ export function shouldIndexFile(repoRoot, absPath) {
  */
 export function languageForPath(absPath) {
   const lower = absPath.toLowerCase();
-  if (lower.endsWith('.ts')) return 'typescript';
-  if (lower.endsWith('.html')) return 'html';
-  if (lower.endsWith('.scss')) return 'scss';
-  if (lower.endsWith('.md') || lower.endsWith('.mdc')) return 'markdown';
-  if (lower.endsWith('.mjs') || lower.endsWith('.js')) return 'javascript';
-  if (lower.endsWith('.py')) return 'python';
-  if (lower.endsWith('.sh')) return 'shell';
-  if (lower.endsWith('.tf')) return 'hcl';
-  if (lower.endsWith('.json')) return 'json';
-  if (lower.endsWith('.yml') || lower.endsWith('.yaml')) return 'yaml';
-  if (lower.endsWith('.csv')) return 'text';
-  return 'text';
+  if (lower.endsWith(".ts")) return "typescript";
+  if (lower.endsWith(".html")) return "html";
+  if (lower.endsWith(".scss")) return "scss";
+  if (lower.endsWith(".md") || lower.endsWith(".mdc")) return "markdown";
+  if (lower.endsWith(".mjs") || lower.endsWith(".js")) return "javascript";
+  if (lower.endsWith(".py")) return "python";
+  if (lower.endsWith(".sh")) return "shell";
+  if (lower.endsWith(".tf")) return "hcl";
+  if (lower.endsWith(".json")) return "json";
+  if (lower.endsWith(".yml") || lower.endsWith(".yaml")) return "yaml";
+  if (lower.endsWith(".csv")) return "text";
+  return "text";
 }
 
 /**
  * @param {string} content
  */
 export function contentHash(content) {
-  return createHash('sha256').update(content).digest('hex');
+  return createHash("sha256").update(content).digest("hex");
 }

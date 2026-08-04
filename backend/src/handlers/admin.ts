@@ -33,6 +33,7 @@ import {
   generateTemporaryPassword,
   normalizeDisplayName,
   normalizeEmail,
+  normalizeMapCenterFields,
   normalizeMeterCountEstimate,
   normalizeOptionalEmail,
   normalizeOptionalIsoDate,
@@ -158,6 +159,9 @@ async function provisionTenant(
   const billingParsed = parseProvisionBilling(body);
   if (!billingParsed.ok) return badRequest(billingParsed.error);
 
+  const mapParsed = normalizeMapCenterFields(body, name.displayName);
+  if (!mapParsed.ok) return badRequest(mapParsed.error);
+
   const existing = await store.getTenantProfile(id.tenantId);
   if (existing) {
     return badRequest(`Tenant ${id.tenantId} already exists`);
@@ -188,6 +192,10 @@ async function provisionTenant(
     createdByUserId: auth.userId,
     createdByEmail: auth.email,
     initialUserEmail: email.email,
+    mapTown: mapParsed.mapTown,
+    mapCenterLat: mapParsed.mapCenterLat,
+    mapCenterLng: mapParsed.mapCenterLng,
+    mapZoom: mapParsed.mapZoom,
     ...billingParsed.fields,
   };
 
@@ -659,6 +667,10 @@ function sanitizeCrwaTenant(t: TenantProfile) {
     displayName: t.displayName,
     createdAt: t.createdAt,
     initialUserEmail: t.initialUserEmail,
+    mapTown: t.mapTown ?? null,
+    mapCenterLat: t.mapCenterLat ?? null,
+    mapCenterLng: t.mapCenterLng ?? null,
+    mapZoom: t.mapZoom ?? null,
     ...crwaBillingView(t),
   };
 }

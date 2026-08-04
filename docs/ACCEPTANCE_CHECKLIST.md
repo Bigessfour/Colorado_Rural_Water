@@ -5,12 +5,14 @@
 **Authority:** Prefer [SPEC.md](SPEC.md) §0 (Kelly vs Pilot vs vNext) and §11. This file operationalizes those criteria; it does not expand scope.
 
 **How to use (Cursor):**
+
 1. Run sections in order. Mark each item `pass` / `fail` / `blocked` with a one-line note.
 2. Prefer live SPA + API (or staging) with a demo tenant JWT. Never invent tenant_id from the client.
 3. On any `fail` on a **Kelly gate**, stop and fix before claiming “ready for Kelly.”
 4. Produce a short summary at the end: overall status, failed items, and whether the Kelly Review URL may be sent.
 
 **Fixtures:**
+
 - Customer messy file: `sample-data/` (messy readings / Town of Steve export as available)
 - Source messy file: source readings sample as available
 - Demo operator Cognito user with `custom:tenant_id`
@@ -74,7 +76,7 @@
 | E3  | Asset fields editable (install date, brand/manufacturer, model, serial, etc.) via UI or documented API | PUT `/meters/{id}` or form save    | **pass** — PUT metadata + History form |
 | E4  | Empty ingest values do not wipe operator-entered asset metadata                                        | Spec non-wipe upsert               | **pass** — non-wipe upsert tests       |
 
-*If E1–E3 are not shipped, mark `blocked` for Pilot—not a Kelly §11a blocker unless demo script depends on them.*
+_If E1–E3 are not shipped, mark `blocked` for Pilot—not a Kelly §11a blocker unless demo script depends on them._
 
 ---
 

@@ -3,9 +3,12 @@ import { describe, it } from 'node:test';
 import {
   applyMeterLocationUpsert,
   applyMeterMetadataPatch,
+  hasMapCoordinates,
   mergeAssetField,
   normalizeAddressKey,
+  parseMeterCreateBody,
   parseMeterMetadataPatch,
+  parseOptionalCoordinates,
   type MeterLocation,
 } from './meter-location.js';
 
@@ -50,6 +53,8 @@ describe('applyMeterLocationUpsert', () => {
     radioId: 'RADIO-1',
     lastTestedAt: '2024-01-15',
     notes: 'OK',
+    latitude: null,
+    longitude: null,
     updatedAt: '2026-06-15T00:00:00.000Z',
   };
 
@@ -166,6 +171,8 @@ describe('parseMeterMetadataPatch + applyMeterMetadataPatch', () => {
     radioId: null,
     lastTestedAt: null,
     notes: 'old',
+    latitude: 38.154,
+    longitude: -102.72,
     updatedAt: '2026-06-15T00:00:00.000Z',
   };
 
@@ -191,5 +198,54 @@ describe('parseMeterMetadataPatch + applyMeterMetadataPatch', () => {
     assert.equal(next.installDate, '2019-06-01');
     assert.equal(next.serviceAddress, base.serviceAddress);
     assert.equal(next.updatedAt, '2026-08-03T12:00:00.000Z');
+  });
+
+  it('accepts lat/lng pair and clearing', () => {
+    const set = parseMeterMetadataPatch({ latitude: 38.15, longitude: -102.72 });
+    assert.equal(set.ok, true);
+    if (!set.ok) return;
+    const next = applyMeterMetadataPatch(base, set.patch);
+    assert.equal(next.latitude, 38.15);
+    assert.equal(next.longitude, -102.72);
+
+    const clear = parseMeterMetadataPatch({ latitude: null, longitude: null });
+    assert.equal(clear.ok, true);
+    if (!clear.ok) return;
+    const cleared = applyMeterMetadataPatch(next, clear.patch);
+    assert.equal(cleared.latitude, null);
+    assert.equal(cleared.longitude, null);
+  });
+
+  it('rejects one-sided coordinates', () => {
+    assert.equal(parseMeterMetadataPatch({ latitude: 38 }).ok, false);
+    assert.equal(parseMeterMetadataPatch({ longitude: -102 }).ok, false);
+  });
+});
+
+describe('parseOptionalCoordinates / create with map pins', () => {
+  it('creates with coords and defaults null', () => {
+    const bad = parseOptionalCoordinates({ latitude: 91, longitude: -105 });
+    assert.equal(bad.ok, false);
+
+    const created = parseMeterCreateBody('t1', {
+      meterId: 'MAP-1',
+      serviceAddress: '1 Main St Wiley CO',
+      latitude: '38.1542',
+      longitude: '-102.7201',
+    });
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+    assert.equal(created.location.latitude, 38.1542);
+    assert.equal(created.location.longitude, -102.7201);
+    assert.equal(hasMapCoordinates(created.location), true);
+
+    const plain = parseMeterCreateBody('t1', {
+      meterId: 'MAP-2',
+      serviceAddress: '2 Main St Wiley CO',
+    });
+    assert.equal(plain.ok, true);
+    if (!plain.ok) return;
+    assert.equal(plain.location.latitude, null);
+    assert.equal(plain.location.longitude, null);
   });
 });

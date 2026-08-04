@@ -1,0 +1,14 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.meter-map-host {
+  width: 100%;
+  min-height: 360px;
+  height: min(55vh, 28rem);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(15, 61, 66, 0.12);
+  background: #dce6e8;
+  z-index: 0;
+}

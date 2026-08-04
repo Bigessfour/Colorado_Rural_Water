@@ -25,11 +25,48 @@
   margin-bottom: 1rem;
 }
 
+:host ::ng-deep .map-card {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 61, 66, 0.08);
+  box-shadow: none;
+  margin-bottom: 1rem;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
   margin-bottom: 1rem;
+}
+
+.meters-layout.both {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+}
+
+@media (max-width: 64rem) {
+  .meters-layout.both {
+    grid-template-columns: 1fr;
+  }
+}
+
+.row-selected {
+  background: rgba(15, 61, 66, 0.06);
+}
+
+.pin-ok {
+  color: #0f3d42;
+  font-weight: 600;
+}
+
+.muted-inline {
+  color: #4a6368;
+}
+
+:host ::ng-deep .map-status {
+  margin-bottom: 0.85rem;
 }
 
 .mono {
@@ -67,8 +104,19 @@
   gap: 0.35rem;
 }
 
+.geo-actions {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.geo-hint {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 .meta-form .span-2,
-.meta-actions {
+.meta-actions,
+.geo-actions.span-2 {
   grid-column: 1 / -1;
 }
 

@@ -1,9 +1,22 @@
 <section class="page">
-  <h1>Member dashboard</h1>
-  <p class="lede">
-    Trends, water balance, and prioritized alerts for your system — built for rural operators, not
-    enterprise dashboards.
-  </p>
+  <header class="page-head">
+    <div>
+      <h1>Member dashboard</h1>
+      <p class="lede">
+        Trends, water balance, and prioritized alerts for your system — built for rural operators, not
+        enterprise dashboards.
+      </p>
+    </div>
+    @if (auth.isLoggedIn()) {
+      <p-button
+        label="Refresh"
+        severity="secondary"
+        [outlined]="true"
+        [loading]="busy()"
+        (onClick)="refreshLive()"
+      />
+    }
+  </header>
 
   @if (!auth.isLoggedIn()) {
     <p-message severity="warn" styleClass="hint">

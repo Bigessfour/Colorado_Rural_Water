@@ -1,10 +1,12 @@
-<section class="page">
-  <h1>Assistant</h1>
-  <p class="lede">
-    Onboarding help, Confidence coaching, and calm explanations — scoped to your system only.
-  </p>
+<section class="page page--narrow">
+  <header class="page-head">
+    <h1>Assistant</h1>
+    <p class="lede">
+      Onboarding help, Confidence coaching, and calm explanations — scoped to your system only.
+    </p>
+  </header>
 
-  <p-message severity="info" styleClass="hint">{{ costNote() }}</p-message>
+  <p class="cost-note">{{ costNote() }}</p>
   @if (coaching()) {
     <p-message severity="info" styleClass="hint">{{ coaching() }}</p-message>
   }
@@ -17,7 +19,7 @@
     <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
   }
 
-  @if (!auth.isLoggedIn()) {
+  @if (!canChat()) {
     <p class="signin-hint"><a routerLink="/login">Sign in</a> to use the assistant.</p>
   }
 
@@ -27,17 +29,24 @@
         label="Start onboarding inventory"
         severity="secondary"
         [outlined]="true"
-        [disabled]="!auth.isLoggedIn() || busy()"
+        [disabled]="!canChat() || busy()"
         (onClick)="askOnboarding()"
       />
       <p-tag value="Tenant-scoped" severity="success" />
+      @if (busy()) {
+        <span class="busy-hint">Thinking…</span>
+      }
     </div>
 
     <div class="transcript" aria-live="polite">
       @for (msg of messages(); track $index) {
         <div class="bubble" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
           <div class="who">{{ msg.role === 'user' ? 'You' : 'Water Saver' }}</div>
-          <div class="text">{{ msg.text }}</div>
+          @if (msg.role === 'assistant') {
+            <div class="text md" [innerHTML]="msg.text | safeMarkdown"></div>
+          } @else {
+            <div class="text">{{ msg.text }}</div>
+          }
         </div>
       } @empty {
         <p class="empty">Ask about Confidence, onboarding history, or mapping tips.</p>
@@ -52,13 +61,13 @@
         rows="3"
         fluid
         placeholder="Ask in everyday language…"
-        [disabled]="busy() || !auth.isLoggedIn()"
+        [disabled]="busy() || !canChat()"
       ></textarea>
       <p-button
         type="submit"
         label="Send"
         [loading]="busy()"
-        [disabled]="busy() || !draft.trim() || !auth.isLoggedIn()"
+        [disabled]="busy() || !draft.trim() || !canChat()"
       />
     </form>
   </p-card>

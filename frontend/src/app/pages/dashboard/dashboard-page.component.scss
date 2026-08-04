@@ -6,6 +6,19 @@
   margin: 0 0 0.35rem;
 }
 
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.page-head .lede {
+  margin-bottom: 0;
+}
+
 .lede {
   font-family: 'Source Sans 3', system-ui, sans-serif;
   color: #4a6368;

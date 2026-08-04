@@ -146,13 +146,13 @@ Align copy with [DEMO_WALKTHROUGH.md](DEMO_WALKTHROUGH.md); Pilot surfaces (CRWA
 
 ```ts
 // Session — synthetic partition (LeadingKeys TENANT#*), not a municipality
-pk: "TENANT#_review"
-sk: "SESSION#{sessionId}"
+pk: "TENANT#_review";
+sk: "SESSION#{sessionId}";
 // { sessionId, reviewerUserId, reviewerEmail, createdAt, expiresAt, status: "open"|"completed", submittedAt? }
 
 // Per-step feedback (upsert)
-pk: "TENANT#_review"
-sk: "SESSION#{sessionId}#STEP#{stepId}"
+pk: "TENANT#_review";
+sk: "SESSION#{sessionId}#STEP#{stepId}";
 // {
 //   stepId, rating: "love"|"dont_need"|"change"|"need_new"|null,
 //   clarity?: 1|2|3|4|5, comment?: string, skipped?: boolean,

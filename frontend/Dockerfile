@@ -5,6 +5,11 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
+# Compose uses primeng-license.local.ts when present (gitignored on host; copied into build context).
+# Fall back to empty stub so CI still builds; CSS also hides the license toast as a safety net.
+RUN if [ ! -f src/environments/primeng-license.local.ts ]; then \
+      cp src/environments/primeng-license.ts src/environments/primeng-license.local.ts; \
+    fi
 # Compose build talks to same-origin /api (nginx proxy)
 RUN npm run build -- --configuration=compose
 

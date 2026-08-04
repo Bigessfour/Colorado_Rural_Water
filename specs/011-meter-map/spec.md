@@ -1,7 +1,7 @@
 # Feature 011: Meter Map (Product)
 
 **Rubric:** optional product polish (not Assessment III required %)
-**Status:** planned (deferred until Features 001–010 smoke green)
+**Status:** verified
 **Product:** Water Saver (Colorado Rural Water)
 **Isolation:** `tenant_id` on all AI / data paths
 **Depends on:** Meter list/API, tenant isolation, existing Meters UI
@@ -16,10 +16,10 @@
 
 ## Acceptance criteria (official)
 
-- [ ] Display tenant-scoped meters on a Leaflet + OSM map using optional lat/lng
-- [ ] Integrate with Angular 22 + PrimeNG 22 (chrome only; map is Leaflet)
-- [ ] Marker popups with meter identity + key status; graceful skip when coords missing
-- [ ] Preserve multi-tenant isolation; no map API keys in git
+- [x] Display tenant-scoped meters on a Leaflet + OSM map using optional lat/lng
+- [x] Integrate with Angular 22 + PrimeNG 22 (chrome only; map is Leaflet)
+- [x] Marker popups with meter identity + key status; graceful skip when coords missing
+- [x] Preserve multi-tenant isolation; no map API keys in git
 
 ## Non-goals (MVP)
 
@@ -27,11 +27,12 @@
 - Blocking Features 001–010
 - Rewriting the Meters table (map complements it)
 
-## Primary paths (when implementing)
+## Primary paths
 
 - `frontend/src/app/pages/meters/` (+ `MeterMapComponent`)
-- `backend/src/shared/meter-location.ts` (add `latitude` / `longitude`)
+- `backend/src/shared/meter-location.ts` (`latitude` / `longitude`)
 - `docs/meter-map.md`
+- Evidence: [`evidence/011-meter-map.md`](../../evidence/011-meter-map.md)
 
 ## Locked MVP decisions
 
@@ -45,4 +46,6 @@
 
 ## Demo evidence
 
-Deferred — see [`plan.md`](plan.md). Do not block Assessment III closeout on this feature.
+See [`evidence/011-meter-map.md`](../../evidence/011-meter-map.md) — Chrome prove 2026-08-04 (5/6 plotted, OSM markers, popup).
+
+**vNext (in app):** Suggest from address (Photon) + Fine-tune pin (drag / map click → auto-save).

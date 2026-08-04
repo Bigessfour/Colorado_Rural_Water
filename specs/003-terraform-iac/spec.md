@@ -1,7 +1,7 @@
 # Feature 003: Terraform IaC Core
 
 **Rubric:** 10% required
-**Status:** planned → implementing
+**Status:** CLOSED (verified 2026-08-03)
 **Product:** Water Saver (Colorado Rural Water)
 **Isolation:** `tenant_id` on all AI / data paths
 
@@ -11,10 +11,10 @@ Operators of small Colorado rural water systems get AI assistance that stays ins
 
 ## Acceptance criteria (official rubric language)
 
-- [ ] Terraform provisions three-tier + AI path resources (API, DB/storage, IAM, Bedrock roles)
-- [ ] Proper state management + backend configuration (remote state preferred)
-- [ ] Clear variables, outputs, dependency ordering
-- [ ] Align with existing infra/terraform; extend rather than rewrite
+- [x] Terraform provisions three-tier + AI path resources (API, DB/storage, IAM, Bedrock roles)
+- [x] Proper state management + backend configuration (remote state preferred)
+- [x] Clear variables, outputs, dependency ordering
+- [x] Align with existing infra/terraform; extend rather than rewrite
 
 ## Non-goals
 
@@ -29,13 +29,18 @@ Operators of small Colorado rural water systems get AI assistance that stays ins
 
 ## Demo evidence
 
-See [`../RUBRIC_COVERAGE.md`](../RUBRIC_COVERAGE.md) row for Feature 003.
+[`evidence/003-terraform-iac.md`](../../evidence/003-terraform-iac.md) · [`../RUBRIC_COVERAGE.md`](../RUBRIC_COVERAGE.md) row for Feature 003.
 
 ## Acceptance Criteria
 
-- [ ] Terraform provisions the resources needed to run the three-tier app + AI path (API/compute, database, storage, IAM, and any required AI-related roles/config).
-- [ ] `terraform init` + `terraform plan` succeed with documented var files / examples.
-- [ ] State backend is configured (local documented minimum; remote preferred).
-- [ ] Variables and outputs are defined for key values (endpoints, bucket names, DB connection hints, etc.).
-- [ ] Apply is documented; destroy path is documented (even if full destroy is in Feature 006).
-- [ ] No secrets committed in `.tf` / `.tfvars` checked into git.
+- [x] Terraform provisions the resources needed to run the three-tier app + AI path (API/compute, database, storage, IAM, and any required AI-related roles/config).
+- [x] `terraform init` + `terraform plan` succeed with documented var files / examples.
+- [x] State backend is configured (local documented minimum; remote preferred).
+- [x] Variables and outputs are defined for key values (endpoints, bucket names, DB connection hints, etc.).
+- [x] Apply is documented; destroy path is documented (even if full destroy is in Feature 006).
+- [x] No secrets committed in `.tf` / `.tfvars` checked into git.
+
+## Notes
+
+- Live stack already applied in account `388691194728`; `terraform plan` = no changes (2026-08-03).
+- Remote S3 backend remains **optional** via `backend.tf.example` → Feature **004**.

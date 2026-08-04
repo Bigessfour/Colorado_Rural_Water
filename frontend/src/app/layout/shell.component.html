@@ -12,8 +12,10 @@
     <a routerLink="/meters" routerLinkActive="active">Meters</a>
     <a routerLink="/sources" routerLinkActive="active">Sources</a>
     <a routerLink="/alerts" routerLinkActive="active">Alerts</a>
-    @if (auth.isLoggedIn()) {
+    @if (composeDemo || auth.isLoggedIn()) {
       <a routerLink="/assistant" routerLinkActive="active">Assistant</a>
+    }
+    @if (auth.isLoggedIn()) {
       <a routerLink="/account" routerLinkActive="active">Account</a>
     }
     @if (auth.canManageUsers()) {
@@ -31,11 +33,19 @@
     @if (auth.isLoggedIn()) {
       <span class="auth-email">{{ auth.email() }}</span>
       <button type="button" class="auth-btn" (click)="logout()">Sign out</button>
+    } @else if (composeDemo) {
+      <span class="auth-email">Compose demo</span>
     } @else {
       <a routerLink="/login" class="auth-link">Sign in</a>
     }
   </div>
 </header>
+@if (composeDemo) {
+  <div class="compose-banner" role="status">
+    Assessment Compose — Assistant uses tenant <code>town-wiley</code> headers (no Cognito). Sign in
+    on the AWS SPA (<code>npm start</code>) for upload, dashboard, and alert acknowledge.
+  </div>
+}
 <main class="main">
   <router-outlet />
 </main>

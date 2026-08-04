@@ -1,9 +1,9 @@
 # Water Saver – Spec Kit
 
-*Working name: Water Saver (final name to be chosen by Colorado Rural Water Association)*
-*Status: Scoped for Kelly demo → Pilot hardening → vNext (see §0)*
-*Last updated: August 3, 2026 (membership billing §9 / Epic I — processor-agnostic)*
-*Scope freeze: section walkthrough defaults applied (subject to Kelly / pilot feedback where marked)*
+_Working name: Water Saver (final name to be chosen by Colorado Rural Water Association)_
+_Status: Scoped for Kelly demo → Pilot hardening → vNext (see §0)_
+_Last updated: August 3, 2026 (membership billing §9 / Epic I — processor-agnostic)_
+_Scope freeze: section walkthrough defaults applied (subject to Kelly / pilot feedback where marked)_
 
 ---
 
@@ -84,6 +84,7 @@ A non-technical city clerk can upload (or drop) a messy real-world CSV/Excel fil
 - Support 3–10 pilot municipalities cleanly and securely
 
 **Quality bar**
+
 - **Kelly:** demo-polished critical path (§0 Stay); no runtime errors on the walkthrough; Watch never reads as dig-now certainty
 - **Pilot:** harden remaining P0 tickets; reduce rough edges on Operator / System Admin / CRWA Admin flows
 - Do **not** interpret “production-ready / no rough edges” as requiring full Epic D/E/H before Kelly
@@ -199,7 +200,7 @@ Reuse Epic B ingest (forgiving mapper + S3 drop). Support multiple files / date 
 - Ask what they have (“Any past months or years of readings you can export?”) — do not require deep history to start.
 - Set expectations: thin data → useful Watch flags; dig-now Actionable statistical alarms need more comparable history.
 - Never overclaim (“We found a leak” when Confidence is Thin). Prefer “Worth a look when you can” / “Watch — not enough history yet for a firm call.”
-- Celebrate progress: “You’re about *N* more similar months from Solid confidence for usage outliers.”
+- Celebrate progress: “You’re about _N_ more similar months from Solid confidence for usage outliers.”
 - Apply the same honesty to **all** municipal data elements (customer meters, sources / water balance, trends, alerts)—not only high-usage flags.
 
 ---
@@ -208,7 +209,7 @@ Reuse Epic B ingest (forgiving mapper + S3 drop). Support multiple files / date 
 
 **Stay** these rules permanently. **Kelly:** optional thin explanations (C6) or static copy. **Pilot:** full agent must obey all of the following.
 
-- Tone: Professional, friendly, helpful, and reassuring. Feels like it was built for *this* town.
+- Tone: Professional, friendly, helpful, and reassuring. Feels like it was built for _this_ town.
 - Retains conversation history and names where appropriate so interactions feel continuous and personal.
 - When proposing any configuration or AWS-related change:
   - Explain clearly what will happen
@@ -287,6 +288,7 @@ Reality is never perfect (flushing, leaks, meter error, theft, timing mismatches
 | **Unaccounted %**              | `(In − Out) / In × 100` when In > 0; **null** when status is `insufficient`              |
 
 **Status semantics (Kelly — non-negotiable)**
+
 - `insufficient` when In and/or Out is missing for the period (one-sided or empty) — **never** present as loss/gain dig-now
 - `loss` / `gain` / `ok` only when both sides have data
 
@@ -361,7 +363,7 @@ Score from transparent inputs (document formula in code comments; tune later via
 1. **Months of comparable readings** — contiguous (or near-contiguous) billing cycles with usable data for the signal.
 2. **Meter / source coverage %** — share of expected meters (or named sources) present in recent cycles.
 3. **Seasonality coverage** — whether both colder and warmer periods are represented (matters for usage outliers and balance norms).
-4. **Signal completeness** — e.g. balance Confidence also needs source *and* customer sides for the same periods.
+4. **Signal completeness** — e.g. balance Confidence also needs source _and_ customer sides for the same periods.
 
 Produce:
 
@@ -384,7 +386,7 @@ Produce:
 | Guidance                                  | Frozen default                                                                               | Notes                                                                          |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | Thin → Building                           | **3** months comparable history **and** coverage ≥ **50%**                                   | Below this: statistical usage outliers = Watch only                            |
-| Building → Solid (Actionable statistical) | **6** months comparable history                                                              | Copy may say “About *N* more similar months toward a high display score (~90)” |
+| Building → Solid (Actionable statistical) | **6** months comparable history                                                              | Copy may say “About _N_ more similar months toward a high display score (~90)” |
 | Solid → Strong                            | **12+** months **and** seasonality (winter + summer) **and** coverage ≥ **80%**              | Multi-year archive accelerates Strong if coverage holds                        |
 | Display score                             | 0–100 heuristic mapped from the inputs above                                                 | Must never be labeled “leak accuracy %”                                        |
 | “>90% Confidence”                         | Means **display score** near Solid — **not** a fifth named level                             |                                                                                |
@@ -405,7 +407,7 @@ Produce:
 
 - Bayesian leak probability models or custom deep learning
 - Claiming Confidence = field-verified leak certainty
-- Blocking operators from *seeing* Watch flags (visibility yes; dig-now framing no)
+- Blocking operators from _seeing_ Watch flags (visibility yes; dig-now framing no)
 
 ---
 
@@ -423,14 +425,14 @@ Produce:
 
 ## 9. Cost & Pricing Model (membership billing)
 
-*Product dues for Water Saver as a CRWA member service — not municipal customer billing CIS. Implementation notes: [docs/BILLING.md](BILLING.md). Tickets: Epic I.*
+_Product dues for Water Saver as a CRWA member service — not municipal customer billing CIS. Implementation notes: [docs/BILLING.md](BILLING.md). Tickets: Epic I._
 
 ### Product rules (processor-agnostic)
 
 - **Pricing axes (suggestions only):** meter-count bands (e.g. ≤100 / 101–300 / 301–750 / 750+) plus add-ons that affect cost (longer retention, extra users, higher support tier).
-- **CRWA sets dollar amounts;** the system only *suggests* a band from meter estimate / complexity and shows transparent line items boards can defend.
+- **CRWA sets dollar amounts;** the system only _suggests_ a band from meter estimate / complexity and shows transparent line items boards can defend.
 - **Statuses on every municipality (tenant):** `pilot` | `active` | `past_due` | `suspended` (optional `canceled` later).
-- **Payment methods at product level:** card and/or invoice + ACH/check — via a processor *or* offline. Never force small boards onto cards only.
+- **Payment methods at product level:** card and/or invoice + ACH/check — via a processor _or_ offline. Never force small boards onto cards only.
 - **Pilot / complimentary** is a first-class status (no fake $0 processor invoice required for free pilots).
 - **Early pilot (3–10 systems)** may run entirely on **manual status + offline payments** (Record external payment in CRWA Admin). No payment-processor SDK is required for I0–I2.
 - **Secrets:** any processor keys live in AWS Secrets Manager / SSM only — never in the frontend or git.

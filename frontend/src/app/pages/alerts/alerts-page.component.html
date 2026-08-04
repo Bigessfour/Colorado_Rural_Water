@@ -1,11 +1,12 @@
 <section class="page">
-  <h1>Alerts</h1>
-  <p class="lede">
-    Prioritized issues from your meter readings. Watch means thin history — look when you can;
-    Actionable means worth a field check now. Accept, dispatch a follow-up, or mark resolved with
-    what you did — each action is saved on the meter’s alert history. Export flagged meters for field
-    lists; open History for readings and past alert activity.
-  </p>
+  <header class="page-head">
+    <h1>Alerts</h1>
+    <p class="lede">
+      Prioritized issues from your meter readings. Watch means thin history — look when you can;
+      Actionable means worth a field check now. Accept, dispatch a follow-up, or mark resolved with
+      what you did — each action is saved on the meter’s alert history.
+    </p>
+  </header>
 
   <p-message severity="info" styleClass="hint">{{ confidenceNote() }}</p-message>
   @if (notice()) {
@@ -17,13 +18,20 @@
 
   <div class="toolbar">
     @if (!auth.isLoggedIn()) {
-      <a routerLink="/login">Sign in</a>
-      <span class="muted"> to load alerts for your tenant.</span>
+      <p class="signin-hint">
+        <a routerLink="/login">Sign in</a> to load alerts, Explain, and Act for your tenant.
+      </p>
     }
-    <p-button label="Refresh alerts" [loading]="busy()" (onClick)="refresh()" />
+    <p-button
+      label="Refresh alerts"
+      [loading]="busy()"
+      [disabled]="!auth.isLoggedIn()"
+      (onClick)="refresh()"
+    />
     <p-button
       label="Export flagged CSV"
       severity="secondary"
+      [outlined]="true"
       [loading]="exportBusy()"
       [disabled]="!auth.isLoggedIn()"
       (onClick)="exportFlaggedCsv()"

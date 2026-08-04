@@ -1,7 +1,7 @@
 # Feature 004: Terraform Best-Practice Bonuses
 
 **Rubric:** 10% bonuses
-**Status:** planned → implementing
+**Status:** CLOSED (verified 2026-08-03)
 **Product:** Water Saver (Colorado Rural Water)
 **Isolation:** `tenant_id` on all AI / data paths
 
@@ -11,11 +11,11 @@ Operators of small Colorado rural water systems get AI assistance that stays ins
 
 ## Acceptance criteria (official rubric language)
 
-- [ ] Modules (existing cognito/storage/api + security as needed)
-- [ ] Workspace or clean environment separation (dev at minimum)
-- [ ] Remote state + locking
-- [ ] Outputs consumable by CI/CD and docs
-- [ ] No secrets in git; variables + Secrets Manager / GH secrets patterns
+- [x] Modules (existing cognito/storage/api + security as needed)
+- [x] Workspace or clean environment separation (dev at minimum)
+- [x] Remote state + locking
+- [x] Outputs consumable by CI/CD and docs
+- [x] No secrets in git; variables + Secrets Manager / GH secrets patterns
 
 ## Non-goals
 
@@ -31,13 +31,18 @@ Operators of small Colorado rural water systems get AI assistance that stays ins
 
 ## Demo evidence
 
-See [`../RUBRIC_COVERAGE.md`](../RUBRIC_COVERAGE.md) row for Feature 004.
+[`evidence/004-terraform-best-practices.md`](../../evidence/004-terraform-best-practices.md) · [`../RUBRIC_COVERAGE.md`](../RUBRIC_COVERAGE.md) row for Feature 004.
 
 ## Acceptance Criteria
 
-- [ ] Resources are organized into modules (e.g. networking, compute/API, database, storage, security) rather than one flat file only.
-- [ ] Environment separation exists (at least `dev` via workspace, tfvars, or equivalent).
-- [ ] Remote state is configured with locking (e.g. S3 + DynamoDB) where account policy allows.
-- [ ] Outputs are consumable by CI/docs (URLs, ARNs, bucket names).
-- [ ] Dependencies are explicit and plan shows a sensible create order.
-- [ ] README/infra docs describe module layout and how to apply per environment.
+- [x] Resources are organized into modules (e.g. networking, compute/API, database, storage, security) rather than one flat file only.
+- [x] Environment separation exists (at least `dev` via workspace, tfvars, or equivalent).
+- [x] Remote state is configured with locking (e.g. S3 + DynamoDB) where account policy allows.
+- [x] Outputs are consumable by CI/docs (URLs, ARNs, bucket names).
+- [x] Dependencies are explicit and plan shows a sensible create order.
+- [x] README/infra docs describe module layout and how to apply per environment.
+
+## Notes
+
+- Locking uses Terraform S3 native `use_lockfile` (no DynamoDB lock table required on TF 1.10+).
+- Workspace **`dev`** is authoritative; do not apply from `default`.

@@ -1,13 +1,23 @@
 """LangGraph multi-step alert triage (Feature 002).
 
-Flow: classify severity → retrieve tenant context → draft calm operator reply.
-Constrained by tenant_id on every node.
+Documented LangGraph ``StateGraph`` flow (tenant-scoped on every node):
+
+1. ``classify`` — severity from alert text
+2. ``gather_context`` — calm operator notes (tenant-only; no other tenants)
+3. ``draft`` — operator-facing reply
+
+LangSmith: set ``LANGCHAIN_TRACING_V2=true`` + ``LANGCHAIN_API_KEY`` (see
+``configure_langsmith``). Graph invokes are wrapped with ``@traceable`` when
+langsmith is installed.
 """
+
 from __future__ import annotations
 
 import logging
-import re
-from typing import Any, Dict, TypedDict
+from typing import Any, Dict, List, TypedDict
+
+from rag.settings import configure_langsmith
+from rag.tenant import normalize_tenant_id, normalize_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +27,10 @@ class TriageState(TypedDict):
     user_id: str
     alert: str
     severity: str
+    context: str
     draft: str
     notes: str
+    steps: List[Dict[str, str]]
 
 
 def _classify(alert: str) -> str:
@@ -30,7 +42,15 @@ def _classify(alert: str) -> str:
     return "low"
 
 
-def _draft(tenant_id: str, alert: str, severity: str) -> str:
+def _gather_context(tenant_id: str, severity: str) -> str:
+    return (
+        f"Tenant={tenant_id} only. Severity={severity}. "
+        "Use Watch vs Actionable language; Thin Confidence is never a confirmed leak. "
+        "Prefer field check when staff can visit — not dig-now."
+    )
+
+
+def _draft(tenant_id: str, alert: str, severity: str, context: str) -> str:
     calm = {
         "high": "Worth a look soon — treat as priority when staff can visit. Do not dig yet on Thin Confidence alone.",
         "medium": "Flagged as Watch. Compare to last few cycles when you have a quiet moment.",
@@ -38,56 +58,126 @@ def _draft(tenant_id: str, alert: str, severity: str) -> str:
     }[severity]
     return (
         f"Tenant {tenant_id} triage ({severity}): {calm}\n"
+        f"Context: {context}\n"
         f"Alert summary: {alert[:500]}"
     )
 
 
-def run_alert_triage_graph(alert: str, tenant_id: str, user_id: str) -> Dict[str, Any]:
-    """Prefer LangGraph when installed; fall back to linear steps for CI without Bedrock."""
-    try:
-        from langgraph.graph import END, StateGraph
+def _append_step(state: TriageState, node: str, detail: str) -> List[Dict[str, str]]:
+    steps = list(state.get("steps") or [])
+    steps.append({"node": node, "detail": detail[:300]})
+    return steps
 
-        def classify_node(state: TriageState) -> TriageState:
-            return {**state, "severity": _classify(state["alert"])}
 
-        def draft_node(state: TriageState) -> TriageState:
-            return {
-                **state,
-                "draft": _draft(state["tenant_id"], state["alert"], state["severity"]),
-                "notes": "LangGraph triage; tenant-scoped; no cross-tenant tools.",
-            }
+def _build_graph():
+    from langgraph.graph import END, START, StateGraph
 
-        graph = StateGraph(TriageState)
-        graph.add_node("classify", classify_node)
-        graph.add_node("draft", draft_node)
-        graph.set_entry_point("classify")
-        graph.add_edge("classify", "draft")
-        graph.add_edge("draft", END)
-        app = graph.compile()
-        result = app.invoke(
-            {
-                "tenant_id": tenant_id,
-                "user_id": user_id,
-                "alert": alert,
-                "severity": "",
-                "draft": "",
-                "notes": "",
-            }
+    def classify_node(state: TriageState) -> TriageState:
+        severity = _classify(state["alert"])
+        return {
+            **state,
+            "severity": severity,
+            "steps": _append_step(state, "classify", f"severity={severity}"),
+        }
+
+    def gather_node(state: TriageState) -> TriageState:
+        context = _gather_context(state["tenant_id"], state["severity"])
+        return {
+            **state,
+            "context": context,
+            "steps": _append_step(state, "gather_context", context),
+        }
+
+    def draft_node(state: TriageState) -> TriageState:
+        draft = _draft(
+            state["tenant_id"], state["alert"], state["severity"], state["context"]
         )
         return {
-            "tenant_id": tenant_id,
-            "severity": result["severity"],
-            "reply": result["draft"],
-            "notes": result["notes"],
-            "graph": "langgraph",
+            **state,
+            "draft": draft,
+            "notes": "LangGraph triage; tenant-scoped; no cross-tenant tools.",
+            "steps": _append_step(state, "draft", "operator reply drafted"),
         }
-    except Exception as exc:
-        logger.info("LangGraph unavailable, linear triage: %s", exc)
-        severity = _classify(alert)
-        return {
-            "tenant_id": tenant_id,
-            "severity": severity,
-            "reply": _draft(tenant_id, alert, severity),
-            "notes": f"linear fallback: {exc}",
-            "graph": "linear",
-        }
+
+    graph = StateGraph(TriageState)
+    graph.add_node("classify", classify_node)
+    graph.add_node("gather_context", gather_node)
+    graph.add_node("draft", draft_node)
+    graph.add_edge(START, "classify")
+    graph.add_edge("classify", "gather_context")
+    graph.add_edge("gather_context", "draft")
+    graph.add_edge("draft", END)
+    return graph.compile()
+
+
+def _linear_triage(
+    alert: str, tenant_id: str, user_id: str, reason: str
+) -> Dict[str, Any]:
+    severity = _classify(alert)
+    context = _gather_context(tenant_id, severity)
+    draft = _draft(tenant_id, alert, severity, context)
+    steps = [
+        {"node": "classify", "detail": f"severity={severity}"},
+        {"node": "gather_context", "detail": context[:300]},
+        {"node": "draft", "detail": "operator reply drafted"},
+    ]
+    return {
+        "tenant_id": tenant_id,
+        "user_id": user_id,
+        "severity": severity,
+        "reply": draft,
+        "notes": f"linear fallback: {reason}",
+        "graph": "linear",
+        "steps": steps,
+        "langsmith": configure_langsmith(),
+    }
+
+
+def run_alert_triage_graph(alert: str, tenant_id: str, user_id: str) -> Dict[str, Any]:
+    """Run documented LangGraph StateGraph (or linear fallback)."""
+    tenant_id = normalize_tenant_id(tenant_id)
+    user_id = normalize_user_id(user_id)
+    tracing = configure_langsmith()
+
+    def _invoke() -> Dict[str, Any]:
+        try:
+            app = _build_graph()
+            result = app.invoke(
+                {
+                    "tenant_id": tenant_id,
+                    "user_id": user_id,
+                    "alert": alert,
+                    "severity": "",
+                    "context": "",
+                    "draft": "",
+                    "notes": "",
+                    "steps": [],
+                }
+            )
+            return {
+                "tenant_id": tenant_id,
+                "user_id": user_id,
+                "severity": result["severity"],
+                "reply": result["draft"],
+                "notes": result["notes"],
+                "graph": "langgraph",
+                "steps": result.get("steps") or [],
+                "langsmith": tracing,
+            }
+        except Exception as exc:
+            logger.info("LangGraph unavailable, linear triage: %s", exc)
+            return _linear_triage(alert, tenant_id, user_id, str(exc))
+
+    try:
+        from langsmith import traceable
+
+        @traceable(
+            name="water-saver-alert-triage",
+            metadata={"tenant_id": tenant_id, "feature": "002"},
+        )
+        def traced_invoke() -> Dict[str, Any]:
+            return _invoke()
+
+        return traced_invoke()
+    except Exception:
+        return _invoke()

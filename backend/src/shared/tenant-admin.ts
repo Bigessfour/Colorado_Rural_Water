@@ -8,6 +8,13 @@ export interface TenantProfile extends BillingFields {
   createdByUserId: string;
   createdByEmail: string;
   initialUserEmail: string;
+  /** Town/municipality label used for map centering (e.g. "Town of Wiley, CO"). */
+  mapTown?: string | null;
+  /** Optional WGS84 map default when the tenant has few/no meter pins. */
+  mapCenterLat?: number | null;
+  mapCenterLng?: number | null;
+  /** Leaflet zoom when using mapCenter* (default 12). */
+  mapZoom?: number | null;
 }
 
 export interface TenantUserRecord {
@@ -108,6 +115,69 @@ export function normalizeMeterCountEstimate(
     return { ok: false, error: 'meterCountEstimate must be a number between 0 and 1000000' };
   }
   return { ok: true, value: Math.floor(n) };
+}
+
+/**
+ * Optional map centering for a municipality (Feature 011 follow-on).
+ * - mapTown defaults to displayName when omitted
+ * - lat/lng both required together; zoom optional (default 12 when coords set)
+ */
+export function normalizeMapCenterFields(
+  body: Record<string, unknown>,
+  displayName: string,
+):
+  | {
+      ok: true;
+      mapTown: string | null;
+      mapCenterLat: number | null;
+      mapCenterLng: number | null;
+      mapZoom: number | null;
+    }
+  | { ok: false; error: string } {
+  const townRaw = body.mapTown;
+  let mapTown: string | null =
+    typeof townRaw === 'string' && townRaw.trim()
+      ? townRaw.trim().slice(0, 160)
+      : displayName.trim().slice(0, 160) || null;
+
+  const hasLat = 'mapCenterLat' in body && body.mapCenterLat !== undefined && body.mapCenterLat !== '';
+  const hasLng = 'mapCenterLng' in body && body.mapCenterLng !== undefined && body.mapCenterLng !== '';
+  if (hasLat !== hasLng) {
+    return {
+      ok: false,
+      error: 'mapCenterLat and mapCenterLng must be set together (or both omitted)',
+    };
+  }
+
+  if (!hasLat && !hasLng) {
+    return { ok: true, mapTown, mapCenterLat: null, mapCenterLng: null, mapZoom: null };
+  }
+
+  const lat = Number(body.mapCenterLat);
+  const lng = Number(body.mapCenterLng);
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+    return { ok: false, error: 'mapCenterLat must be a number between -90 and 90' };
+  }
+  if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+    return { ok: false, error: 'mapCenterLng must be a number between -180 and 180' };
+  }
+
+  let mapZoom: number | null = 12;
+  if (body.mapZoom !== undefined && body.mapZoom !== null && body.mapZoom !== '') {
+    const z = Number(body.mapZoom);
+    if (!Number.isFinite(z) || z < 1 || z > 19) {
+      return { ok: false, error: 'mapZoom must be between 1 and 19' };
+    }
+    mapZoom = Math.round(z);
+  }
+
+  return {
+    ok: true,
+    mapTown,
+    mapCenterLat: lat,
+    mapCenterLng: lng,
+    mapZoom,
+  };
 }
 
 /** Cognito-safe temporary password (meets pool policy). Not logged. */

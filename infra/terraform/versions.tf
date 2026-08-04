@@ -8,6 +8,5 @@ terraform {
     }
   }
 
-  # Remote state: copy backend.tf.example → backend.tf after creating the S3 bucket
-  # (see infra/README.md). Until then, local state is used.
+  # Remote state config: backend.tf (S3 + use_lockfile). Workspace: dev.
 }

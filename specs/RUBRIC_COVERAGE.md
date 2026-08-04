@@ -32,26 +32,26 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 
 ## 3. GitHub Actions (30%)
 
-| Brief item                       | Type | Feature                             | Status          | Evidence                                                                                         |
-| -------------------------------- | ---- | ----------------------------------- | --------------- | ------------------------------------------------------------------------------------------------ |
+| Brief item                       | Type | Feature                             | Status          | Evidence                                                                                                                                  |
+| -------------------------------- | ---- | ----------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Automate build / test / images   | R    | [005](005-github-actions-compose/)  | done (verified) | [`evidence/005-github-actions-compose.md`](../evidence/005-github-actions-compose.md) — compose build/test; **no ECR**; RAG not a CI gate |
-| Dockerfiles + Compose three-tier | R    | [005](005-github-actions-compose/)  | done (verified) | same — `--wait` + hard `/health` `/ready` + frontend                                                     |
-| No hard-coded secrets            | R    | [005](005-github-actions-compose/)  | done (verified) | `.env.example`, GH secret names, `gh-secrets-example.sh`                                                 |
-| Testing, logging, health checks  | R    | [005](005-github-actions-compose/)  | done (verified) | node + pytest + `scripts/smoke.sh` (`SMOKE_REQUIRE_RAG` opt-in)                                          |
-| Conditional PR vs main           | B    | [006](006-github-actions-advanced/) | done (verified) | [plan 30865855551](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865855551) · hard-fail `terraform.yml` |
-| Destroy workflow                 | B    | [006](006-github-actions-advanced/) | done (verified) | `destroy.yml` dry_run; local plan -destroy (92) until file on `main`                                                  |
-| Python unit tests in pipeline    | B    | [006](006-github-actions-advanced/) | done (via 005)  | `ci.yml` pytest job                                                                                                  |
-| Ansible                          | B    | —                                   | **skip**        | Compose path preferred                                                                           |
+| Dockerfiles + Compose three-tier | R    | [005](005-github-actions-compose/)  | done (verified) | same — `--wait` + hard `/health` `/ready` + frontend                                                                                      |
+| No hard-coded secrets            | R    | [005](005-github-actions-compose/)  | done (verified) | `.env.example`, GH secret names, `gh-secrets-example.sh`                                                                                  |
+| Testing, logging, health checks  | R    | [005](005-github-actions-compose/)  | done (verified) | node + pytest + `scripts/smoke.sh` (`SMOKE_REQUIRE_RAG` opt-in)                                                                           |
+| Conditional PR vs main           | B    | [006](006-github-actions-advanced/) | done (verified) | [plan 30865855551](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865855551) · hard-fail `terraform.yml`               |
+| Destroy workflow                 | B    | [006](006-github-actions-advanced/) | done (verified) | `destroy.yml` dry_run; local plan -destroy (92) until file on `main`                                                                      |
+| Python unit tests in pipeline    | B    | [006](006-github-actions-advanced/) | done (via 005)  | `ci.yml` pytest job                                                                                                                       |
+| Ansible                          | B    | —                                   | **skip**        | Compose path preferred                                                                                                                    |
 
 ## 4. Integrations (15%)
 
-| Brief item                      | Type | Feature                             | Status | Evidence                                 |
-| ------------------------------- | ---- | ----------------------------------- | ------ | ---------------------------------------- |
-| Bedrock for AI                  | R    | [007](007-integrations-bedrock-ui/) | done   | `backend/rag/llm.py`, Lambda Bedrock IAM |
-| Backend API for AI/RAG/agent    | R    | [007](007-integrations-bedrock-ui/) | done   | `/api/rag`, `/agent`                     |
-| Frontend UI (Angular + PrimeNG) | R    | [007](007-integrations-bedrock-ui/) | done   | `/assistant`                             |
-| Authenticated tenant scope      | R    | [007](007-integrations-bedrock-ui/) | done   | JWT `tenant_id`                          |
-| System UI browser demo          | B    | [008](008-system-ui-browser-demo/)  | done   | `docs/ASSESSMENT_III_DEMO.md`            |
+| Brief item                      | Type | Feature                             | Status          | Evidence                                                                                                         |
+| ------------------------------- | ---- | ----------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Bedrock for AI                  | R    | [007](007-integrations-bedrock-ui/) | done (verified) | [`evidence/007-integrations-bedrock-ui.md`](../evidence/007-integrations-bedrock-ui.md) · ChatBedrock Compose    |
+| Backend API for AI/RAG/agent    | R    | [007](007-integrations-bedrock-ui/) | done (verified) | `POST /api/rag` 200; `/agent` + `/alerts/explain` wired                                                          |
+| Frontend UI (Angular + PrimeNG) | R    | [007](007-integrations-bedrock-ui/) | done (verified) | `/assistant` Chrome prove · screenshot                                                                           |
+| Authenticated tenant scope      | R    | [007](007-integrations-bedrock-ui/) | done (verified) | Compose `town-wiley` headers; JWT path for AWS                                                                   |
+| System UI browser demo          | B    | [008](008-system-ui-browser-demo/)  | done (verified) | [`evidence/008-system-ui-browser-demo.md`](../evidence/008-system-ui-browser-demo.md) · Compose AI + Cognito ack |
 
 ## 5. Documentation (20%)
 
@@ -70,7 +70,7 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 
 - [ ] `docker compose up` brings up healthy three-tier stack
 - [x] RAG + Mem0 path works and is tenant-safe
-- [ ] Bedrock reachable from backend and usable from frontend
+- [x] Bedrock reachable from backend and usable from frontend
 - [ ] Terraform plan/apply + remote state documented
 - [x] GitHub Actions: PR path + main path; destroy workflow exists
 - [ ] ≥2 diagrams + reproducible README
@@ -94,6 +94,6 @@ Per-feature grading checklists live at the bottom of each `specs/00X-.../spec.md
 
 ## Optional product (not Assessment III %)
 
-| Item                      | Feature               | Status  | Notes                                                     |
-| ------------------------- | --------------------- | ------- | --------------------------------------------------------- |
-| Meter map (Leaflet + OSM) | [011](011-meter-map/) | planned | Deferred until 001–010 smoke green; does not block rubric |
+| Item                      | Feature               | Status   | Notes                                                                                                                  |
+| ------------------------- | --------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Meter map (Leaflet + OSM) | [011](011-meter-map/) | verified | Optional product polish — [`evidence/011-meter-map.md`](../evidence/011-meter-map.md); does not score Assessment III % |

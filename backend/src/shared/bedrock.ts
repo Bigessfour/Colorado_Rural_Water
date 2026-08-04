@@ -6,16 +6,19 @@
 import {
   BedrockRuntimeClient,
   ConverseCommand,
-} from '@aws-sdk/client-bedrock-runtime';
+} from "@aws-sdk/client-bedrock-runtime";
 
 const client = new BedrockRuntimeClient({});
 
 /** Cheapest general text model with live access on codeplatoon / us-east-1. */
 export const DEFAULT_BEDROCK_MODEL_ID =
-  process.env.BEDROCK_MODEL_ID?.trim() || 'amazon.nova-lite-v1:0';
+  process.env.BEDROCK_MODEL_ID?.trim() || "amazon.nova-lite-v1:0";
 
 export function bedrockEnabled(): boolean {
-  return process.env.BEDROCK_ENABLED !== '0' && process.env.BEDROCK_ENABLED !== 'false';
+  return (
+    process.env.BEDROCK_ENABLED !== "0" &&
+    process.env.BEDROCK_ENABLED !== "false"
+  );
 }
 
 export async function converseText(params: {
@@ -31,13 +34,16 @@ export async function converseText(params: {
       new ConverseCommand({
         modelId,
         system: [{ text: params.system }],
-        messages: [{ role: 'user', content: [{ text: params.user }] }],
-        inferenceConfig: { maxTokens: params.maxTokens ?? 400, temperature: 0.2 },
+        messages: [{ role: "user", content: [{ text: params.user }] }],
+        inferenceConfig: {
+          maxTokens: params.maxTokens ?? 400,
+          temperature: 0.2,
+        },
       }),
     );
     const text = res.output?.message?.content
-      ?.map((c) => ('text' in c && c.text ? c.text : ''))
-      .join('')
+      ?.map((c) => ("text" in c && c.text ? c.text : ""))
+      .join("")
       .trim();
     if (!text) return null;
     return { text, modelId };

@@ -1,5 +1,6 @@
 import type { AuthedHandler } from '../shared/apigw.js';
 import { parseAuthFromClaims } from '../shared/auth.js';
+import { createTenantStoreFromEnv } from '../shared/dynamo-store.js';
 import { badRequest, ok, unauthorized } from '../shared/http.js';
 
 const MAX_MESSAGE = 2000;
@@ -7,7 +8,7 @@ const MAX_STACK = 4000;
 const MAX_URL = 500;
 
 /**
- * GET /me — caller identity from JWT.
+ * GET /me — caller identity from JWT (+ tenant map center when profile exists).
  * POST /telemetry/client-errors — SPA runtime errors → CloudWatch (structured JSON).
  */
 export const handler: AuthedHandler = async (event) => {
@@ -21,11 +22,38 @@ export const handler: AuthedHandler = async (event) => {
   const path = event.rawPath ?? event.requestContext.http.path ?? '';
 
   if (method === 'GET' && /\/me\/?$/.test(path)) {
+    let displayName: string | null = null;
+    let mapTown: string | null = null;
+    let mapCenterLat: number | null = null;
+    let mapCenterLng: number | null = null;
+    let mapZoom: number | null = null;
+
+    if (auth.tenantId) {
+      try {
+        const store = createTenantStoreFromEnv();
+        const profile = await store.getTenantProfile(auth.tenantId);
+        if (profile) {
+          displayName = profile.displayName;
+          mapTown = profile.mapTown ?? profile.displayName ?? null;
+          mapCenterLat = profile.mapCenterLat ?? null;
+          mapCenterLng = profile.mapCenterLng ?? null;
+          mapZoom = profile.mapZoom ?? null;
+        }
+      } catch {
+        // Profile table optional for older demo users — identity still returns.
+      }
+    }
+
     return ok({
       userId: auth.userId,
       email: auth.email,
       tenantId: auth.tenantId,
       roles: auth.roles,
+      displayName,
+      mapTown,
+      mapCenterLat,
+      mapCenterLng,
+      mapZoom,
     });
   }
 
@@ -56,7 +84,6 @@ function reportClientError(
   const url = typeof rec.url === 'string' ? rec.url.slice(0, MAX_URL) : undefined;
   const source = typeof rec.source === 'string' ? rec.source.slice(0, 80) : 'spa';
 
-  // Structured line for CloudWatch Logs Insights / filter on CLIENT_ERROR
   console.error(
     JSON.stringify({
       level: 'error',

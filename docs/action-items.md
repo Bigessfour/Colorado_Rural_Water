@@ -11,32 +11,53 @@
 
 **Scanner diagnosis → fix (2026-08-03):**
 
-| Item         | Was (broken)                                                               | Now (Water Saver)                                             |
-| ------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Scanner      | `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py` | Same script; dual-stack                                       |
-| Language     | C# / Blazor only                                                           | TypeScript forced via `.function-inventory.json`              |
-| Roots        | Whole repo                                                                 | `frontend/src`, `backend/src`                                 |
-| Excludes     | Weak → scanned `mcp/crwa-rag/node_modules`                                 | `node_modules`, `mcp`, `dist`, `.angular`, `infra`, …         |
-| Theme oracle | `sf_blazor_style` (TIKR)                                                   | **`primeng`** MCP (not Syncfusion Blazor)                     |
-| Result       | **0 tracked**, noise UI table                                              | **181 tracked** \| **161 with proof** \| **20 without proof** |
+| Item         | Was (broken)                                                               | Now (Water Saver)                                                                 |
+| ------------ | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Scanner      | `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py` | Same script; dual-stack                                                           |
+| Language     | C# / Blazor only                                                           | TypeScript forced via `.function-inventory.json`                                  |
+| Roots        | Whole repo                                                                 | `frontend/src`, `backend/src`                                                     |
+| Excludes     | Weak → scanned `mcp/crwa-rag/node_modules`                                 | `node_modules`, `mcp`, `dist`, `.angular`, `infra`, …                             |
+| Theme oracle | `sf_blazor_style` (TIKR)                                                   | **`primeng`** MCP (not Syncfusion Blazor)                                         |
+| Result       | **0 tracked**, noise UI table                                              | **206 tracked** \| **182 with proof** \| **24 without proof** (2026-08-04 rescan) |
 
-**Without proof is not “missing feature.”** Remaining gaps are Wave 3 deferred AWS wrappers + non-Kelly pages — see below.
+**Without proof is not “missing feature.”** Remaining gaps are Wave 3 deferred AWS wrappers + some SPA pages — browser prove now covers several (see Assessment features below).
 
-**Proof baselines (2026-08-03 closeout):**
-- Backend: `cd backend && npm test` → **133 pass**
-- Frontend: Vitest smokes + chart/meter-usage specs (~38)
-- Live F5: `POST/GET/PUT/submit /review/sessions*` → `emailSent: true`; Cognito `kelly.review@watersaver.local`
+**Proof baselines (2026-08-04 Assessment closeout refresh):**
+- Backend: `cd backend && npm test` (unit)
+- Frontend: Vitest smokes + chart/meter-usage specs
+- Inventory: `npm run inventory` → **209 / 184 with proof**
+- Assessment Spec-Kit **001–008** verified (see table below) · evidence under `evidence/` · **011** meter map verified (optional product)
+- Live F5: review API + SES (earlier); Feature **008** Cognito demo operator `demo.operator@watersaver.local`
 - Engineering closeout: [CLOSEOUT.md](./CLOSEOUT.md) — code Done; ops = Kelly invite + F2 smoke
+
+---
+
+## Assessment Spec-Kit features (inventory map)
+
+| ID      | Feature               | Status          | Primary surfaces                            | Evidence                                                                                                                              |
+| ------- | --------------------- | --------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 001     | LangChain + Mem0 RAG  | done (verified) | `backend/rag/*`, `POST /api/rag`            | [`evidence/001-langchain-mem0-rag.md`](../evidence/001-langchain-mem0-rag.md), [`mem0-connection.md`](../evidence/mem0-connection.md) |
+| 002     | LangGraph + LangSmith | done (verified) | `backend/rag/graph.py`, agent tools         | [`evidence/002-langgraph-langsmith-agent.md`](../evidence/002-langgraph-langsmith-agent.md)                                           |
+| 003     | Terraform IaC         | done (verified) | `infra/terraform`                           | [`evidence/003-terraform-iac.md`](../evidence/003-terraform-iac.md)                                                                   |
+| 004     | TF best practices     | done (verified) | remote state S3 + modules                   | [`evidence/004-terraform-best-practices.md`](../evidence/004-terraform-best-practices.md)                                             |
+| 005     | GHA + Compose         | done (verified) | `.github/workflows/ci.yml`, Compose         | [`evidence/005-github-actions-compose.md`](../evidence/005-github-actions-compose.md)                                                 |
+| 006     | GHA advanced          | done (verified) | `terraform.yml`, `destroy.yml`              | [`evidence/006-github-actions-advanced.md`](../evidence/006-github-actions-advanced.md)                                               |
+| 007     | Bedrock + UI          | done (verified) | `/assistant`, `/api/rag`, `/agent`, Bedrock | [`evidence/007-integrations-bedrock-ui.md`](../evidence/007-integrations-bedrock-ui.md)                                               |
+| 008     | System UI browser     | done (verified) | shell, dashboard, alerts ack, Compose AI    | [`evidence/008-system-ui-browser-demo.md`](../evidence/008-system-ui-browser-demo.md)                                                 |
+| 009–010 | Docs / ops bonuses    | done (matrix)   | README, diagrams, scripts                   | [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md)                                                                             |
+| 011     | Meter map             | done (verified) | Leaflet/OSM on `/meters` Table\|Map\|Both   | [`evidence/011-meter-map.md`](../evidence/011-meter-map.md)                                                                           |
+
+Rubric matrix: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md). Browser matrix: [`PROVE_FEATURES.md`](./PROVE_FEATURES.md).
 
 ---
 
 ## Inventory proof waves
 
-| Wave  | Status   | What                                                                                                                                                                                                           |
-| ----- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1** | done     | `ReviewService`, `AuthService`, `app.routes` smoke, s3-ingest synthetic event → memory commit                                                                                                                  |
-| **2** | done     | Vitest smokes: ReviewHowto, ReviewPanel, Dashboard, Upload, Alerts                                                                                                                                             |
-| **3** | deferred | Bedrock live, Dynamo `create*FromEnv` / `DynamoMeterStore` / `DynamoReviewStore`, `AwsCognitoAdminClient`, remaining SPA pages (Login/Meters/Sources/Admin/Billing/CRWA/Agent/Account/Shell) — manual smoke OK |
+| Wave  | Status  | What                                                                                                                                                                              |
+| ----- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | done    | `ReviewService`, `AuthService`, `app.routes` smoke, s3-ingest synthetic event → memory commit                                                                                     |
+| **2** | done    | Vitest smokes: ReviewHowto, ReviewPanel, Dashboard, Upload, Alerts                                                                                                                |
+| **3** | partial | Browser prove (008): Shell Compose banner, Agent `/assistant`, Bedrock/RAG live, Cognito dashboard + alert Accept; Dynamo factories / Cognito admin SDK still deferred unit-proof |
 
 ---
 
@@ -92,59 +113,60 @@ npm run inventory
 
 ## Pages & Major Components
 
-| Page / route  | Component                                           | Proof                                                            | Status          |
-| ------------- | --------------------------------------------------- | ---------------------------------------------------------------- | --------------- |
-| `/login`      | `LoginPageComponent`                                | Manual F2 #6 + D5 MFA; `AuthService` unit tests                  | Needs page test |
-| `/account`    | `AccountPageComponent`                              | Manual D5 smoke (SMOKE)                                          | Deferred W3     |
-| `/dashboard`  | `DashboardPageComponent`                            | `dashboard-page.component.spec.ts`                               | OK              |
-| `/upload`     | `UploadPageComponent`                               | `upload-page.component.spec.ts`                                  | OK              |
-| `/sources`    | `SourcesPageComponent`                              | Manual F2 #3                                                     | Deferred W3     |
-| `/meters`     | `MetersPageComponent`                               | Manual C7 inventory CRUD                                         | Deferred W3     |
-| `/alerts`     | `AlertsPageComponent`                               | `alerts-page.component.spec.ts`                                  | OK              |
-| `/assistant`  | `AgentPageComponent`                                | Manual Epic E smoke                                              | Deferred W3     |
-| `/billing`    | `BillingPageComponent`                              | Manual I2 smoke (system admin)                                   | Deferred W3     |
-| `/admin`      | `AdminPageComponent`                                | Manual (system/CRWA admin + billing actions)                     | Deferred W3     |
-| `/crwa`       | `CrwaRollupPageComponent`                           | Roll-up via `/admin/rollup`                                      | Deferred W3     |
-| `/review`     | `ReviewHowtoPageComponent` + `ReviewPanelComponent` | `review-howto-page` + `review-panel` specs; `ReviewService` spec | OK              |
-| Shell         | `ShellComponent`                                    | Manual nav                                                       | Deferred W3     |
-| App bootstrap | `app.ts` (hosts review panel)                       | `frontend/src/app/app.spec.ts`                                   | Thin proof      |
-| Routes table  | `app.routes.ts`                                     | `app.routes.spec.ts`                                             | OK              |
+| Page / route  | Component                                           | Proof                                                             | Status           |
+| ------------- | --------------------------------------------------- | ----------------------------------------------------------------- | ---------------- |
+| `/login`      | `LoginPageComponent`                                | Feature 008 Cognito SPA session + `AuthService` unit tests        | Browser pass 008 |
+| `/account`    | `AccountPageComponent`                              | Manual D5 smoke (SMOKE)                                           | Deferred W3      |
+| `/dashboard`  | `DashboardPageComponent`                            | Spec + Feature **008** live Refresh (5 meters / alerts / balance) | OK + browser 008 |
+| `/upload`     | `UploadPageComponent`                               | Spec + 008 API ingest of sample CSV + signed-in UI                | OK (API prove)   |
+| `/sources`    | `SourcesPageComponent`                              | 008 API seed (wells + source CSV)                                 | API prove 008    |
+| `/meters`     | `MetersPageComponent` + `MeterMapComponent`         | Feature **011** map (5/6 pins) + Stats/History prove              | Browser pass 011 |
+| `/alerts`     | `AlertsPageComponent`                               | Spec + Feature **008** Accept on balance alert                    | OK + browser 008 |
+| `/assistant`  | `AgentPageComponent` + `SafeMarkdownPipe`           | Feature **007/008** Compose RAG + markdown; Cognito `/agent` path | Browser pass     |
+| `/billing`    | `BillingPageComponent`                              | Manual I2 smoke (system admin)                                    | Deferred W3      |
+| `/admin`      | `AdminPageComponent`                                | Manual (system/CRWA admin + billing actions)                      | Deferred W3      |
+| `/crwa`       | `CrwaRollupPageComponent`                           | Roll-up via `/admin/rollup`                                       | Deferred W3      |
+| `/review`     | `ReviewHowtoPageComponent` + `ReviewPanelComponent` | `review-howto-page` + `review-panel` specs; `ReviewService` spec  | OK               |
+| Shell         | `ShellComponent`                                    | Feature **008** Compose banner + Assistant nav                    | Browser pass 008 |
+| App bootstrap | `app.ts` (hosts review panel)                       | `frontend/src/app/app.spec.ts`                                    | Thin proof       |
+| Routes table  | `app.routes.ts`                                     | `app.routes.spec.ts`                                              | OK               |
 
 ---
 
 ## Core Services & Public Methods
 
-| Function / surface                              | Location                         | Proof                                               | Minimal?           |
-| ----------------------------------------------- | -------------------------------- | --------------------------------------------------- | ------------------ |
-| `parseAuthFromClaims`, `requireTenantId`, roles | `shared/auth.ts`                 | `auth.test.ts`                                      | Yes                |
-| `parseStepFeedbackBody`, `buildReviewEmailBody` | `shared/review.ts`               | `handlers/review.test.ts`                           | Yes                |
-| Review store (`TENANT#_review`)                 | `shared/review-store.ts`         | `handlers/review.test.ts` (MemoryReviewStore)       | Yes                |
-| `DynamoReviewStore`                             | `shared/review-store.ts`         | Deferred W3 (no Dynamo in CI)                       | Env wiring         |
-| `normalizeTenantId` / email / password          | `shared/tenant-admin.ts`         | `auth.test.ts`                                      | Yes                |
-| CSV customer parse + mapping                    | `shared/csv-parse.ts`            | `csv-parse.test.ts`                                 | Yes                |
-| Excel → CSV path                                | `shared/excel-parse.ts`          | `excel-parse.test.ts` (Steve fixture + DoS guards)  | Yes                |
-| Source CSV parse                                | `shared/source-csv-parse.ts`     | `source-csv-parse.test.ts`                          | Yes                |
-| Meter location upsert / metadata patch          | `shared/meter-location.ts`       | `meter-location.test.ts`                            | Yes                |
-| Water balance calc                              | `shared/water-balance.ts`        | `water-balance.test.ts`                             | Yes                |
-| Alert engine + confidence                       | `shared/alert-engine.ts`         | `alert-engine.test.ts`                              | Yes                |
-| Balance alerts                                  | `shared/balance-alerts.ts`       | `balance-alerts.test.ts`                            | Yes                |
-| Alert status apply                              | `shared/alert-status.ts`         | `alert-status.test.ts`                              | Yes                |
-| Alert explain template                          | `shared/alert-explain.ts`        | `agent-isolation.test.ts` (C6)                      | Yes                |
-| Threshold merge/patch                           | `shared/balance-thresholds.ts`   | `balance-thresholds.test.ts`                        | Yes                |
-| Flagged CSV export                              | `shared/flagged-export.ts`       | `flagged-export.test.ts`                            | Yes                |
-| Source normalize / slug                         | `shared/water-source.ts`         | `water-source.test.ts`                              | Yes                |
-| Billing plans/status/events                     | `shared/billing.ts`              | `billing.test.ts`                                   | Yes                |
-| CRWA roll-up sanitize                           | `shared/crwa-rollup.ts`          | `agent-isolation.test.ts`                           | Yes                |
-| Agent context / confirm / isolation             | `shared/agent-context.ts`        | `agent-isolation.test.ts`                           | Yes                |
-| Conversation store                              | `shared/conversation.ts`         | `agent-isolation.test.ts` (memory)                  | Yes                |
-| Bedrock invoke wrapper                          | `shared/bedrock.ts`              | Deferred W3 — templates proven in agent tests       | Thin OK            |
-| Memory/source store isolation                   | `shared/*-store` / dynamo        | `source-store.test.ts`, meter-history               | Yes                |
-| Dynamo factories / `DynamoMeterStore`           | `shared/dynamo-store.ts`         | Deferred W3                                         | Thin env wiring OK |
-| Cognito admin client                            | `shared/cognito-admin.ts`        | `admin-isolation.test.ts` (mock); real SDK deferred | Yes                |
-| `tenantFromKey` + `handleS3IngestEvent`         | `handlers/s3-ingest.ts`          | `s3-ingest.test.ts`                                 | Yes                |
-| HTTP helpers (`ok`/`csv`/…)                     | `shared/http.ts`                 | Indirect via handlers                               | Yes                |
-| `AuthService` (login, MFA, password, `/me`)     | `frontend/.../auth.service.ts`   | `auth.service.spec.ts`                              | Yes                |
-| `ReviewService`                                 | `frontend/.../review.service.ts` | `review.service.spec.ts`                            | Yes                |
+| Function / surface                              | Location                             | Proof                                                                   | Minimal?           |
+| ----------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- | ------------------ |
+| `parseAuthFromClaims`, `requireTenantId`, roles | `shared/auth.ts`                     | `auth.test.ts`                                                          | Yes                |
+| `parseStepFeedbackBody`, `buildReviewEmailBody` | `shared/review.ts`                   | `handlers/review.test.ts`                                               | Yes                |
+| Review store (`TENANT#_review`)                 | `shared/review-store.ts`             | `handlers/review.test.ts` (MemoryReviewStore)                           | Yes                |
+| `DynamoReviewStore`                             | `shared/review-store.ts`             | Deferred W3 (no Dynamo in CI)                                           | Env wiring         |
+| `normalizeTenantId` / email / password          | `shared/tenant-admin.ts`             | `auth.test.ts`                                                          | Yes                |
+| CSV customer parse + mapping                    | `shared/csv-parse.ts`                | `csv-parse.test.ts`                                                     | Yes                |
+| Excel → CSV path                                | `shared/excel-parse.ts`              | `excel-parse.test.ts` (Steve fixture + DoS guards)                      | Yes                |
+| Source CSV parse                                | `shared/source-csv-parse.ts`         | `source-csv-parse.test.ts`                                              | Yes                |
+| Meter location upsert / metadata patch          | `shared/meter-location.ts`           | `meter-location.test.ts`                                                | Yes                |
+| Water balance calc                              | `shared/water-balance.ts`            | `water-balance.test.ts`                                                 | Yes                |
+| Alert engine + confidence                       | `shared/alert-engine.ts`             | `alert-engine.test.ts`                                                  | Yes                |
+| Balance alerts                                  | `shared/balance-alerts.ts`           | `balance-alerts.test.ts`                                                | Yes                |
+| Alert status apply                              | `shared/alert-status.ts`             | `alert-status.test.ts`                                                  | Yes                |
+| Alert explain template                          | `shared/alert-explain.ts`            | `agent-isolation.test.ts` (C6)                                          | Yes                |
+| Threshold merge/patch                           | `shared/balance-thresholds.ts`       | `balance-thresholds.test.ts`                                            | Yes                |
+| Flagged CSV export                              | `shared/flagged-export.ts`           | `flagged-export.test.ts`                                                | Yes                |
+| Source normalize / slug                         | `shared/water-source.ts`             | `water-source.test.ts`                                                  | Yes                |
+| Billing plans/status/events                     | `shared/billing.ts`                  | `billing.test.ts`                                                       | Yes                |
+| CRWA roll-up sanitize                           | `shared/crwa-rollup.ts`              | `agent-isolation.test.ts`                                               | Yes                |
+| Agent context / confirm / isolation             | `shared/agent-context.ts`            | `agent-isolation.test.ts`                                               | Yes                |
+| Conversation store                              | `shared/conversation.ts`             | `agent-isolation.test.ts` (memory)                                      | Yes                |
+| Bedrock invoke wrapper                          | `shared/bedrock.ts`                  | Live Compose RAG + agent polish (007); unit still “NO PROOF” in scanner | Thin OK            |
+| `SafeMarkdownPipe`                              | `frontend/.../safe-markdown.pipe.ts` | Feature 008 browser — assistant bubbles render `<strong>`               | Yes                |
+| Memory/source store isolation                   | `shared/*-store` / dynamo            | `source-store.test.ts`, meter-history                                   | Yes                |
+| Dynamo factories / `DynamoMeterStore`           | `shared/dynamo-store.ts`             | Deferred W3                                                             | Thin env wiring OK |
+| Cognito admin client                            | `shared/cognito-admin.ts`            | `admin-isolation.test.ts` (mock); real SDK deferred                     | Yes                |
+| `tenantFromKey` + `handleS3IngestEvent`         | `handlers/s3-ingest.ts`              | `s3-ingest.test.ts`                                                     | Yes                |
+| HTTP helpers (`ok`/`csv`/…)                     | `shared/http.ts`                     | Indirect via handlers                                                   | Yes                |
+| `AuthService` (login, MFA, password, `/me`)     | `frontend/.../auth.service.ts`       | `auth.service.spec.ts`                                                  | Yes                |
+| `ReviewService`                                 | `frontend/.../review.service.ts`     | `review.service.spec.ts`                                                | Yes                |
 
 ---
 
@@ -152,6 +174,7 @@ npm run inventory
 
 - [x] `handlers/agent.ts` — routed `GET/POST /agent` (Terraform); tenant isolation + confirm guardrails proven; Bedrock optional fallback to templates.
 - [x] `POST /alerts/explain` — template explain (C6) proven in `agent-isolation.test.ts`.
+- [x] Compose `POST /api/rag` — LangChain `ChatBedrock` + Mem0 (`evidence/001`, `mem0-connection`, `007`).
 - [x] MCP `crwa-rag` (`search_codebase` / `refresh_index`) — agent protocol, not product API.
 
 ---
@@ -163,12 +186,13 @@ npm run inventory
 - [x] **S3 → s3-ingest → memory commit** — `handleS3IngestEvent` with memory stores (`s3-ingest.test.ts`)
 - [x] **Source CRUD + source ingest → balance** — `water-source`, `source-store`, `source-csv-parse`, `water-balance` tests
 - [x] **Alerts (usage + balance + status + CSV + explain)** — engine / status / flagged-export / balance-alerts / alert-explain; accept/dispatch/resolve + meter `ALERT#EVT#` timeline (C3)
-- [ ] **Browser prove (Chrome DevTools)** — [PROVE_FEATURES.md](./PROVE_FEATURES.md): Dashboard DataViz + Meter History sparkline + Meter Stats viz **pass** 2026-08-03; remaining rows still open
+- [x] **Browser prove (Chrome DevTools)** — [PROVE_FEATURES.md](./PROVE_FEATURES.md): Dashboard / Alerts Accept / Assistant / Sign-in **pass** 2026-08-04 (Feature 008); DataViz + Meter History/Stats earlier
 - [x] **Billing ledger + municipality view** — `billing.test.ts`, `admin-isolation.test.ts`
 - [x] **Agent isolation + confirm** — `agent-isolation.test.ts` (E4/E5/E6)
 - [x] **CRWA roll-up sanitize** — no PII / cross-tenant leakage in roll-up rows
 - [x] **Kelly Review API + SPA services/pages** — `review.test.ts` + frontend Review/Auth/panel/howto specs
 - [x] **F5 live deploy** — Terraform apply + SES + Cognito Kelly user; API smoke submit emailed Steve
+- [x] **Assessment 001–008** — Spec-Kit closed with evidence (Compose CI, TF plan Actions, Bedrock/Mem0, system UI demo)
 - [ ] **Kelly F2 smoke end-to-end** — [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md) boxes still open for live env
 - [ ] **Admin invite happy path against Cognito** — isolation rules unit-tested; live invite is manual
 - [ ] **Send Kelly F5 invite** — share `/review` + creds from local secrets (ops)

@@ -1,6 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TagModule } from 'primeng/tag';
@@ -43,12 +44,13 @@ interface BalanceView {
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [CardModule, TagModule, ChartModule, DecimalPipe, MessageModule, RouterLink],
+  imports: [CardModule, TagModule, ChartModule, DecimalPipe, MessageModule, RouterLink, ButtonModule],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.scss',
 })
 export class DashboardPageComponent implements OnInit {
   readonly auth = inject(AuthService);
+  busy = signal(false);
 
   kpis = signal([
     { label: 'Meters monitored', value: '—', hint: 'After first upload' },
@@ -145,6 +147,7 @@ export class DashboardPageComponent implements OnInit {
       this.loadError.set('');
       return;
     }
+    this.busy.set(true);
     try {
       const [alertsRes, balanceRes] = await Promise.all([
         fetch(`${environment.apiBaseUrl}/alerts`, {
@@ -326,6 +329,8 @@ export class DashboardPageComponent implements OnInit {
       this.liveAlerts.set(alerts.slice(0, 8));
     } catch (err) {
       this.loadError.set(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      this.busy.set(false);
     }
   }
 

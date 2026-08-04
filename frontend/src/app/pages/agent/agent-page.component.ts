@@ -8,6 +8,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { TagModule } from 'primeng/tag';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
+import { SafeMarkdownPipe } from '../../shared/safe-markdown.pipe';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -28,12 +29,15 @@ const COMPOSE_SESSION_ID = 'assistant';
     MessageModule,
     TextareaModule,
     TagModule,
+    SafeMarkdownPipe,
   ],
   templateUrl: './agent-page.component.html',
   styleUrl: './agent-page.component.scss',
 })
 export class AgentPageComponent implements OnInit {
   readonly auth = inject(AuthService);
+  /** Compose Assessment path uses tenant headers (no Cognito); AWS path needs JWT. */
+  readonly composeDemo = environment.composeDemo;
 
   messages = signal<ChatMsg[]>([]);
   draft = '';
@@ -44,6 +48,11 @@ export class AgentPageComponent implements OnInit {
   );
   coaching = signal('');
   needsConfirm = signal(false);
+
+  /** True when the operator can send chat turns (Compose demo or Cognito session). */
+  canChat(): boolean {
+    return this.composeDemo || this.auth.isLoggedIn();
+  }
 
   ngOnInit(): void {
     void this.loadHistory();
@@ -61,10 +70,9 @@ export class AgentPageComponent implements OnInit {
     if (environment.composeDemo) {
       try {
         const qs = new URLSearchParams({ session_id: COMPOSE_SESSION_ID });
-        const res = await fetch(
-          `${environment.apiBaseUrl}${environment.historyPath}?${qs}`,
-          { headers: this.composeHeaders() },
-        );
+        const res = await fetch(`${environment.apiBaseUrl}${environment.historyPath}?${qs}`, {
+          headers: this.composeHeaders(),
+        });
         const body = await res.json();
         if (!res.ok) {
           this.error.set(body.error ?? `Could not load history (${res.status})`);

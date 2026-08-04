@@ -11,5 +11,40 @@ BEDROCK_EMBED_MODEL = os.environ.get(
 LLM_TIMEOUT_SEC = int(os.environ.get("LLM_TIMEOUT_SEC", "45"))
 KNOWLEDGE_DIR = os.path.join(os.path.dirname(__file__), "..", "knowledge")
 
-# LangSmith (optional — Feature 002)
-# Set LANGCHAIN_TRACING_V2=true and LANGCHAIN_API_KEY via secrets; never commit keys.
+# LangSmith (Feature 002) — never commit keys.
+LANGCHAIN_API_KEY = (
+    os.environ.get("LANGCHAIN_API_KEY") or os.environ.get("LANGSMITH_API_KEY") or ""
+)
+LANGCHAIN_PROJECT = os.environ.get("LANGCHAIN_PROJECT", "water-saver-assessment-iii")
+_LANGCHAIN_TRACING_RAW = (
+    os.environ.get("LANGCHAIN_TRACING_V2")
+    or os.environ.get("LANGSMITH_TRACING")
+    or "false"
+)
+
+
+def langsmith_enabled() -> bool:
+    return str(_LANGCHAIN_TRACING_RAW).lower() in {"1", "true", "yes"} and bool(
+        LANGCHAIN_API_KEY
+    )
+
+
+def configure_langsmith() -> dict:
+    """Enable LangSmith auto-tracing when key + flag are present (Feature 002).
+
+    Docs: https://docs.langchain.com/langsmith/trace-with-langgraph
+    """
+    enabled = langsmith_enabled()
+    if enabled:
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        os.environ["LANGSMITH_TRACING"] = "true"
+        os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
+        os.environ["LANGSMITH_API_KEY"] = LANGCHAIN_API_KEY
+        os.environ["LANGCHAIN_PROJECT"] = LANGCHAIN_PROJECT
+        os.environ["LANGSMITH_PROJECT"] = LANGCHAIN_PROJECT
+    return {
+        "enabled": enabled,
+        "project": LANGCHAIN_PROJECT,
+        "has_api_key": bool(LANGCHAIN_API_KEY),
+        "tracing_flag": str(_LANGCHAIN_TRACING_RAW).lower() in {"1", "true", "yes"},
+    }
