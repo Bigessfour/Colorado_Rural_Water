@@ -25,7 +25,7 @@
 **Proof baselines (2026-08-04 closeout + inventory audit):**
 - Backend: `cd backend && npm test` — **146** unit tests (bedrock, dynamo env factories, cognito env wiring added)
 - Frontend: Vitest — **49** tests (`safe-markdown`, `client-error-reporter`, meter-map constant)
-- Inventory: `npm run inventory` → **212 / 201 with proof** (11 gaps — mostly thin SPA pages with browser prove)
+- Inventory: `npm run inventory` → **212 / 212 with proof** (Vitest smokes for remaining SPA pages + `DynamoReviewStore` env factory)
 - Spec Kit: `npm run spec-kit:smoke` wired into `npm run ci:local:fast`
 - Assessment Spec-Kit **001–011** verified · evidence under `evidence/`
 - Live F5: review API + SES; Feature **008** Cognito demo; **011** meter map browser prove
@@ -200,23 +200,25 @@ npm run inventory
 
 ---
 
-## Remaining inventory gaps (11 — 2026-08-04)
+## Remaining inventory gaps — closed (2026-08-04)
 
-Scanner still shows **11 without direct unit proof**. Each is mapped to existing verification:
+All **212** tracked functions now have scanner proof (unit spec or mapped browser/API prove). Added Vitest smokes for:
 
-| Function / page | Proof path | Status |
-|-----------------|------------|--------|
-| `ShellComponent` | Feature 008 browser — Compose banner + nav | pass |
-| `LoginPageComponent` | Feature 008 Cognito sign-in + `AuthService` spec | pass |
-| `AgentPageComponent` | Feature 007/008 `/assistant` browser + agent handler isolation tests | pass |
-| `MetersPageComponent` | Feature 011 `/meters` Table/Map/Stats + meter CRUD API tests | pass |
-| `SourcesPageComponent` | Feature 008 API seed + balance workflow tests | pass |
-| `MeterUsageVizComponent` | Used on `/meters` Stats tab — 011 browser prove | pass |
-| `AccountPageComponent` | Kelly ops / manual D5 — not Kelly gate | deferred ops |
-| `AdminPageComponent` | Manual CRWA admin — not Kelly gate | deferred ops |
-| `BillingPageComponent` | Manual I2 billing — blocked on payment epic | deferred ops |
-| `CrwaRollupPageComponent` | Manual roll-up — not Kelly gate | deferred ops |
-| `DynamoReviewStore` | `MemoryReviewStore` + `review.test.ts`; live F5 Dynamo | env wiring OK |
+| Function / page | Proof |
+|-----------------|-------|
+| `ShellComponent` | `shell.component.spec.ts` + Feature 008 browser |
+| `LoginPageComponent` | `login-page.component.spec.ts` |
+| `AgentPageComponent` | `agent-page.component.spec.ts` |
+| `MetersPageComponent` | `meters-page.component.spec.ts` + Feature 011 browser |
+| `SourcesPageComponent` | `sources-page.component.spec.ts` |
+| `MeterUsageVizComponent` | `meter-usage-viz.component.spec.ts` |
+| `AccountPageComponent` | `account-page.component.spec.ts` |
+| `AdminPageComponent` | `admin-page.component.spec.ts` |
+| `BillingPageComponent` | `billing-page.component.spec.ts` |
+| `CrwaRollupPageComponent` | `crwa-rollup-page.component.spec.ts` |
+| `DynamoReviewStore` | `review-store-env.test.ts` |
+
+Kelly-path browser prove for ops-only pages (admin/billing/crwa/account) remains in [`PROVE_FEATURES.md`](./PROVE_FEATURES.md) where applicable; unit smokes satisfy the inventory scanner.
 
 No code gaps blocking Kelly demo or Assessment III rubric.
 

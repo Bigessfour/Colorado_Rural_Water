@@ -2,30 +2,14 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — Colorado Rural Water
-Generated: 2026-08-04T21:33:35.241526+00:00
+Generated: 2026-08-04T21:36:17.830846+00:00
 **Stack:** TypeScript/Angular
 **Scan roots:** `frontend/src`, `backend/src`
 
-**Summary:** 212 tracked functions | 201 with proof | 11 without proof
+**Summary:** 212 tracked functions | 212 with proof | 0 without proof
 Focus on the ones without proof for your key paths.
 
 Ship gate for Kelly/pilot remains Spec §0 + `docs/ACCEPTANCE_CHECKLIST.md` / smoke checklists — inventory count alone is not “done.”
-
-## Functions without proof (review these)
-- Angular Page / Component: ShellComponent.ShellComponent @ frontend/src/app/layout/shell.component.ts:10
-- Angular Page / Component: AccountPageComponent.AccountPageComponent @ frontend/src/app/pages/account/account-page.component.ts:12
-- Angular Page / Component: AdminPageComponent.AdminPageComponent @ frontend/src/app/pages/admin/admin-page.component.ts:50
-- Angular Page / Component: AgentPageComponent.AgentPageComponent @ frontend/src/app/pages/agent/agent-page.component.ts:22
-- Angular Page / Component: BillingPageComponent.BillingPageComponent @ frontend/src/app/pages/billing/billing-page.component.ts:39
-- Angular Page / Component: CrwaRollupPageComponent.CrwaRollupPageComponent @ frontend/src/app/pages/crwa/crwa-rollup-page.component.ts:26
-- Angular Page / Component: LoginPageComponent.LoginPageComponent @ frontend/src/app/pages/login/login-page.component.ts:16
-- Angular Page / Component: MetersPageComponent.MetersPageComponent @ frontend/src/app/pages/meters/meters-page.component.ts:183
-- Angular Page / Component: SourcesPageComponent.SourcesPageComponent @ frontend/src/app/pages/sources/sources-page.component.ts:25
-- Angular Page / Component: MeterUsageVizComponent.MeterUsageVizComponent @ frontend/src/app/shared/meter-usage-viz.component.ts:18
-- Core Service: DynamoReviewStore.DynamoReviewStore @ backend/src/shared/review-store.ts:36
-
-Note: Many items here are thin handlers or UI pages covered by higher-level smoke / acceptance.
-Empty proof ≠ missing feature. Use this list to decide where to add focused proof.
 
 ## Detected Packages & Major Components
 - ★ @angular/animations (^22.1.0) — frontend/package.json
@@ -87,6 +71,8 @@ Detected theme, layout, error UI, and JS interop touchpoints (not every CSS rule
 | layout | `frontend/src/app/layout/shell.component.ts` | `app-shell` |
 | js-interop | `frontend/src/app/layout/shell.component.ts` | `document.` |
 | primeng | `frontend/src/app/layout/shell.component.ts` | `from 'primeng/` |
+| layout | `frontend/src/app/layout/shell.component.spec.ts` | `ShellComponent` |
+| js-interop | `frontend/src/app/layout/shell.component.spec.ts` | `document.` |
 | primeng | `frontend/src/app/shared/meter-usage-viz.component.ts` | `from 'primeng/` |
 | js-interop | `frontend/src/app/review/review.service.ts` | `sessionStorage` |
 | js-interop | `frontend/src/app/review/review.service.spec.ts` | `sessionStorage` |
@@ -123,9 +109,7 @@ Detected theme, layout, error UI, and JS interop touchpoints (not every CSS rule
 | error-ui | `frontend/src/app/pages/billing/billing-page.component.html` | `p-message` |
 | error-ui | `frontend/src/app/pages/upload/upload-page.component.html` | `p-message` |
 | error-ui | `frontend/src/styles.scss` | `p-toast` |
-| layout | `frontend/src/app/pages/meters/meters-page.component.scss` | `layout` |
-| theme | `backend/src/shared/excel-parse.ts` | `material` |
-| … | … | +1 more |
+| … | … | +3 more |
 
 Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` / `get_guide` for PrimeNG 22 + `@primeuix/themes` (Aura/project preset). Not Syncfusion Blazor.
 
@@ -164,22 +148,22 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | API Endpoint | upload-url.buildUploadObjectKey | backend/src/handlers/upload-url.ts:86 | backend/src/handlers/upload-url.test.ts | has logic |
 | API Endpoint | upload-url.handler | backend/src/handlers/upload-url.ts:19 | backend/src/handlers/upload-url.test.ts | has logic |
 | API Endpoint | upload-url.sanitizeFilename | backend/src/handlers/upload-url.ts:78 | backend/src/handlers/upload-url.test.ts | has logic |
-| Angular Page / Component | ShellComponent.ShellComponent | frontend/src/app/layout/shell.component.ts:10 | NO PROOF FOUND | has logic |
-| Angular Page / Component | AccountPageComponent.AccountPageComponent | frontend/src/app/pages/account/account-page.component.ts:12 | NO PROOF FOUND | has logic |
-| Angular Page / Component | AdminPageComponent.AdminPageComponent | frontend/src/app/pages/admin/admin-page.component.ts:50 | NO PROOF FOUND | has logic |
-| Angular Page / Component | AgentPageComponent.AgentPageComponent | frontend/src/app/pages/agent/agent-page.component.ts:22 | NO PROOF FOUND | has logic |
+| Angular Page / Component | ShellComponent.ShellComponent | frontend/src/app/layout/shell.component.ts:10 | frontend/src/app/layout/shell.component.spec.ts | has logic |
+| Angular Page / Component | AccountPageComponent.AccountPageComponent | frontend/src/app/pages/account/account-page.component.ts:12 | frontend/src/app/pages/account/account-page.component.spec.t... | has logic |
+| Angular Page / Component | AdminPageComponent.AdminPageComponent | frontend/src/app/pages/admin/admin-page.component.ts:50 | frontend/src/app/pages/admin/admin-page.component.spec.ts | has logic |
+| Angular Page / Component | AgentPageComponent.AgentPageComponent | frontend/src/app/pages/agent/agent-page.component.ts:22 | frontend/src/app/pages/agent/agent-page.component.spec.ts | has logic |
 | Angular Page / Component | AlertsPageComponent.AlertsPageComponent | frontend/src/app/pages/alerts/alerts-page.component.ts:89 | frontend/src/app/pages/alerts/alerts-page.component.spec.ts | has logic |
-| Angular Page / Component | BillingPageComponent.BillingPageComponent | frontend/src/app/pages/billing/billing-page.component.ts:39 | NO PROOF FOUND | has logic |
-| Angular Page / Component | CrwaRollupPageComponent.CrwaRollupPageComponent | frontend/src/app/pages/crwa/crwa-rollup-page.component.ts:26 | NO PROOF FOUND | has logic |
+| Angular Page / Component | BillingPageComponent.BillingPageComponent | frontend/src/app/pages/billing/billing-page.component.ts:39 | frontend/src/app/pages/billing/billing-page.component.spec.t... | has logic |
+| Angular Page / Component | CrwaRollupPageComponent.CrwaRollupPageComponent | frontend/src/app/pages/crwa/crwa-rollup-page.component.ts:26 | frontend/src/app/pages/crwa/crwa-rollup-page.component.spec.... | has logic |
 | Angular Page / Component | DashboardPageComponent.DashboardPageComponent | frontend/src/app/pages/dashboard/dashboard-page.component.ts:45 | frontend/src/app/pages/dashboard/dashboard-page.component.sp... | has logic |
-| Angular Page / Component | LoginPageComponent.LoginPageComponent | frontend/src/app/pages/login/login-page.component.ts:16 | NO PROOF FOUND | has logic |
+| Angular Page / Component | LoginPageComponent.LoginPageComponent | frontend/src/app/pages/login/login-page.component.ts:16 | frontend/src/app/pages/login/login-page.component.spec.ts | has logic |
 | Angular Page / Component | MeterMapComponent.MeterMapComponent | frontend/src/app/pages/meters/meter-map.component.ts:45 | frontend/src/app/pages/meters/meter-map.component.spec.ts | has logic |
-| Angular Page / Component | MetersPageComponent.MetersPageComponent | frontend/src/app/pages/meters/meters-page.component.ts:183 | NO PROOF FOUND | has logic |
+| Angular Page / Component | MetersPageComponent.MetersPageComponent | frontend/src/app/pages/meters/meters-page.component.ts:183 | frontend/src/app/pages/meters/meters-page.component.spec.ts | has logic |
 | Angular Page / Component | ReviewHowtoPageComponent.ReviewHowtoPageComponent | frontend/src/app/pages/review/review-howto-page.component.ts:10 | frontend/src/app/pages/review/review-howto-page.component.sp... | has logic |
-| Angular Page / Component | SourcesPageComponent.SourcesPageComponent | frontend/src/app/pages/sources/sources-page.component.ts:25 | NO PROOF FOUND | has logic |
+| Angular Page / Component | SourcesPageComponent.SourcesPageComponent | frontend/src/app/pages/sources/sources-page.component.ts:25 | frontend/src/app/pages/sources/sources-page.component.spec.t... | has logic |
 | Angular Page / Component | UploadPageComponent.UploadPageComponent | frontend/src/app/pages/upload/upload-page.component.ts:106 | frontend/src/app/pages/upload/upload-page.component.spec.ts | has logic |
 | Angular Page / Component | ReviewPanelComponent.ReviewPanelComponent | frontend/src/app/review/review-panel.component.ts:10 | frontend/src/app/review/review-panel.component.spec.ts | has logic |
-| Angular Page / Component | MeterUsageVizComponent.MeterUsageVizComponent | frontend/src/app/shared/meter-usage-viz.component.ts:18 | NO PROOF FOUND | has logic |
+| Angular Page / Component | MeterUsageVizComponent.MeterUsageVizComponent | frontend/src/app/shared/meter-usage-viz.component.ts:18 | frontend/src/app/shared/meter-usage-viz.component.spec.ts | has logic |
 | Angular Route | routes.route:(shell root) | frontend/src/app/app.routes.ts:19 | frontend/src/app/app.routes.spec.ts | small body |
 | Angular Route | routes.route:(shell root) | frontend/src/app/app.routes.ts:22 | frontend/src/app/app.routes.spec.ts | small body |
 | Angular Route | routes.route:/account | frontend/src/app/app.routes.ts:29 | frontend/src/app/app.routes.spec.ts | small body |
@@ -230,8 +214,8 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | Core Service | billing.suggestPlanCode | backend/src/shared/billing.ts:82 | backend/src/shared/billing.test.ts | has logic |
 | Core Service | AwsCognitoAdminClient.AwsCognitoAdminClient | backend/src/shared/cognito-admin.ts:16 | backend/src/shared/cognito-admin-env.test.ts | has logic |
 | Core Service | cognito-admin.createCognitoAdminFromEnv | backend/src/shared/cognito-admin.ts:51 | backend/src/shared/cognito-admin-env.test.ts, backend/src/ha... | small body |
-| Core Service | crwa-rollup.buildCrwaRollupRow | backend/src/shared/crwa-rollup.ts:44 | backend/src/shared/agent-isolation.test.ts | has logic |
-| Core Service | crwa-rollup.sanitizeRollupForResponse | backend/src/shared/crwa-rollup.ts:71 | backend/src/shared/agent-isolation.test.ts | has logic |
+| Core Service | crwa-rollup.buildCrwaRollupRow | backend/src/shared/crwa-rollup.ts:44 | backend/src/shared/agent-isolation.test.ts, frontend/src/app... | has logic |
+| Core Service | crwa-rollup.sanitizeRollupForResponse | backend/src/shared/crwa-rollup.ts:71 | backend/src/shared/agent-isolation.test.ts, frontend/src/app... | has logic |
 | Core Service | csv-parse.applyMapping | backend/src/shared/csv-parse.ts:360 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
 | Core Service | csv-parse.findHeaderRowIndex | backend/src/shared/csv-parse.ts:270 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
 | Core Service | csv-parse.guessColumnMapping | backend/src/shared/csv-parse.ts:335 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | small body |
@@ -287,9 +271,9 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | Core Service | meter-location.parseOptionalCoordinates | backend/src/shared/meter-location.ts:118 | backend/src/shared/meter-location.test.ts | has logic |
 | Core Service | meter-location.sanitizeMeterLocationForResponse | backend/src/shared/meter-location.ts:351 | backend/src/shared/meter-location.test.ts | has logic |
 | Core Service | meter-location.toDateOnly | backend/src/shared/meter-location.ts:558 | backend/src/shared/meter-location.test.ts | has logic |
-| Core Service | DynamoReviewStore.DynamoReviewStore | backend/src/shared/review-store.ts:36 | NO PROOF FOUND | has logic |
-| Core Service | MemoryReviewStore.MemoryReviewStore | backend/src/shared/review-store.ts:186 | backend/src/handlers/review.test.ts | has logic |
-| Core Service | review-store.createReviewStoreFromEnv | backend/src/shared/review-store.ts:176 | backend/src/handlers/review.test.ts | has logic |
+| Core Service | DynamoReviewStore.DynamoReviewStore | backend/src/shared/review-store.ts:36 | backend/src/shared/review-store-env.test.ts | has logic |
+| Core Service | MemoryReviewStore.MemoryReviewStore | backend/src/shared/review-store.ts:186 | backend/src/shared/review-store-env.test.ts, backend/src/han... | has logic |
+| Core Service | review-store.createReviewStoreFromEnv | backend/src/shared/review-store.ts:176 | backend/src/shared/review-store-env.test.ts, backend/src/han... | has logic |
 | Core Service | review.buildReviewEmailBody | backend/src/shared/review.ts:142 | backend/src/handlers/review.test.ts | has logic |
 | Core Service | review.isReviewRating | backend/src/shared/review.ts:48 | backend/src/handlers/review.test.ts | has logic |
 | Core Service | review.isReviewStepId | backend/src/shared/review.ts:44 | backend/src/handlers/review.test.ts | has logic |
