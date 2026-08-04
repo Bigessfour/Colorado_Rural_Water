@@ -93,3 +93,9 @@ High-level / big features are **not Done** until proven live in the SPA:
 - After public API / route / handler changes: `npm run inventory`, then update `docs/action-items.md` proofs.
 - **Done / ship gate** for Kelly or pilot = Spec §0 + `docs/ACCEPTANCE_CHECKLIST.md` / smoke — **not** inventory count alone.
 - Overlays: `docs/function-tree.md` (visual), `docs/action-items.md` (proof status).
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+at specs/011-meter-map/plan.md
+<!-- SPECKIT END -->

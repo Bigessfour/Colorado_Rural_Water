@@ -1,0 +1,14 @@
+# Water Saver — agent-context targets
+# Sync Spec Kit active-feature block into project agent rules + Cursor always-apply rule.
+# agent.md is a hand-maintained twin of AGENTS.md (not managed here).
+
+context_file: ""
+
+context_files:
+  - AGENTS.md
+  - agent.md
+  - .cursor/rules/specify-rules.mdc
+
+context_markers:
+  start: "<!-- SPECKIT START -->"
+  end: "<!-- SPECKIT END -->"

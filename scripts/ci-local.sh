@@ -70,6 +70,7 @@ fast)
 	run_backend_node
 	run_pytest
 	docker compose config --quiet
+	bash scripts/spec-kit-smoke.sh
 	echo "OK — fast path green (skipped compose build/up)"
 	;;
 compose)

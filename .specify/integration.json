@@ -2,10 +2,15 @@
   "version": "0.15.2",
   "integration_state_schema": 1,
   "installed_integrations": [
-    "cursor-agent"
+    "cursor-agent",
+    "grok"
   ],
   "integration_settings": {
     "cursor-agent": {
+      "script": "sh",
+      "invoke_separator": "-"
+    },
+    "grok": {
       "script": "sh",
       "invoke_separator": "-"
     }
