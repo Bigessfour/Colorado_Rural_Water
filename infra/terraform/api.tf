@@ -4,7 +4,14 @@ module "storage" {
 
   project_name       = var.project_name
   environment        = var.environment
-  cors_allow_origins = ["http://localhost:4200"]
+  cors_allow_origins = ["http://localhost:4200", "http://localhost:8080"]
+}
+
+module "security" {
+  source = "./modules/security"
+
+  project_name = var.project_name
+  environment  = var.environment
 }
 
 module "api" {
@@ -103,4 +110,19 @@ output "uploads_bucket" {
 output "data_table" {
   value       = try(module.storage[0].data_table_name, null)
   description = "DynamoDB data table"
+}
+
+output "ai_runtime_secret_arn" {
+  value       = module.security.ai_runtime_secret_arn
+  description = "Secrets Manager ARN for AI keys (CI/docs)"
+}
+
+output "ai_runtime_secret_name" {
+  value       = module.security.ai_runtime_secret_name
+  description = "Secrets Manager name for AI runtime"
+}
+
+output "assessment_tag" {
+  value       = var.assessment_tag
+  description = "Assessment-iii tag value applied via default_tags"
 }

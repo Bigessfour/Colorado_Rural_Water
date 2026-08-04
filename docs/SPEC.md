@@ -11,11 +11,12 @@
 
 Agents and humans use this section to decide what “done” means. Prefer this over older “everything is MVP” wording in tickets.
 
-| Layer                  | Purpose                                                  | Quality bar                                                                             |
-| ---------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| **Kelly demo**         | End-to-end walkthrough for Kelly Stone / CRWA leadership | Demo-polished **critical path**; known Pilot gaps are OK if listed and not fake dig-now |
-| **Pilot hardening**    | 3–10 municipalities after Kelly                          | Stronger Confidence, roles, CRWA roll-up, AI agent, threshold stores                    |
-| **vNext / post-pilot** | Explicitly deferred                                      | Do not start unless Spec §0 moves the item                                              |
+| Layer                  | Purpose                                                                  | Quality bar                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Kelly demo**         | End-to-end walkthrough for Kelly Stone / CRWA leadership                 | Demo-polished **critical path**; known Pilot gaps are OK if listed and not fake dig-now                                            |
+| **Pilot hardening**    | 3–10 municipalities after Kelly                                          | Stronger Confidence, roles, CRWA roll-up, AI agent, threshold stores                                                               |
+| **Assessment III**     | Additive full-credit track (Compose, Actions, LangChain/Mem0, TF remote) | Spec-Kit under [`specs/`](../specs/) + [`RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md); does **not** replace Kelly/Pilot scope |
+| **vNext / post-pilot** | Explicitly deferred                                                      | Do not start unless Spec §0 moves the item                                                                                         |
 
 ### Kelly demo — Stay
 
@@ -91,21 +92,21 @@ A non-technical city clerk can upload (or drop) a messy real-world CSV/Excel fil
 
 ## 3. Users & Roles
 
-| Role              | Who                              | Kelly demo                         | Pilot                                 |
-| ----------------- | -------------------------------- | ---------------------------------- | ------------------------------------- |
-| Operator          | City clerk / operator            | **Stay** — primary demo persona    | Full                                  |
-| System Admin      | Designated person at the utility | Stub / same as Operator OK         | Invite users (D2) + source management |
+| Role              | Who                              | Kelly demo                         | Pilot                                                                                 |
+| ----------------- | -------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------- |
+| Operator          | City clerk / operator            | **Stay** — primary demo persona    | Full                                                                                  |
+| System Admin      | Designated person at the utility | Stub / same as Operator OK         | Invite users (D2) + source management                                                 |
 | CRWA Admin        | CRWA staff                       | Not required for Kelly walkthrough | Provision tenant (D3) + roll-up (D4); membership billing status (Epic I, early pilot) |
-| Conversational AI | System agent                     | Rules stay; full agent = Pilot     | Epic E                                |
+| Conversational AI | System agent                     | Rules stay; full agent = Pilot     | Epic E                                                                                |
 
 **Capabilities (product intent — timing per §0)**
 
-| Role              | Capabilities                                                                                                                                     |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Operator          | Upload customer & source readings, view dashboard & alerts (including water balance), acknowledge alerts, manage own profile (password + MFA)    |
-| System Admin      | Everything an Operator can do + invite/manage users **within their own system only** + manage named water sources + view own membership billing status (Epic I) |
+| Role              | Capabilities                                                                                                                                                                                                                               |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Operator          | Upload customer & source readings, view dashboard & alerts (including water balance), acknowledge alerts, manage own profile (password + MFA)                                                                                              |
+| System Admin      | Everything an Operator can do + invite/manage users **within their own system only** + manage named water sources + view own membership billing status (Epic I)                                                                            |
 | CRWA Admin        | Provision new municipalities (one initial user per system); set plan / pilot vs paid; record external payment & payment status; suspend / reactivate; view sanitized enterprise roll-up (incl. water-balance KPIs); manage global settings |
-| Conversational AI | Guides onboarding, helps map data, explains alerts & loss figures, assists with configuration (with strict guardrails)                           |
+| Conversational AI | Guides onboarding, helps map data, explains alerts & loss figures, assists with configuration (with strict guardrails)                                                                                                                     |
 
 **Membership billing vs municipal billing systems**
 
@@ -230,13 +231,13 @@ Reuse Epic B ingest (forgiving mapper + S3 drop). Support multiple files / date 
 
 **Canonical customer / distribution fields (flexible)**
 
-| Field                                                 | Role                                         | Stability                                                                       |
-| ----------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| **Meter ID**                                          | Identity of the physical meter at a location | Stable (replaced only if hardware replaced)                                     |
-| **Service address**                                   | Service location the meter serves            | **Stable — treat as the meter’s location key for operators; should not change** |
-| **Occupant / customer name**                          | Who is currently billed or living there      | **Mutable** — renters move, owners sell; updates do not move the meter          |
-| Account Number                                        | Billing account (may change with ownership)  | Mutable                                                                         |
-| Timestamp, Cumulative Reading, Unit, Diagnostic Flags | Reading stream                               | Per reading                                                                     |
+| Field                                                                                                                            | Role                                             | Stability                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Meter ID**                                                                                                                     | Identity of the physical meter at a location     | Stable (replaced only if hardware replaced)                                                                                                                  |
+| **Service address**                                                                                                              | Service location the meter serves                | **Stable — treat as the meter’s location key for operators; should not change**                                                                              |
+| **Occupant / customer name**                                                                                                     | Who is currently billed or living there          | **Mutable** — renters move, owners sell; updates do not move the meter                                                                                       |
+| Account Number                                                                                                                   | Billing account (may change with ownership)      | Mutable                                                                                                                                                      |
+| Timestamp, Cumulative Reading, Unit, Diagnostic Flags                                                                            | Reading stream                                   | Per reading                                                                                                                                                  |
 | Meter Size, Install Date, Route, Manufacturer, Model, Serial, Meter Type, Location detail, Radio/endpoint ID, Last tested, Notes | Optional meter asset / inventory metadata (LOC#) | Optional — ingest only overwrites when CSV value is non-empty; operators edit via PUT /meters/{id} or Meters page; create via POST /meters without a reading |
 
 Also map any additional columns the AI helps when needed. **Do not collapse name and address into one field** in the canonical store — uploads may still ship them mashed together; the mapper separates them.
@@ -437,12 +438,12 @@ Produce:
 
 ### Payment processor — due-out (discover and install)
 
-| Item | Approach |
-| ---- | -------- |
-| **Discovery** | Confirm with CRWA whether they already collect member dues (processor name, QuickBooks, bank ACH/check only, or none). See [BILLING.md](BILLING.md) checklist. |
-| **Decision** | Reuse existing → adapter/install; none / prefer SaaS → **recommend Stripe Billing** as the default greenfield engine; other commercial vendor → evaluate effort. |
-| **Install** | Separate tickets after written decision (I3 → I4+). Keep a **PaymentProvider** boundary so core admin status never hard-codes a vendor. |
-| **Hybrid always** | Even after a processor is installed, keep admin **Mark paid / Record external payment** for check/ACH offline. |
+| Item              | Approach                                                                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Discovery**     | Confirm with CRWA whether they already collect member dues (processor name, QuickBooks, bank ACH/check only, or none). See [BILLING.md](BILLING.md) checklist.   |
+| **Decision**      | Reuse existing → adapter/install; none / prefer SaaS → **recommend Stripe Billing** as the default greenfield engine; other commercial vendor → evaluate effort. |
+| **Install**       | Separate tickets after written decision (I3 → I4+). Keep a **PaymentProvider** boundary so core admin status never hard-codes a vendor.                          |
+| **Hybrid always** | Even after a processor is installed, keep admin **Mark paid / Record external payment** for check/ACH offline.                                                   |
 
 If CRWA chooses greenfield SaaS, **Stripe Billing** (Invoicing + Customer Portal / Checkout + webhooks) is the recommended install path — documented as an appendix in [BILLING.md](BILLING.md), not as a mandatory engine in this Spec.
 

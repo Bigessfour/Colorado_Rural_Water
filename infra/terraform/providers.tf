@@ -10,17 +10,10 @@ provider "aws" {
       Project     = "water-saver"
       Environment = var.environment
       ManagedBy   = "terraform"
-      Owner       = "crwa-pilot"
+      Owner       = "assessment-iii"
       AwsAccount  = var.aws_account_id
+      # Required for Code Platoon Assessment III cost/attribution
+      Assessment-iii = var.assessment_tag
     }
   }
-}
-
-# Cognito create requires cognito-idp:TagResource when tags are present.
-# IAM user `copilot` currently lacks TagResource — use an untagged provider alias.
-provider "aws" {
-  alias               = "no_default_tags"
-  region              = var.aws_region
-  profile             = var.aws_profile
-  allowed_account_ids = [var.aws_account_id]
 }

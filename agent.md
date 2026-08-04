@@ -32,7 +32,7 @@ Skipping RAG start/end or package-MCP doc checks is a process failure for this r
 - Spec Kit: `docs/SPEC.md` — **§0 Scope layers** is authoritative (Kelly vs Pilot vs vNext). Tickets: `docs/TICKETS.md`. Isolation: `docs/TENANT_ISOLATION.md`.
 - AI agent (product): cheapest option first, explain cost, require confirmation, multi-step confirm for deletes. No cross-tenant data in prompts.
 - Prefer reversible local edits. Confirm before push, shared deploys, or IAM mutations.
-- **AWS account (locked):** `570912405222` · CLI profile **`townofwiley`** · region **`us-east-2`** — see `docs/AWS_ACCOUNT.md`. Never use `codeplatoon` for this repo.
+- **AWS account (locked):** `388691194728` · CLI profile **`codeplatoon`** · region **`us-east-1`** · required tag **`Assessment-iii`** — see `docs/AWS_ACCOUNT.md`.
 
 ## 3. Frontend conventions
 

@@ -1,4 +1,4 @@
-# Cognito module — account 570912405222 (profile townofwiley)
+# Cognito module — Code Platoon account 388691194728 (profile codeplatoon)
 
 module "cognito" {
   count  = var.enable_cognito ? 1 : 0

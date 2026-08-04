@@ -16,7 +16,7 @@ function s3Event(key: string): S3Event {
       {
         eventVersion: '2.1',
         eventSource: 'aws:s3',
-        awsRegion: 'us-east-2',
+        awsRegion: 'us-east-1',
         eventTime: '2026-08-03T00:00:00.000Z',
         eventName: 'ObjectCreated:Put',
         userIdentity: { principalId: 'test' },

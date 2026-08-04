@@ -31,10 +31,10 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | ID  | Title                                         | Priority | Status | Layer | Notes                                                                                                                               |
 | --- | --------------------------------------------- | -------- | ------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | A1  | Repo bootstrap & README                       | P0       | done   | Kelly | Monorepo layout, Spec Kit, this backlog                                                                                             |
-| A2  | Terraform skeleton (accounts, naming, tags)   | P0       | done   | Kelly | Account 570912405222 / profile townofwiley; provider ~> 6.0                                                                         |
-| A3  | Cognito user pool + app client (MFA optional) | P0       | done   | Kelly | Live pool us-east-2_oHpsTZZAN; MFA/groups IAM workarounds                                                                           |
+| A2  | Terraform skeleton (accounts, naming, tags)   | P0       | done   | Kelly | Account **388691194728** / profile **codeplatoon** / `us-east-1`; tag `Assessment-iii`; provider ~> 6.0                             |
+| A3  | Cognito user pool + app client (MFA optional) | P0       | done   | Kelly | Live pool `us-east-1_oZlKJ1y39` (codeplatoon)                                                                                       |
 | A4  | Tenant model + isolation strategy doc         | P0       | done   | Kelly | DynamoDB single-table + S3 uploads; see TENANT_ISOLATION.md                                                                         |
-| A5  | API Gateway + Lambda stub (health + me)       | P0       | done   | Kelly | Live API 14jxov7h72; /health 200, /me JWT 401 without token                                                                         |
+| A5  | API Gateway + Lambda stub (health + me)       | P0       | done   | Kelly | Live API tz6rqlus7b (us-east-1); /health 200, /me JWT 401 without token                                                             |
 | A6  | Per-tenant IAM ABAC / session tags            | P1       | done   | Pilot | Thin: `tenants/*` S3 + LeadingKeys `TENANT#*` + **Deny Scan** + Bedrock model ARNs; residual = no session-tag ABAC yet (documented) |
 
 ## Epic B — Ingestion (critical path)
@@ -174,7 +174,7 @@ API (sketch):
 
 **Body:**
 
-```
+```text
 Kelly Review — Water Saver
 Session: {sessionId}
 Submitted: {submittedAt}

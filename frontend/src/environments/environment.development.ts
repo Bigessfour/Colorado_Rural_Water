@@ -2,11 +2,17 @@ import { primeNgLicense } from './primeng-license';
 
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://14jxov7h72.execute-api.us-east-2.amazonaws.com',
+  composeDemo: false,
+  apiBaseUrl: 'https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com',
+  ragPath: '/api/rag',
+  agentPath: '/agent',
+  historyPath: '/agent',
+  demoTenantId: '',
+  demoUserId: '',
   cognito: {
-    region: 'us-east-2',
-    userPoolId: 'us-east-2_oHpsTZZAN',
-    clientId: '5fd9gii0m2aaibpn1j261pmfo9',
+    region: 'us-east-1',
+    userPoolId: 'us-east-1_oZlKJ1y39',
+    clientId: '3lbh20n9383nhraaioaa5is5an',
   },
   /** Filled via fileReplacements → primeng-license.local.ts in development. */
   primeNgLicense,

@@ -15,6 +15,9 @@ interface ChatMsg {
   createdAt?: string;
 }
 
+/** Compose RAG session key — must match POST /api/rag and GET /api/history. */
+const COMPOSE_SESSION_ID = 'assistant';
+
 @Component({
   selector: 'app-agent-page',
   imports: [
@@ -46,11 +49,45 @@ export class AgentPageComponent implements OnInit {
     void this.loadHistory();
   }
 
+  private composeHeaders(): Record<string, string> {
+    return {
+      'content-type': 'application/json',
+      'X-Tenant-Id': environment.demoTenantId || 'town-wiley',
+      'X-User-Id': environment.demoUserId || 'compose-demo',
+    };
+  }
+
   async loadHistory(): Promise<void> {
+    if (environment.composeDemo) {
+      try {
+        const qs = new URLSearchParams({ session_id: COMPOSE_SESSION_ID });
+        const res = await fetch(
+          `${environment.apiBaseUrl}${environment.historyPath}?${qs}`,
+          { headers: this.composeHeaders() },
+        );
+        const body = await res.json();
+        if (!res.ok) {
+          this.error.set(body.error ?? `Could not load history (${res.status})`);
+          return;
+        }
+        this.messages.set(
+          ((body.messages ?? []) as Array<{ role: string; content?: string; text?: string }>).map(
+            (m) => ({
+              role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
+              text: m.content ?? m.text ?? '',
+            }),
+          ),
+        );
+      } catch (err) {
+        this.error.set(err instanceof Error ? err.message : 'Network error');
+      }
+      return;
+    }
+
     const token = this.auth.getBearerToken();
     if (!token) return;
     try {
-      const res = await fetch(`${environment.apiBaseUrl}/agent`, {
+      const res = await fetch(`${environment.apiBaseUrl}${environment.historyPath}`, {
         headers: { authorization: `Bearer ${token}` },
       });
       const body = await res.json();
@@ -73,17 +110,54 @@ export class AgentPageComponent implements OnInit {
   async send(): Promise<void> {
     const text = this.draft.trim();
     if (!text) return;
-    const token = this.auth.getBearerToken();
-    if (!token) {
+
+    // Auth gate before mutating the transcript (Cognito path).
+    if (!environment.composeDemo && !this.auth.getBearerToken()) {
       this.error.set('Sign in to chat with the assistant.');
       return;
     }
+
     this.busy.set(true);
     this.error.set('');
     this.messages.update((m) => [...m, { role: 'user', text }]);
     this.draft = '';
+
     try {
-      const res = await fetch(`${environment.apiBaseUrl}/agent`, {
+      if (environment.composeDemo) {
+        // Assessment Compose path: LangChain RAG (Feature 001/007)
+        const res = await fetch(`${environment.apiBaseUrl}${environment.ragPath}`, {
+          method: 'POST',
+          headers: this.composeHeaders(),
+          body: JSON.stringify({
+            question: text,
+            tenant_id: environment.demoTenantId,
+            user_id: environment.demoUserId,
+            session_id: COMPOSE_SESSION_ID,
+          }),
+        });
+        const body = await res.json();
+        if (!res.ok) {
+          this.error.set(body.error ?? `RAG failed (${res.status})`);
+          return;
+        }
+        this.messages.update((m) => [
+          ...m,
+          { role: 'assistant', text: body.answer ?? body.reply ?? '(no answer)' },
+        ]);
+        this.costNote.set(
+          'Compose RAG uses Bedrock when AWS credentials are present; Mem0 when MEM0_API_KEY is set.',
+        );
+        return;
+      }
+
+      const token = this.auth.getBearerToken();
+      if (!token) {
+        // Should be unreachable after the pre-check; keep as safety net.
+        this.error.set('Sign in to chat with the assistant.');
+        this.messages.update((m) => m.slice(0, -1));
+        return;
+      }
+      const res = await fetch(`${environment.apiBaseUrl}${environment.agentPath}`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

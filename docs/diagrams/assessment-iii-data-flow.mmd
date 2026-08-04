@@ -1,0 +1,12 @@
+flowchart LR
+  Op[Operator browser] --> FE[Angular UI]
+  FE -->|X-Tenant-Id + question| API[Compose API :3000]
+  API --> RAG[LangChain chain]
+  RAG --> FAISS[FAISS per tenant_id]
+  RAG --> Mem0[Mem0 user_id tenant:user]
+  RAG --> Bedrock[Bedrock chat + embed]
+  RAG --> Sess[LangChain session memory]
+  FAISS --> Answer[Tenant-scoped answer]
+  Mem0 --> Answer
+  Sess --> Answer
+  Answer --> FE

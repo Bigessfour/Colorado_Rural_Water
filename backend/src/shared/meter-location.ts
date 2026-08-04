@@ -142,13 +142,14 @@ export function applyMeterMetadataPatch(
 
   const applyOptionalString = (key: keyof MeterMetadataPatch, value: unknown): void => {
     if (value === undefined) return;
+    const record = next as unknown as Record<string, unknown>;
     if (value === null) {
-      (next as Record<string, unknown>)[key] = null;
+      record[key] = null;
       return;
     }
     if (typeof value !== 'string') return;
     const trimmed = value.trim();
-    (next as Record<string, unknown>)[key] = trimmed.length ? trimmed : null;
+    record[key] = trimmed.length ? trimmed : null;
   };
 
   applyOptionalString('occupantName', patch.occupantName);

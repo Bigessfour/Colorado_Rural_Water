@@ -1,5 +1,5 @@
 /**
- * Optional Bedrock helpers — cheapest model first (Nova Lite in us-east-2).
+ * Optional Bedrock helpers — cheapest model first (Nova Lite in us-east-1).
  * Never include cross-tenant data in prompts; caller must scope context.
  */
 
@@ -10,7 +10,7 @@ import {
 
 const client = new BedrockRuntimeClient({});
 
-/** Cheapest general text model with live access on townofwiley / us-east-2. */
+/** Cheapest general text model with live access on codeplatoon / us-east-1. */
 export const DEFAULT_BEDROCK_MODEL_ID =
   process.env.BEDROCK_MODEL_ID?.trim() || 'amazon.nova-lite-v1:0';
 

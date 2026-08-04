@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Smoke: hard health + ready (+ optional frontend). RAG is opt-in (avoids Bedrock flake).
+#
+# Usage:
+#   ./scripts/smoke.sh [BASE_URL]
+#   SMOKE_REQUIRE_RAG=1 ./scripts/smoke.sh          # also POST /api/rag — expect HTTP 200
+#   SMOKE_FRONTEND_URL=http://127.0.0.1:8080 ./scripts/smoke.sh
+#
+# Env:
+#   SMOKE_TENANT_ID / SMOKE_USER_ID — RAG headers when required
+#   SMOKE_WAIT_SEC — max seconds to wait for health/ready (default 90)
+set -euo pipefail
+
+BASE="${1:-http://127.0.0.1:3000}"
+TENANT="${SMOKE_TENANT_ID:-town-wiley}"
+USER="${SMOKE_USER_ID:-smoke-user}"
+WAIT_SEC="${SMOKE_WAIT_SEC:-90}"
+REQUIRE_RAG="${SMOKE_REQUIRE_RAG:-0}"
+FRONTEND_URL="${SMOKE_FRONTEND_URL:-}"
+
+wait_http() {
+	local url="$1"
+	local label="$2"
+	local deadline=$((SECONDS + WAIT_SEC))
+	local code=""
+	echo "== wait ${label}: ${url} (≤${WAIT_SEC}s) =="
+	while ((SECONDS < deadline)); do
+		code=$(curl -s -o /tmp/ws-wait-body.json -w "%{http_code}" "$url" || true)
+		if [[ $code == "200" ]]; then
+			cat /tmp/ws-wait-body.json
+			echo
+			return 0
+		fi
+		sleep 2
+	done
+	echo "TIMEOUT waiting for ${label} (last HTTP ${code:-none})" >&2
+	[[ -f /tmp/ws-wait-body.json ]] && cat /tmp/ws-wait-body.json >&2 || true
+	return 1
+}
+
+echo "== GET ${BASE}/health =="
+wait_http "${BASE}/health" "health"
+grep -q '"status"' /tmp/ws-wait-body.json
+
+echo "== GET ${BASE}/ready =="
+wait_http "${BASE}/ready" "ready"
+python3 - <<'PY'
+import json
+d = json.load(open("/tmp/ws-wait-body.json"))
+assert d.get("status") == "ready", d
+PY
+
+if [[ -n ${FRONTEND_URL} ]]; then
+	echo "== GET frontend ${FRONTEND_URL} =="
+	wait_http "${FRONTEND_URL}" "frontend"
+fi
+
+if [[ ${REQUIRE_RAG} == "1" || ${REQUIRE_RAG} == "true" ]]; then
+	echo "== POST ${BASE}/api/rag (SMOKE_REQUIRE_RAG=1 — expect 200) =="
+	CODE=$(curl -s -o /tmp/ws-rag.json -w "%{http_code}" \
+		-X POST "${BASE}/api/rag" \
+		-H "content-type: application/json" \
+		-H "X-Tenant-Id: ${TENANT}" \
+		-H "X-User-Id: ${USER}" \
+		-d "{\"question\":\"What is Watch vs Actionable?\",\"tenant_id\":\"${TENANT}\",\"user_id\":\"${USER}\",\"session_id\":\"smoke\"}" || true)
+	echo "HTTP ${CODE}"
+	cat /tmp/ws-rag.json || true
+	if [[ ${CODE} != "200" ]]; then
+		echo "RAG required but got HTTP ${CODE} (need AWS/Bedrock creds in the container)" >&2
+		exit 1
+	fi
+	grep -q '"answer"\|"tenant_id"' /tmp/ws-rag.json
+else
+	echo "== RAG skipped (set SMOKE_REQUIRE_RAG=1 for live Bedrock prove) =="
+fi
+
+echo "smoke ok"
