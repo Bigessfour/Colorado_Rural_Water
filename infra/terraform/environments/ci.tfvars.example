@@ -1,0 +1,10 @@
+# CI / automation — no named profile (use AWS_ACCESS_KEY_ID env from GH secrets).
+aws_account_id = "388691194728"
+aws_profile    = ""
+aws_region     = "us-east-1"
+environment    = "dev"
+project_name   = "water-saver"
+assessment_tag = "true"
+enable_cognito = true
+enable_api     = true
+enable_storage = true

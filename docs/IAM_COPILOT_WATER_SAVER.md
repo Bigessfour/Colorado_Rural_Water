@@ -1,67 +1,16 @@
-# Suggested IAM additions for user `copilot` (Water Saver deploys)
+# IAM notes for Water Saver (Code Platoon)
 
-Attach to `arn:aws:iam::570912405222:user/copilot` (or a role it can assume).
+**Current account:** `388691194728` · profile `codeplatoon` · region `us-east-1`
+**Typical caller:** `arn:aws:iam::388691194728:user/Steve`
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "CognitoWaterSaver",
-      "Effect": "Allow",
-      "Action": [
-        "cognito-idp:CreateUserPool",
-        "cognito-idp:DeleteUserPool",
-        "cognito-idp:DescribeUserPool",
-        "cognito-idp:UpdateUserPool",
-        "cognito-idp:SetUserPoolMfaConfig",
-        "cognito-idp:GetUserPoolMfaConfig",
-        "cognito-idp:ListUserPools",
-        "cognito-idp:TagResource",
-        "cognito-idp:UntagResource",
-        "cognito-idp:ListTagsForResource",
-        "cognito-idp:CreateUserPoolClient",
-        "cognito-idp:DeleteUserPoolClient",
-        "cognito-idp:DescribeUserPoolClient",
-        "cognito-idp:UpdateUserPoolClient",
-        "cognito-idp:CreateGroup",
-        "cognito-idp:DeleteGroup",
-        "cognito-idp:GetGroup",
-        "cognito-idp:ListGroups",
-        "cognito-idp:UpdateGroup",
-        "cognito-idp:AdminCreateUser",
-        "cognito-idp:AdminDeleteUser",
-        "cognito-idp:AdminGetUser",
-        "cognito-idp:AdminAddUserToGroup",
-        "cognito-idp:AdminRemoveUserFromGroup"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ApiLambdaWaterSaver",
-      "Effect": "Allow",
-      "Action": [
-        "apigateway:*",
-        "lambda:*",
-        "iam:CreateRole",
-        "iam:DeleteRole",
-        "iam:GetRole",
-        "iam:PassRole",
-        "iam:AttachRolePolicy",
-        "iam:DetachRolePolicy",
-        "iam:PutRolePolicy",
-        "iam:DeleteRolePolicy",
-        "iam:TagRole",
-        "logs:*"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
+Terraform apply for Assessment III uses this profile. Resources are tagged `Assessment-iii=true` via provider `default_tags`.
 
-Tighten `Resource` ARNs once the stack is stable. Until `GetGroup` / `SetUserPoolMfaConfig` / `TagResource` are allowed, use:
+## Least-privilege sketch (if splitting from Admin)
 
-- `provider "aws" { alias = "no_default_tags" }` for Cognito
-- `mfa_configuration = "OFF"`
-- `terraform apply -refresh=false` when group refresh fails
+If the deploying user is ever narrowed from Administrator, grant at least Cognito, API Gateway, Lambda, IAM roles for Lambdas, DynamoDB, S3, Secrets Manager (AI stub), and Bedrock Invoke/Converse in `us-east-1` for Nova Lite / Titan embeddings used by the product.
+
+Prefer attaching a managed policy to the CI/deploy principal rather than broadening root credentials. Never commit access keys.
+
+## Historical
+
+Earlier personal-account IAM notes for user `copilot` on `570912405222` are obsolete; that stack was destroyed. See [`AWS_ACCOUNT.md`](AWS_ACCOUNT.md) and [`evidence/07-destroy.md`](../evidence/07-destroy.md).

@@ -9,6 +9,8 @@
     "backend:build": "npm --prefix backend run build",
     "backend:test": "npm --prefix backend test",
     "backend:bundle": "node scripts/build-lambda-zip.mjs",
+    "ci:local": "./scripts/ci-local.sh",
+    "ci:local:fast": "./scripts/ci-local.sh --fast",
     "test:auth": "npm --prefix backend test",
     "rag:setup": "node scripts/rag-setup.mjs",
     "rag:index": "node scripts/rag-run.mjs index",

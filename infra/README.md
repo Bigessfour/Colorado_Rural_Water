@@ -1,39 +1,85 @@
 # Water Saver infrastructure (Terraform)
 
-Multi-tenant AWS serverless foundation.
+Multi-tenant AWS serverless foundation + Assessment III track.
 
-**Account (locked):** `570912405222` · profile `townofwiley` · region `us-east-2`
+**Account (locked):** `388691194728` · profile `codeplatoon` · region `us-east-1`
+**Required tag:** `Assessment-iii=true` (provider `default_tags`)
 Details: [docs/AWS_ACCOUNT.md](../docs/AWS_ACCOUNT.md)
 
 ## Modules
 
-| Module    | Purpose                                                                   |
-| --------- | ------------------------------------------------------------------------- |
-| `cognito` | User pool, SPA client, groups, optional MFA                               |
-| `storage` | Private uploads bucket + DynamoDB single-table (`LOC#` / `RDG#` / `MAP#`) |
-| `api`     | HTTP API + JWT authorizer + health/me/presign/ingest + S3→ingest          |
+| Module     | Purpose                                                               |
+| ---------- | --------------------------------------------------------------------- |
+| `cognito`  | User pool, SPA client, groups, optional MFA                           |
+| `storage`  | Private uploads bucket + DynamoDB single-table                        |
+| `api`      | HTTP API + JWT authorizer + Lambdas (health/me/ingest/alerts/agent/…) |
+| `security` | Secrets Manager stub for AI runtime keys (Mem0/LangSmith names)       |
 
-## Live dev outputs (typical)
+## Remote state (Feature 004)
 
-| Resource   | Name / URL                                               |
-| ---------- | -------------------------------------------------------- |
-| API        | `https://14jxov7h72.execute-api.us-east-2.amazonaws.com` |
-| Uploads    | `water-saver-dev-uploads-570912405222`                   |
-| Data table | `water-saver-dev-data`                                   |
-| Ingest     | `POST /ingest` (JWT)                                     |
-| Presign    | `POST /uploads/presign` (JWT)                            |
+| Item        | Value                                                    |
+| ----------- | -------------------------------------------------------- |
+| Backend     | S3 `water-saver-tf-state-388691194728`                   |
+| Key         | `water-saver/terraform.tfstate` (+ `env:/dev/…`)         |
+| Locking     | Native S3 lockfile (`use_lockfile = true`)               |
+| Workspace   | **`dev`** (CI + local)                                   |
+| Config file | Committed [`terraform/backend.tf`](terraform/backend.tf) |
+
+Local auth for backend + provider:
+
+```bash
+export AWS_PROFILE=codeplatoon
+```
+
+CI uses GH secrets `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (no `profile` in `backend.tf`).
+
+State bucket is **bootstrap-only** (outside this root module). Re-create steps: comments in `backend.tf.example`.
+
+## Live dev outputs (codeplatoon)
+
+| Resource   | Name / URL                                                  |
+| ---------- | ----------------------------------------------------------- |
+| API        | `https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com`    |
+| Uploads    | `water-saver-dev-uploads-388691194728`                      |
+| Data table | `water-saver-dev-data`                                      |
+| Cognito    | `us-east-1_oZlKJ1y39` / client `3lbh20n9383nhraaioaa5is5an` |
+| AI secret  | `water-saver-dev-ai-runtime` (stub; put values via CLI)     |
+| Tag        | `Assessment-iii=true`                                       |
 
 ## Apply flow
 
 ```bash
-# from repo root — rebuild Lambda zip first
 npm run backend:bundle
 
 cd infra/terraform
-aws sts get-caller-identity --profile townofwiley
+cp environments/dev.tfvars.example environments/dev.tfvars   # gitignored; set aws_profile=codeplatoon
+export AWS_PROFILE=codeplatoon
+aws sts get-caller-identity
 terraform init
+terraform workspace select dev || terraform workspace new dev
 terraform plan -var-file=environments/dev.tfvars
 terraform apply -var-file=environments/dev.tfvars
 ```
 
-Guards: `allowed_account_ids` on the provider + `check "expected_account"` in `checks.tf`.
+CI uses `environments/ci.tfvars.example` (`aws_profile=""`) with `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` from GitHub secrets.
+
+## Destroy
+
+Local teardown (same account/profile guards as apply):
+
+```bash
+cd infra/terraform
+export AWS_PROFILE=codeplatoon
+terraform workspace select dev
+terraform plan -destroy -var-file=environments/dev.tfvars
+terraform destroy -var-file=environments/dev.tfvars
+```
+
+CI teardown (Feature 006): workflow_dispatch on [`.github/workflows/destroy.yml`](../.github/workflows/destroy.yml) with `confirm=destroy`. Requires GH secrets `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (Feature 005).
+
+Guards: `allowed_account_ids` + `check "expected_account"` + `Assessment-iii` default tag.
+
+## Secrets
+
+- Never commit `*.tfvars` with secrets (gitignored). Use `*.tfvars.example` only.
+- AI keys: Secrets Manager stub `water-saver-dev-ai-runtime` + GH secrets (`scripts/gh-secrets-example.sh`).

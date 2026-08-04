@@ -1,0 +1,22 @@
+# Copy to backend.tf when the state bucket exists (Features 003/004).
+# Bootstrap (Code Platoon):
+#   aws s3 mb s3://water-saver-tf-state-388691194728 --region us-east-1 --profile codeplatoon
+#   aws s3api put-bucket-versioning --bucket water-saver-tf-state-388691194728 \
+#     --versioning-configuration Status=Enabled --profile codeplatoon
+#   aws s3api put-bucket-tagging --bucket water-saver-tf-state-388691194728 --profile codeplatoon \
+#     --tagging 'TagSet=[{Key=Assessment-iii,Value=true},{Key=Project,Value=water-saver}]'
+#   cp backend.tf.example backend.tf
+#   terraform init -migrate-state
+#
+# Workspaces: terraform workspace new/select dev
+
+terraform {
+  backend "s3" {
+    bucket       = "water-saver-tf-state-388691194728"
+    key          = "water-saver/terraform.tfstate"
+    region       = "us-east-1"
+    encrypt      = true
+    use_lockfile = true
+    profile      = "codeplatoon"
+  }
+}

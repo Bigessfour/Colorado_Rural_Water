@@ -44,15 +44,15 @@ A private, guided walkthrough of the live Water Saver app. On each section you l
 1. [x] Terraform `review_notify_to` + `review_from_email` (SES-verified) — applied to `water-saver-dev-review`.
 2. [x] Cognito `kelly.review@watersaver.local` — `operators` + `crwa_admins`, tenant `town-wiley` (password in `~/.cursor/secrets/watersaver-kelly-review-cognito.txt`, not git).
 3. [x] Deploy API (review Lambda + routes) — live smoke: create → step → submit → `emailSent: true`.
-4. [x] SPA `/review` + panel — **`cd frontend && npm start` → http://localhost:4200/review** (API Gateway URL is not the SPA; no CloudFront host yet).
+4. [x] SPA `/review` + panel — **`cd frontend && npm start` → <http://localhost:4200/review>** (API Gateway URL is not the SPA; no CloudFront host yet).
 5. [x] Runtime error capture — SPA `ErrorHandler` / window errors → `POST /telemetry/client-errors` → CloudWatch `/aws/lambda/water-saver-dev-me` (`CLIENT_ERROR`). Review Lambda errors → `/aws/lambda/water-saver-dev-review`.
 6. [ ] Send Kelly: localhost or future public SPA URL, credentials, this page.
 
 ### Tail logs during a Kelly run
 
 ```bash
-aws logs tail /aws/lambda/water-saver-dev-review --follow --profile townofwiley --region us-east-2
-aws logs tail /aws/lambda/water-saver-dev-me --follow --profile townofwiley --region us-east-2 --filter-pattern CLIENT_ERROR
+aws logs tail /aws/lambda/water-saver-dev-review --follow --profile codeplatoon --region us-east-1
+aws logs tail /aws/lambda/water-saver-dev-me --follow --profile codeplatoon --region us-east-1 --filter-pattern CLIENT_ERROR
 ```
 
 Feedback is stored under Dynamo `TENANT#_review` (not municipal tenant data). Ticket **F5** done; **H8** still waits on Kelly’s real submit.

@@ -30,4 +30,4 @@ When implementing or changing any PrimeNG/PrimeUI element (component, directive,
 
 - `tenant_id` isolation on all data paths; no cross-tenant AI context.
 - Spec: `docs/SPEC.md` (**§0** Kelly vs Pilot vs vNext). Isolation: `docs/TENANT_ISOLATION.md`.
-- AWS account **570912405222** only (`townofwiley` / `us-east-2`) — `docs/AWS_ACCOUNT.md`.
+- AWS account **388691194728** only (`codeplatoon` / `us-east-1`) with required tag **`Assessment-iii`** — `docs/AWS_ACCOUNT.md`.

@@ -1,0 +1,25 @@
+flowchart TB
+  subgraph compose [Compose Assessment Path]
+    FE[frontend Angular nginx]
+    API[backend Node Express]
+    RAG[Python RAG LangChain Mem0]
+    PG[(Postgres db)]
+    FE -->|/api| API
+    API --> RAG
+    API --> PG
+    RAG --> PG
+  end
+  subgraph aws [AWS Code Platoon 388691194728]
+    SPA[Angular SPA]
+    APIGW[API Gateway JWT]
+    L[Lambdas]
+    DDB[(DynamoDB)]
+    S3[S3 uploads]
+    BR[Bedrock]
+    SPA --> APIGW --> L
+    L --> DDB
+    L --> S3
+    L --> BR
+  end
+  RAG -->|Bedrock embeddings chat| BR
+  note1[Tag Assessment-iii on all TF resources]

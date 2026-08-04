@@ -20,59 +20,59 @@
 
 ## A. Environment & access (Kelly gate)
 
-| ID  | Check                                              | How                                                   | Result |
-| --- | -------------------------------------------------- | ----------------------------------------------------- | ------ |
+| ID  | Check                                              | How                                                   | Result                                                                                                              |
+| --- | -------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | A1  | SPA loads over HTTPS (CloudFront or equivalent)    | Open production/staging URL                           | **blocked** — no CloudFront yet; SPA via `localhost:4200` against live API (acceptable for Kelly until public host) |
-| A2  | Cognito sign-in works (email/password)             | Login as demo operator → dashboard                    | **pass** — Cognito + Kelly review user live |
-| A3  | `/me` (or equivalent) returns tenant from JWT only | Bearer token; confirm `tenant_id`; no client override | **pass** — JWT claims only; unit + live `/me` |
-| A4  | API health endpoint returns 200                    | `GET /health`                                         | **pass** — live `14jxov7h72` |
-| A5  | No secrets in frontend bundle or repo              | Grep / config review: no Stripe secret, no AWS keys   | **pass** — secrets local only |
+| A2  | Cognito sign-in works (email/password)             | Login as demo operator → dashboard                    | **pass** — Cognito + Kelly review user live                                                                         |
+| A3  | `/me` (or equivalent) returns tenant from JWT only | Bearer token; confirm `tenant_id`; no client override | **pass** — JWT claims only; unit + live `/me`                                                                       |
+| A4  | API health endpoint returns 200                    | `GET /health`                                         | **pass** — live `tz6rqlus7b` (codeplatoon)                                                                          |
+| A5  | No secrets in frontend bundle or repo              | Grep / config review: no Stripe secret, no AWS keys   | **pass** — secrets local only                                                                                       |
 
 ---
 
 ## B. Ingestion & mapper (Kelly gate)
 
-| ID  | Check                                                            | How                                              | Result |
-| --- | ---------------------------------------------------------------- | ------------------------------------------------ | ------ |
+| ID  | Check                                                            | How                                              | Result                                                     |
+| --- | ---------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
 | B1  | Messy customer CSV/Excel uploads without crash                   | Upload fixture; friendly guidance if columns odd | **pass** — Town of Steve Excel + CSV fixtures; parse tests |
-| B2  | Visual column mapper appears when needed and can complete ingest | Map required fields → success                    | **pass** — Upload mapper + saved `MAP#` |
-| B3  | Everyday-language errors (not stack traces) on bad rows          | Force one bad row if possible                    | **pass** — friendly status/warnings |
-| B4  | Ingest is tenant-scoped                                          | Data visible only for demo tenant                | **pass** — JWT tenant + key harden |
-| B5  | S3 drop / presign path works or is explicitly N/A for this build | Presign + notify or documented skip              | **pass** — presign + s3-ingest live path |
+| B2  | Visual column mapper appears when needed and can complete ingest | Map required fields → success                    | **pass** — Upload mapper + saved `MAP#`                    |
+| B3  | Everyday-language errors (not stack traces) on bad rows          | Force one bad row if possible                    | **pass** — friendly status/warnings                        |
+| B4  | Ingest is tenant-scoped                                          | Data visible only for demo tenant                | **pass** — JWT tenant + key harden                         |
+| B5  | S3 drop / presign path works or is explicitly N/A for this build | Presign + notify or documented skip              | **pass** — presign + s3-ingest live path                   |
 
 ---
 
 ## C. Dashboard, balance, Confidence, alerts (Kelly gate)
 
-| ID  | Check                                                               | How                                              | Result |
-| --- | ------------------------------------------------------------------- | ------------------------------------------------ | ------ |
+| ID  | Check                                                               | How                                              | Result                                           |
+| --- | ------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
 | C1  | Dashboard shows KPI / trend area without runtime errors             | Sign-in → dashboard; console clean on happy path | **pass** — DataViz prove 2026-08-03 (4 canvases) |
-| C2  | Water balance shows In / Out / Loss **or** calm insufficient copy   | With and without both sides of data              | **pass** — balance bars + calm empty |
-| C3  | Data Confidence visible (level and/or plain-language meaning)       | Not framed as “leak certainty”                   | **pass** — Confidence card + doughnut |
-| C4  | Alert feed shows prioritized items with **Watch** vs **Actionable** | Thin history → statistical/balance not dig-now   | **pass** — H6 gating |
-| C5  | Operator can open Alerts and refresh                                | Alerts page loads                                | **pass** — Alerts page + act dialog |
-| C6  | Acknowledge (session or persisted) does not error                   | Ack one alert                                    | **pass** — durable accept/dispatch/resolve |
+| C2  | Water balance shows In / Out / Loss **or** calm insufficient copy   | With and without both sides of data              | **pass** — balance bars + calm empty             |
+| C3  | Data Confidence visible (level and/or plain-language meaning)       | Not framed as “leak certainty”                   | **pass** — Confidence card + doughnut            |
+| C4  | Alert feed shows prioritized items with **Watch** vs **Actionable** | Thin history → statistical/balance not dig-now   | **pass** — H6 gating                             |
+| C5  | Operator can open Alerts and refresh                                | Alerts page loads                                | **pass** — Alerts page + act dialog              |
+| C6  | Acknowledge (session or persisted) does not error                   | Ack one alert                                    | **pass** — durable accept/dispatch/resolve       |
 
 ---
 
 ## D. Sources (Kelly gate)
 
-| ID  | Check                                                              | How                  | Result |
-| --- | ------------------------------------------------------------------ | -------------------- | ------ |
+| ID  | Check                                                              | How                  | Result                          |
+| --- | ------------------------------------------------------------------ | -------------------- | ------------------------------- |
 | D1  | Create 2–3 named sources                                           | Sources CRUD         | **pass** — Sources CRUD + tests |
-| D2  | Ingest or enter source readings for a period                       | Source CSV or manual | **pass** — source ingest path |
-| D3  | Dashboard balance updates (or insufficient) after both sides exist | Return to dashboard  | **pass** — balance engine + UI |
+| D2  | Ingest or enter source readings for a period                       | Source CSV or manual | **pass** — source ingest path   |
+| D3  | Dashboard balance updates (or insufficient) after both sides exist | Return to dashboard  | **pass** — balance engine + UI  |
 
 ---
 
 ## E. Meter inventory & history (Pilot preferred; note if missing for Kelly)
 
-| ID  | Check                                                                                                  | How                                | Result |
-| --- | ------------------------------------------------------------------------------------------------------ | ---------------------------------- | ------ |
-| E1  | Meter list / inventory page lists meters for tenant                                                    | Navigate inventory or meters route | **pass** — `/meters` list/CRUD |
-| E2  | Meter detail shows readings history                                                                    | Open one meter                     | **pass** — History + usage viz prove |
+| ID  | Check                                                                                                  | How                                | Result                                 |
+| --- | ------------------------------------------------------------------------------------------------------ | ---------------------------------- | -------------------------------------- |
+| E1  | Meter list / inventory page lists meters for tenant                                                    | Navigate inventory or meters route | **pass** — `/meters` list/CRUD         |
+| E2  | Meter detail shows readings history                                                                    | Open one meter                     | **pass** — History + usage viz prove   |
 | E3  | Asset fields editable (install date, brand/manufacturer, model, serial, etc.) via UI or documented API | PUT `/meters/{id}` or form save    | **pass** — PUT metadata + History form |
-| E4  | Empty ingest values do not wipe operator-entered asset metadata                                        | Spec non-wipe upsert               | **pass** — non-wipe upsert tests |
+| E4  | Empty ingest values do not wipe operator-entered asset metadata                                        | Spec non-wipe upsert               | **pass** — non-wipe upsert tests       |
 
 *If E1–E3 are not shipped, mark `blocked` for Pilot—not a Kelly §11a blocker unless demo script depends on them.*
 
@@ -80,21 +80,21 @@
 
 ## F. Isolation & safety (Kelly gate)
 
-| ID  | Check                                                               | How                              | Result |
-| --- | ------------------------------------------------------------------- | -------------------------------- | ------ |
-| F1  | No cross-tenant data in API responses                               | Spot-check payloads              | **pass** — TENANT_ISOLATION + isolation tests |
-| F2  | Destructive actions require explicit confirmation where implemented | Delete source / clear data paths | **pass** — confirm patterns + agent confirm |
+| ID  | Check                                                               | How                              | Result                                           |
+| --- | ------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------ |
+| F1  | No cross-tenant data in API responses                               | Spot-check payloads              | **pass** — TENANT_ISOLATION + isolation tests    |
+| F2  | Destructive actions require explicit confirmation where implemented | Delete source / clear data paths | **pass** — confirm patterns + agent confirm      |
 | F3  | AI/agent (if present) does not overclaim leaks on Thin confidence   | Copy review on Watch items       | **pass** — Watch vs Actionable + agent isolation |
 
 ---
 
 ## G. CRWA Admin surface (Pilot; include in Kelly Review if shown)
 
-| ID  | Check                                                               | How                           | Result |
-| --- | ------------------------------------------------------------------- | ----------------------------- | ------ |
-| G1  | CRWA Admin route loads for CRWA role only                           | `/crwa` or equivalent         | **pass** — role-gated `/crwa` |
-| G2  | Can view sanitized roll-up or tenant list                           | No raw cross-tenant meter PII | **pass** — sanitize roll-up tests |
-| G3  | Can provision / see pilot vs paid billing status (manual ledger OK) | Epic I0–I2                    | **pass** — manual ledger I0–I2 |
+| ID  | Check                                                               | How                           | Result                             |
+| --- | ------------------------------------------------------------------- | ----------------------------- | ---------------------------------- |
+| G1  | CRWA Admin route loads for CRWA role only                           | `/crwa` or equivalent         | **pass** — role-gated `/crwa`      |
+| G2  | Can view sanitized roll-up or tenant list                           | No raw cross-tenant meter PII | **pass** — sanitize roll-up tests  |
+| G3  | Can provision / see pilot vs paid billing status (manual ledger OK) | Epic I0–I2                    | **pass** — manual ledger I0–I2     |
 | G4  | Municipality billing page shows own status only                     | System Admin                  | **pass** — billing isolation tests |
 
 ---
@@ -116,13 +116,13 @@
 
 ## I. Scripted walkthrough & smoke (Kelly gate)
 
-| ID  | Check                                                                               | How                         | Result |
-| --- | ----------------------------------------------------------------------------------- | --------------------------- | ------ |
+| ID  | Check                                                                               | How                         | Result                                                              |
+| --- | ----------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------- |
 | I1  | [DEMO_WALKTHROUGH.md](DEMO_WALKTHROUGH.md) F1 path completes without runtime errors | Follow script with fixtures | **partial** — script + fixtures ready; full live F2 boxes still ops |
-| I2  | [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) §11a items verified                        | Fill Pass? column           | **blocked** — awaiting Kelly/Steve live walkthrough |
-| I3  | Console clean on happy path                                                         | Browser devtools            | **pass** — DataViz / Stats prove runs clean |
-| I4  | Known Pilot gaps listed; not presented as finished                                  | Honesty check for Kelly     | **pass** — CLOSEOUT + Spec §0 layers |
-| I5  | Big features have browser prove rows in [PROVE_FEATURES.md](PROVE_FEATURES.md)      | Chrome DevTools poke path   | **pass** — protocol + DataViz/Stats rows done |
+| I2  | [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) §11a items verified                        | Fill Pass? column           | **blocked** — awaiting Kelly/Steve live walkthrough                 |
+| I3  | Console clean on happy path                                                         | Browser devtools            | **pass** — DataViz / Stats prove runs clean                         |
+| I4  | Known Pilot gaps listed; not presented as finished                                  | Honesty check for Kelly     | **pass** — CLOSEOUT + Spec §0 layers                                |
+| I5  | Big features have browser prove rows in [PROVE_FEATURES.md](PROVE_FEATURES.md)      | Chrome DevTools poke path   | **pass** — protocol + DataViz/Stats rows done                       |
 
 ---
 
@@ -151,9 +151,10 @@
 ```text
 ACCEPTANCE RUN — Water Saver
 Date: 2026-08-03
-Environment URL: API https://14jxov7h72.execute-api.us-east-2.amazonaws.com ; SPA localhost:4200
+Environment URL: API https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com ; SPA localhost:4200
 Demo tenant: town-wiley
 Review mode URL: http://localhost:4200/review
+AWS: codeplatoon / 388691194728 / us-east-1 / Assessment-iii
 
 Kelly gates (A–D, F, I): PASS (A1 blocked no CloudFront; I2 blocked pending live F2 smoke)
 Pilot surfaces (E, G): PASS
@@ -176,10 +177,10 @@ Notes for Steve:
 
 ## Sign-off
 
-| Role            | Name   | Date       | Kelly-ready? |
-| --------------- | ------ | ---------- | ------------ |
+| Role            | Name   | Date       | Kelly-ready?                                                               |
+| --------------- | ------ | ---------- | -------------------------------------------------------------------------- |
 | Builder / agent | Cursor | 2026-08-03 | **YES** (code) — ops: send invite; A1 no CloudFront; I2 live smoke pending |
-| Steve           |        |            |              |
+| Steve           |        |            |                                                                            |
 
 When **Kelly gates** and **Kelly Review mode (H, J)** are PASS, ship the review URL to Kelly. Use his submitted feedback to drive the next change set; do not treat Pilot-complete as required for that first review.
 

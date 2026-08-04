@@ -1,24 +1,24 @@
 variable "aws_account_id" {
   type        = string
-  description = "Expected AWS account ID for Water Saver (must match caller identity)"
-  default     = "570912405222"
+  description = "Expected AWS account ID (must match caller identity)"
+  default     = "388691194728"
 
   validation {
-    condition     = var.aws_account_id == "570912405222"
-    error_message = "Water Saver MVP is locked to AWS account 570912405222."
+    condition     = var.aws_account_id == "388691194728"
+    error_message = "Assessment III Water Saver is locked to Code Platoon AWS account 388691194728."
   }
 }
 
 variable "aws_region" {
   type        = string
-  description = "AWS region for the MVP stack"
-  default     = "us-east-2"
+  description = "AWS region for the Assessment III stack"
+  default     = "us-east-1"
 }
 
 variable "aws_profile" {
   type        = string
-  description = "Named AWS CLI profile — use townofwiley for account 570912405222"
-  default     = "townofwiley"
+  description = "Optional named AWS CLI profile for local use (codeplatoon). Leave empty in CI so env credentials are used."
+  default     = ""
 }
 
 variable "environment" {
@@ -31,6 +31,12 @@ variable "project_name" {
   type        = string
   description = "Short project slug used in resource names"
   default     = "water-saver"
+}
+
+variable "assessment_tag" {
+  type        = string
+  description = "Required Assessment III resource tag key value"
+  default     = "true"
 }
 
 variable "enable_cognito" {
@@ -53,7 +59,7 @@ variable "enable_storage" {
 
 variable "review_notify_to" {
   type        = string
-  description = "F5 Kelly Review: email that receives the submitted summary (Steve)"
+  description = "F5 Kelly Review: email that receives the submitted summary"
   default     = ""
 }
 
