@@ -46,7 +46,7 @@ A private, guided walkthrough of the live Water Saver app. On each section you l
 3. [x] Deploy API (review Lambda + routes) — live smoke: create → step → submit → `emailSent: true`.
 4. [x] SPA `/review` + panel — **`cd frontend && npm start` → <http://localhost:4200/review>** (API Gateway URL is not the SPA; no CloudFront host yet).
 5. [x] Runtime error capture — SPA `ErrorHandler` / window errors → `POST /telemetry/client-errors` → CloudWatch `/aws/lambda/water-saver-dev-me` (`CLIENT_ERROR`). Review Lambda errors → `/aws/lambda/water-saver-dev-review`.
-6. [ ] Send Kelly: localhost or future public SPA URL, credentials, this page.
+6. [ ] Send Kelly: localhost or future public SPA URL, credentials, this page — **use [KELLY_INVITE.md](./KELLY_INVITE.md)**
 
 ### Tail logs during a Kelly run
 

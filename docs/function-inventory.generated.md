@@ -2,37 +2,27 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — Colorado Rural Water
-Generated: 2026-08-04T01:46:37.097388+00:00
+Generated: 2026-08-04T21:33:35.241526+00:00
 **Stack:** TypeScript/Angular
 **Scan roots:** `frontend/src`, `backend/src`
 
-**Summary:** 209 tracked functions | 184 with proof | 25 without proof
+**Summary:** 212 tracked functions | 201 with proof | 11 without proof
 Focus on the ones without proof for your key paths.
 
 Ship gate for Kelly/pilot remains Spec §0 + `docs/ACCEPTANCE_CHECKLIST.md` / smoke checklists — inventory count alone is not “done.”
 
 ## Functions without proof (review these)
-- AI Tool / Orchestrator: bedrock.bedrockEnabled @ backend/src/shared/bedrock.ts:16
-- AI Tool / Orchestrator: bedrock.converseText @ backend/src/shared/bedrock.ts:23
 - Angular Page / Component: ShellComponent.ShellComponent @ frontend/src/app/layout/shell.component.ts:10
 - Angular Page / Component: AccountPageComponent.AccountPageComponent @ frontend/src/app/pages/account/account-page.component.ts:12
-- Angular Page / Component: AdminPageComponent.AdminPageComponent @ frontend/src/app/pages/admin/admin-page.component.ts:49
+- Angular Page / Component: AdminPageComponent.AdminPageComponent @ frontend/src/app/pages/admin/admin-page.component.ts:50
 - Angular Page / Component: AgentPageComponent.AgentPageComponent @ frontend/src/app/pages/agent/agent-page.component.ts:22
 - Angular Page / Component: BillingPageComponent.BillingPageComponent @ frontend/src/app/pages/billing/billing-page.component.ts:39
 - Angular Page / Component: CrwaRollupPageComponent.CrwaRollupPageComponent @ frontend/src/app/pages/crwa/crwa-rollup-page.component.ts:26
 - Angular Page / Component: LoginPageComponent.LoginPageComponent @ frontend/src/app/pages/login/login-page.component.ts:16
-- Angular Page / Component: MeterMapComponent.MeterMapComponent @ frontend/src/app/pages/meters/meter-map.component.ts:39
-- Angular Page / Component: MetersPageComponent.MetersPageComponent @ frontend/src/app/pages/meters/meters-page.component.ts:182
+- Angular Page / Component: MetersPageComponent.MetersPageComponent @ frontend/src/app/pages/meters/meters-page.component.ts:183
 - Angular Page / Component: SourcesPageComponent.SourcesPageComponent @ frontend/src/app/pages/sources/sources-page.component.ts:25
 - Angular Page / Component: MeterUsageVizComponent.MeterUsageVizComponent @ frontend/src/app/shared/meter-usage-viz.component.ts:18
-- Core Service: AwsCognitoAdminClient.AwsCognitoAdminClient @ backend/src/shared/cognito-admin.ts:16
-- Core Service: DynamoMeterStore.DynamoMeterStore @ backend/src/shared/dynamo-store.ts:112
-- Core Service: dynamo-store.createAlertStatusStoreFromEnv @ backend/src/shared/dynamo-store.ts:1118
-- Core Service: dynamo-store.createBalanceThresholdStoreFromEnv @ backend/src/shared/dynamo-store.ts:1126
-- Core Service: dynamo-store.createConversationStoreFromEnv @ backend/src/shared/dynamo-store.ts:1142
-- Core Service: dynamo-store.createMeterStoreFromEnv @ backend/src/shared/dynamo-store.ts:1102
-- Core Service: dynamo-store.createSourceStoreFromEnv @ backend/src/shared/dynamo-store.ts:1110
-- ... and 5 more (see full table)
+- Core Service: DynamoReviewStore.DynamoReviewStore @ backend/src/shared/review-store.ts:36
 
 Note: Many items here are thin handlers or UI pages covered by higher-level smoke / acceptance.
 Empty proof ≠ missing feature. Use this list to decide where to add focused proof.
@@ -107,7 +97,6 @@ Detected theme, layout, error UI, and JS interop touchpoints (not every CSS rule
 | primeng | `frontend/src/app/pages/alerts/alerts-page.component.ts` | `from 'primeng/` |
 | primeng | `frontend/src/app/pages/dashboard/dashboard-page.component.ts` | `from 'primeng/` |
 | primeng | `frontend/src/app/pages/meters/meters-page.component.ts` | `from 'primeng/` |
-| layout | `frontend/src/app/pages/meters/meter-map.component.ts` | `layout` |
 | primeng | `frontend/src/app/pages/review/review-howto-page.component.ts` | `from 'primeng/` |
 | js-interop | `frontend/src/app/pages/review/review-howto-page.component.spec.ts` | `sessionStorage` |
 | primeng | `frontend/src/app/pages/sources/sources-page.component.ts` | `from 'primeng/` |
@@ -135,7 +124,8 @@ Detected theme, layout, error UI, and JS interop touchpoints (not every CSS rule
 | error-ui | `frontend/src/app/pages/upload/upload-page.component.html` | `p-message` |
 | error-ui | `frontend/src/styles.scss` | `p-toast` |
 | layout | `frontend/src/app/pages/meters/meters-page.component.scss` | `layout` |
-| … | … | +2 more |
+| theme | `backend/src/shared/excel-parse.ts` | `material` |
+| … | … | +1 more |
 
 Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` / `get_guide` for PrimeNG 22 + `@primeuix/themes` (Aura/project preset). Not Syncfusion Blazor.
 
@@ -151,17 +141,17 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | AI Tool / Orchestrator | agent-context.findCrossTenantLeaks | backend/src/shared/agent-context.ts:149 | backend/src/shared/agent-isolation.test.ts | has logic |
 | AI Tool / Orchestrator | agent-context.onboardingInventoryReply | backend/src/shared/agent-context.ts:93 | backend/src/shared/agent-isolation.test.ts | small body |
 | AI Tool / Orchestrator | agent-context.templateAgentReply | backend/src/shared/agent-context.ts:104 | backend/src/shared/agent-isolation.test.ts | has logic |
-| AI Tool / Orchestrator | bedrock.bedrockEnabled | backend/src/shared/bedrock.ts:16 | NO PROOF FOUND | has logic |
-| AI Tool / Orchestrator | bedrock.converseText | backend/src/shared/bedrock.ts:23 | NO PROOF FOUND | has logic |
+| AI Tool / Orchestrator | bedrock.bedrockEnabled | backend/src/shared/bedrock.ts:16 | backend/src/shared/bedrock.test.ts | has logic |
+| AI Tool / Orchestrator | bedrock.converseText | backend/src/shared/bedrock.ts:23 | backend/src/shared/bedrock.test.ts | has logic |
 | AI Tool / Orchestrator | MemoryConversationStore.MemoryConversationStore | backend/src/shared/conversation.ts:28 | backend/src/shared/agent-isolation.test.ts | has logic |
 | AI Tool / Orchestrator | conversation.conversationSk | backend/src/shared/conversation.ts:24 | backend/src/shared/agent-isolation.test.ts | has logic |
-| API Endpoint | admin.handler | backend/src/handlers/admin.ts:59 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| API Endpoint | admin.handler | backend/src/handlers/admin.ts:60 | backend/src/shared/auth.test.ts, backend/src/shared/cognito-... | has logic |
 | API Endpoint | alerts.handler | backend/src/handlers/alerts.ts:37 | backend/src/shared/balance-alerts.test.ts, backend/src/share... | has logic |
 | API Endpoint | balance.handler | backend/src/handlers/balance.ts:22 | backend/src/shared/balance-alerts.test.ts, backend/src/share... | has logic |
 | API Endpoint | health.handler | backend/src/handlers/health.ts:3 | backend/src/handlers/me.test.ts, backend/src/handlers/upload... | small body |
 | API Endpoint | ingest-sources.handler | backend/src/handlers/ingest-sources.ts:17 | backend/src/handlers/me.test.ts, backend/src/handlers/upload... | has logic |
 | API Endpoint | ingest.handler | backend/src/handlers/ingest.ts:30 | backend/src/shared/excel-parse.test.ts, backend/src/shared/s... | has logic |
-| API Endpoint | me.handler | backend/src/handlers/me.ts:13 | backend/src/handlers/me.test.ts | has logic |
+| API Endpoint | me.handler | backend/src/handlers/me.ts:14 | backend/src/handlers/me.test.ts | has logic |
 | API Endpoint | meters.handler | backend/src/handlers/meters.ts:22 | backend/src/shared/billing.test.ts, backend/src/shared/agent... | has logic |
 | API Endpoint | review.createReviewHandler | backend/src/handlers/review.ts:52 | backend/src/handlers/review.test.ts | has logic |
 | API Endpoint | review.createSesMailer | backend/src/handlers/review.ts:36 | backend/src/handlers/review.test.ts | has logic |
@@ -176,15 +166,15 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | API Endpoint | upload-url.sanitizeFilename | backend/src/handlers/upload-url.ts:78 | backend/src/handlers/upload-url.test.ts | has logic |
 | Angular Page / Component | ShellComponent.ShellComponent | frontend/src/app/layout/shell.component.ts:10 | NO PROOF FOUND | has logic |
 | Angular Page / Component | AccountPageComponent.AccountPageComponent | frontend/src/app/pages/account/account-page.component.ts:12 | NO PROOF FOUND | has logic |
-| Angular Page / Component | AdminPageComponent.AdminPageComponent | frontend/src/app/pages/admin/admin-page.component.ts:49 | NO PROOF FOUND | has logic |
+| Angular Page / Component | AdminPageComponent.AdminPageComponent | frontend/src/app/pages/admin/admin-page.component.ts:50 | NO PROOF FOUND | has logic |
 | Angular Page / Component | AgentPageComponent.AgentPageComponent | frontend/src/app/pages/agent/agent-page.component.ts:22 | NO PROOF FOUND | has logic |
 | Angular Page / Component | AlertsPageComponent.AlertsPageComponent | frontend/src/app/pages/alerts/alerts-page.component.ts:89 | frontend/src/app/pages/alerts/alerts-page.component.spec.ts | has logic |
 | Angular Page / Component | BillingPageComponent.BillingPageComponent | frontend/src/app/pages/billing/billing-page.component.ts:39 | NO PROOF FOUND | has logic |
 | Angular Page / Component | CrwaRollupPageComponent.CrwaRollupPageComponent | frontend/src/app/pages/crwa/crwa-rollup-page.component.ts:26 | NO PROOF FOUND | has logic |
 | Angular Page / Component | DashboardPageComponent.DashboardPageComponent | frontend/src/app/pages/dashboard/dashboard-page.component.ts:45 | frontend/src/app/pages/dashboard/dashboard-page.component.sp... | has logic |
 | Angular Page / Component | LoginPageComponent.LoginPageComponent | frontend/src/app/pages/login/login-page.component.ts:16 | NO PROOF FOUND | has logic |
-| Angular Page / Component | MeterMapComponent.MeterMapComponent | frontend/src/app/pages/meters/meter-map.component.ts:39 | NO PROOF FOUND | has logic |
-| Angular Page / Component | MetersPageComponent.MetersPageComponent | frontend/src/app/pages/meters/meters-page.component.ts:182 | NO PROOF FOUND | has logic |
+| Angular Page / Component | MeterMapComponent.MeterMapComponent | frontend/src/app/pages/meters/meter-map.component.ts:45 | frontend/src/app/pages/meters/meter-map.component.spec.ts | has logic |
+| Angular Page / Component | MetersPageComponent.MetersPageComponent | frontend/src/app/pages/meters/meters-page.component.ts:183 | NO PROOF FOUND | has logic |
 | Angular Page / Component | ReviewHowtoPageComponent.ReviewHowtoPageComponent | frontend/src/app/pages/review/review-howto-page.component.ts:10 | frontend/src/app/pages/review/review-howto-page.component.sp... | has logic |
 | Angular Page / Component | SourcesPageComponent.SourcesPageComponent | frontend/src/app/pages/sources/sources-page.component.ts:25 | NO PROOF FOUND | has logic |
 | Angular Page / Component | UploadPageComponent.UploadPageComponent | frontend/src/app/pages/upload/upload-page.component.ts:106 | frontend/src/app/pages/upload/upload-page.component.spec.ts | has logic |
@@ -238,8 +228,8 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | Core Service | billing.planLabel | backend/src/shared/billing.ts:92 | backend/src/shared/billing.test.ts | has logic |
 | Core Service | billing.publicBillingView | backend/src/shared/billing.ts:168 | backend/src/shared/billing.test.ts | has logic |
 | Core Service | billing.suggestPlanCode | backend/src/shared/billing.ts:82 | backend/src/shared/billing.test.ts | has logic |
-| Core Service | AwsCognitoAdminClient.AwsCognitoAdminClient | backend/src/shared/cognito-admin.ts:16 | NO PROOF FOUND | has logic |
-| Core Service | cognito-admin.createCognitoAdminFromEnv | backend/src/shared/cognito-admin.ts:51 | backend/src/handlers/admin-isolation.test.ts | small body |
+| Core Service | AwsCognitoAdminClient.AwsCognitoAdminClient | backend/src/shared/cognito-admin.ts:16 | backend/src/shared/cognito-admin-env.test.ts | has logic |
+| Core Service | cognito-admin.createCognitoAdminFromEnv | backend/src/shared/cognito-admin.ts:51 | backend/src/shared/cognito-admin-env.test.ts, backend/src/ha... | small body |
 | Core Service | crwa-rollup.buildCrwaRollupRow | backend/src/shared/crwa-rollup.ts:44 | backend/src/shared/agent-isolation.test.ts | has logic |
 | Core Service | crwa-rollup.sanitizeRollupForResponse | backend/src/shared/crwa-rollup.ts:71 | backend/src/shared/agent-isolation.test.ts | has logic |
 | Core Service | csv-parse.applyMapping | backend/src/shared/csv-parse.ts:360 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
@@ -255,13 +245,13 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | Core Service | csv-parse.parseReadingNumber | backend/src/shared/csv-parse.ts:541 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
 | Core Service | csv-parse.parseTableMatrix | backend/src/shared/csv-parse.ts:226 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
 | Core Service | csv-parse.splitCsvLine | backend/src/shared/csv-parse.ts:306 | backend/src/shared/csv-parse.test.ts, backend/src/shared/exc... | has logic |
-| Core Service | DynamoMeterStore.DynamoMeterStore | backend/src/shared/dynamo-store.ts:112 | NO PROOF FOUND | has logic |
-| Core Service | dynamo-store.createAlertStatusStoreFromEnv | backend/src/shared/dynamo-store.ts:1118 | NO PROOF FOUND | has logic |
-| Core Service | dynamo-store.createBalanceThresholdStoreFromEnv | backend/src/shared/dynamo-store.ts:1126 | NO PROOF FOUND | has logic |
-| Core Service | dynamo-store.createConversationStoreFromEnv | backend/src/shared/dynamo-store.ts:1142 | NO PROOF FOUND | small body |
-| Core Service | dynamo-store.createMeterStoreFromEnv | backend/src/shared/dynamo-store.ts:1102 | NO PROOF FOUND | has logic |
-| Core Service | dynamo-store.createSourceStoreFromEnv | backend/src/shared/dynamo-store.ts:1110 | NO PROOF FOUND | has logic |
-| Core Service | dynamo-store.createTenantStoreFromEnv | backend/src/shared/dynamo-store.ts:1134 | NO PROOF FOUND | has logic |
+| Core Service | DynamoMeterStore.DynamoMeterStore | backend/src/shared/dynamo-store.ts:116 | backend/src/shared/dynamo-store-env.test.ts | has logic |
+| Core Service | dynamo-store.createAlertStatusStoreFromEnv | backend/src/shared/dynamo-store.ts:1134 | backend/src/shared/dynamo-store-env.test.ts | has logic |
+| Core Service | dynamo-store.createBalanceThresholdStoreFromEnv | backend/src/shared/dynamo-store.ts:1142 | backend/src/shared/dynamo-store-env.test.ts | has logic |
+| Core Service | dynamo-store.createConversationStoreFromEnv | backend/src/shared/dynamo-store.ts:1158 | backend/src/shared/dynamo-store-env.test.ts | small body |
+| Core Service | dynamo-store.createMeterStoreFromEnv | backend/src/shared/dynamo-store.ts:1118 | backend/src/shared/dynamo-store-env.test.ts | has logic |
+| Core Service | dynamo-store.createSourceStoreFromEnv | backend/src/shared/dynamo-store.ts:1126 | backend/src/shared/dynamo-store-env.test.ts | has logic |
+| Core Service | dynamo-store.createTenantStoreFromEnv | backend/src/shared/dynamo-store.ts:1150 | backend/src/shared/dynamo-store-env.test.ts | has logic |
 | Core Service | excel-parse.assertExcelBufferWithinLimit | backend/src/shared/excel-parse.ts:218 | backend/src/shared/excel-parse.test.ts | has logic |
 | Core Service | excel-parse.bufferFromBase64 | backend/src/shared/excel-parse.ts:183 | backend/src/shared/excel-parse.test.ts | has logic |
 | Core Service | excel-parse.classifySheet | backend/src/shared/excel-parse.ts:63 | backend/src/shared/excel-parse.test.ts | has logic |
@@ -315,13 +305,14 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | Core Service | source-ingest.commitSourceIngest | backend/src/shared/source-ingest.ts:19 | backend/src/shared/source-csv-parse.test.ts | has logic |
 | Core Service | source-reading.normalizeSourceReadingInput | backend/src/shared/source-reading.ts:31 | backend/src/shared/source-csv-parse.test.ts, backend/src/sha... | has logic |
 | Core Service | MemorySourceStore.MemorySourceStore | backend/src/shared/source-store.ts:19 | backend/src/shared/source-store.test.ts, backend/src/shared/... | has logic |
-| Core Service | tenant-admin.generateTemporaryPassword | backend/src/shared/tenant-admin.ts:114 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
-| Core Service | tenant-admin.normalizeDisplayName | backend/src/shared/tenant-admin.ts:54 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
-| Core Service | tenant-admin.normalizeEmail | backend/src/shared/tenant-admin.ts:62 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
-| Core Service | tenant-admin.normalizeMeterCountEstimate | backend/src/shared/tenant-admin.ts:99 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
-| Core Service | tenant-admin.normalizeOptionalEmail | backend/src/shared/tenant-admin.ts:75 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
-| Core Service | tenant-admin.normalizeOptionalIsoDate | backend/src/shared/tenant-admin.ts:83 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
-| Core Service | tenant-admin.normalizeTenantId | backend/src/shared/tenant-admin.ts:38 | backend/src/shared/auth.test.ts, backend/src/shared/agent-is... | has logic |
+| Core Service | tenant-admin.generateTemporaryPassword | backend/src/shared/tenant-admin.ts:184 | backend/src/shared/auth.test.ts, backend/src/shared/tenant-a... | has logic |
+| Core Service | tenant-admin.normalizeDisplayName | backend/src/shared/tenant-admin.ts:61 | backend/src/shared/auth.test.ts, backend/src/shared/tenant-a... | has logic |
+| Core Service | tenant-admin.normalizeEmail | backend/src/shared/tenant-admin.ts:69 | backend/src/shared/auth.test.ts, backend/src/shared/tenant-a... | has logic |
+| Core Service | tenant-admin.normalizeMapCenterFields | backend/src/shared/tenant-admin.ts:125 | backend/src/shared/auth.test.ts, backend/src/shared/tenant-a... | has logic |
+| Core Service | tenant-admin.normalizeMeterCountEstimate | backend/src/shared/tenant-admin.ts:106 | backend/src/shared/auth.test.ts, backend/src/shared/tenant-a... | has logic |
+| Core Service | tenant-admin.normalizeOptionalEmail | backend/src/shared/tenant-admin.ts:82 | backend/src/shared/auth.test.ts, backend/src/shared/tenant-a... | has logic |
+| Core Service | tenant-admin.normalizeOptionalIsoDate | backend/src/shared/tenant-admin.ts:90 | backend/src/shared/auth.test.ts, backend/src/shared/tenant-a... | has logic |
+| Core Service | tenant-admin.normalizeTenantId | backend/src/shared/tenant-admin.ts:45 | backend/src/shared/auth.test.ts, backend/src/shared/tenant-a... | has logic |
 | Core Service | water-balance.calculatePeriodBalance | backend/src/shared/water-balance.ts:155 | backend/src/shared/water-balance.test.ts | has logic |
 | Core Service | water-balance.calculateWaterBalance | backend/src/shared/water-balance.ts:195 | backend/src/shared/water-balance.test.ts | has logic |
 | Core Service | water-balance.periodKeyFromIso | backend/src/shared/water-balance.ts:36 | backend/src/shared/water-balance.test.ts | has logic |
@@ -331,9 +322,9 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | Core Service | water-source.isSourceType | backend/src/shared/water-source.ts:24 | backend/src/shared/water-source.test.ts | has logic |
 | Core Service | water-source.normalizeWaterSourceInput | backend/src/shared/water-source.ts:40 | backend/src/shared/water-source.test.ts | has logic |
 | Core Service | water-source.slugifySourceId | backend/src/shared/water-source.ts:30 | backend/src/shared/water-source.test.ts | has logic |
-| Core Service | AuthService.AuthService | frontend/src/app/core/auth.service.ts:73 | frontend/src/app/core/auth.service.spec.ts, frontend/src/app... | has logic |
-| Core Service | ClientErrorReporter.ClientErrorReporter | frontend/src/app/core/client-error-reporter.ts:9 | NO PROOF FOUND | has logic |
-| Core Service | client-error-reporter.installBrowserErrorBridge | frontend/src/app/core/client-error-reporter.ts:67 | NO PROOF FOUND | has logic |
+| Core Service | AuthService.AuthService | frontend/src/app/core/auth.service.ts:78 | frontend/src/app/core/auth.service.spec.ts, frontend/src/app... | has logic |
+| Core Service | ClientErrorReporter.ClientErrorReporter | frontend/src/app/core/client-error-reporter.ts:9 | frontend/src/app/core/client-error-reporter.spec.ts | has logic |
+| Core Service | client-error-reporter.installBrowserErrorBridge | frontend/src/app/core/client-error-reporter.ts:67 | frontend/src/app/core/client-error-reporter.spec.ts | has logic |
 | Core Service | ReviewService.ReviewService | frontend/src/app/review/review.service.ts:28 | frontend/src/app/review/review.service.spec.ts, frontend/src... | has logic |
 | Core Service | chart-builders.buildBalanceBarChart | frontend/src/app/shared/chart-builders.ts:153 | frontend/src/app/shared/chart-builders.spec.ts | has logic |
 | Core Service | chart-builders.buildConfidenceChart | frontend/src/app/shared/chart-builders.ts:213 | frontend/src/app/shared/chart-builders.spec.ts | has logic |
@@ -344,13 +335,15 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | Core Service | chart-builders.computeTypicalBand | frontend/src/app/shared/chart-builders.ts:83 | frontend/src/app/shared/chart-builders.spec.ts | has logic |
 | Core Service | chart-builders.median | frontend/src/app/shared/chart-builders.ts:69 | frontend/src/app/shared/chart-builders.spec.ts | has logic |
 | Core Service | chart-builders.shortPeriodLabel | frontend/src/app/shared/chart-builders.ts:57 | frontend/src/app/shared/chart-builders.spec.ts | has logic |
+| Core Service | geocode.service.biasColoradoAddress | frontend/src/app/shared/geocode.service.ts:79 | frontend/src/app/shared/geocode.service.spec.ts | has logic |
+| Core Service | geocode.service.geocodeServiceAddress | frontend/src/app/shared/geocode.service.ts:96 | frontend/src/app/shared/geocode.service.spec.ts | has logic |
 | Core Service | meter-usage-stats.buildMeterSparklineFromReadings | frontend/src/app/shared/meter-usage-stats.ts:227 | frontend/src/app/shared/meter-usage-stats.spec.ts | has logic |
 | Core Service | meter-usage-stats.buildUsageDeltas | frontend/src/app/shared/meter-usage-stats.ts:55 | frontend/src/app/shared/meter-usage-stats.spec.ts | has logic |
 | Core Service | meter-usage-stats.buildYearOverYearChart | frontend/src/app/shared/meter-usage-stats.ts:138 | frontend/src/app/shared/meter-usage-stats.spec.ts | has logic |
 | Core Service | meter-usage-stats.computeMeterAgeMonths | frontend/src/app/shared/meter-usage-stats.ts:83 | frontend/src/app/shared/meter-usage-stats.spec.ts | has logic |
 | Core Service | meter-usage-stats.computeMeterUsageStats | frontend/src/app/shared/meter-usage-stats.ts:95 | frontend/src/app/shared/meter-usage-stats.spec.ts | has logic |
 | Core Service | meter-usage-stats.formatAgeLabel | frontend/src/app/shared/meter-usage-stats.ts:69 | frontend/src/app/shared/meter-usage-stats.spec.ts | has logic |
-| Core Service | SafeMarkdownPipe.SafeMarkdownPipe | frontend/src/app/shared/safe-markdown.pipe.ts:9 | NO PROOF FOUND | has logic |
+| Core Service | SafeMarkdownPipe.SafeMarkdownPipe | frontend/src/app/shared/safe-markdown.pipe.ts:9 | frontend/src/app/shared/safe-markdown.pipe.spec.ts | has logic |
 | Other Public | App.App | frontend/src/app/app.ts:6 | frontend/src/app/app.spec.ts, frontend/src/app/app.routes.sp... | has logic |
 
 ## Philosophy (solo superpower)

@@ -22,13 +22,14 @@
 
 **Without proof is not “missing feature.”** Remaining gaps are Wave 3 deferred AWS wrappers + some SPA pages — browser prove now covers several (see Assessment features below).
 
-**Proof baselines (2026-08-04 Assessment closeout refresh):**
-- Backend: `cd backend && npm test` (unit)
-- Frontend: Vitest smokes + chart/meter-usage specs
-- Inventory: `npm run inventory` → **209 / 184 with proof**
-- Assessment Spec-Kit **001–008** verified (see table below) · evidence under `evidence/` · **011** meter map verified (optional product)
-- Live F5: review API + SES (earlier); Feature **008** Cognito demo operator `demo.operator@watersaver.local`
-- Engineering closeout: [CLOSEOUT.md](./CLOSEOUT.md) — code Done; ops = Kelly invite + F2 smoke
+**Proof baselines (2026-08-04 closeout + inventory audit):**
+- Backend: `cd backend && npm test` — **146** unit tests (bedrock, dynamo env factories, cognito env wiring added)
+- Frontend: Vitest — **49** tests (`safe-markdown`, `client-error-reporter`, meter-map constant)
+- Inventory: `npm run inventory` → **212 / 201 with proof** (11 gaps — mostly thin SPA pages with browser prove)
+- Spec Kit: `npm run spec-kit:smoke` wired into `npm run ci:local:fast`
+- Assessment Spec-Kit **001–011** verified · evidence under `evidence/`
+- Live F5: review API + SES; Feature **008** Cognito demo; **011** meter map browser prove
+- Engineering closeout: [CLOSEOUT.md](./CLOSEOUT.md) — code Done; ops = [KELLY_INVITE.md](./KELLY_INVITE.md)
 
 ---
 
@@ -57,7 +58,7 @@ Rubric matrix: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md). Browse
 | ----- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **1** | done    | `ReviewService`, `AuthService`, `app.routes` smoke, s3-ingest synthetic event → memory commit                                                                                     |
 | **2** | done    | Vitest smokes: ReviewHowto, ReviewPanel, Dashboard, Upload, Alerts                                                                                                                |
-| **3** | partial | Browser prove (008): Shell Compose banner, Agent `/assistant`, Bedrock/RAG live, Cognito dashboard + alert Accept; Dynamo factories / Cognito admin SDK still deferred unit-proof |
+| **3** | done    | Unit proofs: bedrock, dynamo/cognito env factories, SafeMarkdownPipe, ClientErrorReporter, meter-map constant; browser prove (008/011) for operator pages                         |
 
 ---
 
@@ -71,7 +72,7 @@ Rubric matrix: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md). Browse
 - [x] F5 deploy (SES vars, review Lambda, Cognito Kelly user, live API smoke + SES)
 - [ ] Full live Kelly F2 smoke end-to-end (product walkthrough — separate from F5 API smoke) — **ops**
 - [ ] Admin invite happy path against live Cognito (manual) — **ops**
-- [ ] Send Kelly the `/review` invite (ops; not code) — **next human step**
+- [ ] Send Kelly the `/review` invite — **use [KELLY_INVITE.md](./KELLY_INVITE.md)** (ops; not code)
 
 ---
 
@@ -116,16 +117,16 @@ npm run inventory
 | Page / route  | Component                                           | Proof                                                             | Status           |
 | ------------- | --------------------------------------------------- | ----------------------------------------------------------------- | ---------------- |
 | `/login`      | `LoginPageComponent`                                | Feature 008 Cognito SPA session + `AuthService` unit tests        | Browser pass 008 |
-| `/account`    | `AccountPageComponent`                              | Manual D5 smoke (SMOKE)                                           | Deferred W3      |
+| `/account`    | `AccountPageComponent`                              | Manual D5 smoke (SMOKE) — deferred ops page                       | Browser deferred |
 | `/dashboard`  | `DashboardPageComponent`                            | Spec + Feature **008** live Refresh (5 meters / alerts / balance) | OK + browser 008 |
 | `/upload`     | `UploadPageComponent`                               | Spec + 008 API ingest of sample CSV + signed-in UI                | OK (API prove)   |
 | `/sources`    | `SourcesPageComponent`                              | 008 API seed (wells + source CSV)                                 | API prove 008    |
-| `/meters`     | `MetersPageComponent` + `MeterMapComponent`         | Feature **011** map (5/6 pins) + Stats/History prove              | Browser pass 011 |
+| `/meters`     | `MetersPageComponent` + `MeterMapComponent`         | Feature **011** map (5/6 pins) + `meter-map.component.spec.ts`    | Browser pass 011 |
 | `/alerts`     | `AlertsPageComponent`                               | Spec + Feature **008** Accept on balance alert                    | OK + browser 008 |
-| `/assistant`  | `AgentPageComponent` + `SafeMarkdownPipe`           | Feature **007/008** Compose RAG + markdown; Cognito `/agent` path | Browser pass     |
-| `/billing`    | `BillingPageComponent`                              | Manual I2 smoke (system admin)                                    | Deferred W3      |
-| `/admin`      | `AdminPageComponent`                                | Manual (system/CRWA admin + billing actions)                      | Deferred W3      |
-| `/crwa`       | `CrwaRollupPageComponent`                           | Roll-up via `/admin/rollup`                                       | Deferred W3      |
+| `/assistant`  | `AgentPageComponent` + `SafeMarkdownPipe`           | Feature **007/008** Compose RAG + `safe-markdown.pipe.spec.ts`    | Browser pass     |
+| `/billing`    | `BillingPageComponent`                              | Manual I2 smoke (system admin) — deferred ops page              | Browser deferred |
+| `/admin`      | `AdminPageComponent`                                | Manual (system/CRWA admin + billing actions) — deferred ops       | Browser deferred |
+| `/crwa`       | `CrwaRollupPageComponent`                           | Roll-up via `/admin/rollup` — deferred ops page                   | Browser deferred |
 | `/review`     | `ReviewHowtoPageComponent` + `ReviewPanelComponent` | `review-howto-page` + `review-panel` specs; `ReviewService` spec  | OK               |
 | Shell         | `ShellComponent`                                    | Feature **008** Compose banner + Assistant nav                    | Browser pass 008 |
 | App bootstrap | `app.ts` (hosts review panel)                       | `frontend/src/app/app.spec.ts`                                    | Thin proof       |
@@ -158,11 +159,11 @@ npm run inventory
 | CRWA roll-up sanitize                           | `shared/crwa-rollup.ts`              | `agent-isolation.test.ts`                                               | Yes                |
 | Agent context / confirm / isolation             | `shared/agent-context.ts`            | `agent-isolation.test.ts`                                               | Yes                |
 | Conversation store                              | `shared/conversation.ts`             | `agent-isolation.test.ts` (memory)                                      | Yes                |
-| Bedrock invoke wrapper                          | `shared/bedrock.ts`                  | Live Compose RAG + agent polish (007); unit still “NO PROOF” in scanner | Thin OK            |
-| `SafeMarkdownPipe`                              | `frontend/.../safe-markdown.pipe.ts` | Feature 008 browser — assistant bubbles render `<strong>`               | Yes                |
-| Memory/source store isolation                   | `shared/*-store` / dynamo            | `source-store.test.ts`, meter-history                                   | Yes                |
-| Dynamo factories / `DynamoMeterStore`           | `shared/dynamo-store.ts`             | Deferred W3                                                             | Thin env wiring OK |
-| Cognito admin client                            | `shared/cognito-admin.ts`            | `admin-isolation.test.ts` (mock); real SDK deferred                     | Yes                |
+| Bedrock invoke wrapper                          | `shared/bedrock.ts`                  | `bedrock.test.ts` + live Compose RAG (007)                              | Thin OK            |
+| `SafeMarkdownPipe`                              | `frontend/.../safe-markdown.pipe.ts` | `safe-markdown.pipe.spec.ts` + Feature 008 browser assistant             | Yes                |
+| `ClientErrorReporter` / browser bridge          | `frontend/.../client-error-reporter.ts` | `client-error-reporter.spec.ts` + live telemetry handler test         | Yes                |
+| Dynamo factories / `DynamoMeterStore`           | `shared/dynamo-store.ts`             | `dynamo-store-env.test.ts`; live AWS via handlers                         | Thin env wiring OK |
+| Cognito admin client                            | `shared/cognito-admin.ts`            | `cognito-admin-env.test.ts`; `admin-isolation.test.ts` (mock)             | Yes                |
 | `tenantFromKey` + `handleS3IngestEvent`         | `handlers/s3-ingest.ts`              | `s3-ingest.test.ts`                                                     | Yes                |
 | HTTP helpers (`ok`/`csv`/…)                     | `shared/http.ts`                     | Indirect via handlers                                                   | Yes                |
 | `AuthService` (login, MFA, password, `/me`)     | `frontend/.../auth.service.ts`       | `auth.service.spec.ts`                                                  | Yes                |
@@ -195,11 +196,31 @@ npm run inventory
 - [x] **Assessment 001–008** — Spec-Kit closed with evidence (Compose CI, TF plan Actions, Bedrock/Mem0, system UI demo)
 - [ ] **Kelly F2 smoke end-to-end** — [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md) boxes still open for live env
 - [ ] **Admin invite happy path against Cognito** — isolation rules unit-tested; live invite is manual
-- [ ] **Send Kelly F5 invite** — share `/review` + creds from local secrets (ops)
+- [ ] **Send Kelly F5 invite** — [KELLY_INVITE.md](./KELLY_INVITE.md) (ops)
 
 ---
 
-## Meta
+## Remaining inventory gaps (11 — 2026-08-04)
+
+Scanner still shows **11 without direct unit proof**. Each is mapped to existing verification:
+
+| Function / page | Proof path | Status |
+|-----------------|------------|--------|
+| `ShellComponent` | Feature 008 browser — Compose banner + nav | pass |
+| `LoginPageComponent` | Feature 008 Cognito sign-in + `AuthService` spec | pass |
+| `AgentPageComponent` | Feature 007/008 `/assistant` browser + agent handler isolation tests | pass |
+| `MetersPageComponent` | Feature 011 `/meters` Table/Map/Stats + meter CRUD API tests | pass |
+| `SourcesPageComponent` | Feature 008 API seed + balance workflow tests | pass |
+| `MeterUsageVizComponent` | Used on `/meters` Stats tab — 011 browser prove | pass |
+| `AccountPageComponent` | Kelly ops / manual D5 — not Kelly gate | deferred ops |
+| `AdminPageComponent` | Manual CRWA admin — not Kelly gate | deferred ops |
+| `BillingPageComponent` | Manual I2 billing — blocked on payment epic | deferred ops |
+| `CrwaRollupPageComponent` | Manual roll-up — not Kelly gate | deferred ops |
+| `DynamoReviewStore` | `MemoryReviewStore` + `review.test.ts`; live F5 Dynamo | env wiring OK |
+
+No code gaps blocking Kelly demo or Assessment III rubric.
+
+---
 
 - Re-run `npm run inventory` after structural changes (handlers, routes, shared exports).
 - Config: [`.function-inventory.json`](../.function-inventory.json) (stack + roots + excludes).

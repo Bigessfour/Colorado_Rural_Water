@@ -68,14 +68,14 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 
 ## Definition of Done checklist
 
-- [ ] `docker compose up` brings up healthy three-tier stack
+- [x] `docker compose up` brings up healthy three-tier stack — [`evidence/005-github-actions-compose.md`](../evidence/005-github-actions-compose.md), [`evidence/008-system-ui-browser-demo.md`](../evidence/008-system-ui-browser-demo.md)
 - [x] RAG + Mem0 path works and is tenant-safe
 - [x] Bedrock reachable from backend and usable from frontend
-- [ ] Terraform plan/apply + remote state documented
+- [x] Terraform plan/apply + remote state documented — [`evidence/003-terraform-iac.md`](../evidence/003-terraform-iac.md), [`evidence/004-terraform-best-practices.md`](../evidence/004-terraform-best-practices.md), [Actions plan 30865855551](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865855551)
 - [x] GitHub Actions: PR path + main path; destroy workflow exists
-- [ ] ≥2 diagrams + reproducible README
-- [ ] This matrix shows every required line and claimed bonus with evidence links
-- [ ] 1-on-1 demo script walks rubric then Water Saver product value
+- [x] ≥2 diagrams + reproducible README — `docs/diagrams/*.mmd`, [README.md](../README.md), [GETTING_STARTED_ASSESSMENT.md](../GETTING_STARTED_ASSESSMENT.md)
+- [x] This matrix shows every required line and claimed bonus with evidence links
+- [x] 1-on-1 demo script walks rubric then Water Saver product value — [ASSESSMENT_III_DEMO.md](../docs/ASSESSMENT_III_DEMO.md), [KELLY_ZOOM_WALKTHROUGH.md](../docs/KELLY_ZOOM_WALKTHROUGH.md)
 
 ---
 
@@ -83,10 +83,10 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 
 **Acceptance criteria**
 
-- [ ] Multi-tenant isolation preserved: no cross-tenant data in DB queries, S3 paths, memory, or prompts.
-- [ ] No secrets in git (`.env`, real `*.tfvars`, API keys, tokens).
-- [ ] RUBRIC_COVERAGE.md maps each official rubric line → feature ID → status → evidence path.
-- [ ] Water Saver domain remains primary; Assessment III capabilities are enhancements, not a separate toy app.
+- [x] Multi-tenant isolation preserved: no cross-tenant data in DB queries, S3 paths, memory, or prompts.
+- [x] No secrets in git (`.env`, real `*.tfvars`, API keys, tokens).
+- [x] RUBRIC_COVERAGE.md maps each official rubric line → feature ID → status → evidence path.
+- [x] Water Saver domain remains primary; Assessment III capabilities are enhancements, not a separate toy app.
 
 Per-feature grading checklists live at the bottom of each `specs/00X-.../spec.md` under **Acceptance Criteria**.
 
