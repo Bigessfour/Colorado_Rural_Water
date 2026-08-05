@@ -13,6 +13,33 @@
   margin: 0 0 1rem;
 }
 
+.preview-lede,
+.preview-footer {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #4a6368;
+  margin: 0 0 0.85rem;
+}
+
+.preview-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #2a4549;
+}
+
+.preview-steps li {
+  margin-bottom: 0.65rem;
+}
+
+.preview-steps strong {
+  display: block;
+  color: #0f3d42;
+}
+
+.preview-steps span {
+  color: #4a6368;
+}
+
 .step-label {
   font-family: 'Source Sans 3', system-ui, sans-serif;
   color: #0f3d42;

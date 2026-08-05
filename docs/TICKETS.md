@@ -92,7 +92,7 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 | ID  | Title                                              | Priority | Status | Layer | Notes                                                            |
 | --- | -------------------------------------------------- | -------- | ------ | ----- | ---------------------------------------------------------------- |
 | E1  | Agent shell + conversation history (tenant-scoped) | P1       | done   | Pilot | `GET/POST /agent`; Dynamo `CONV#`; SPA `/assistant`              |
-| E2  | Onboarding interview flow                          | P1       | todo   | Pilot | Thin inventory via Assistant “Start onboarding”; full flow later |
+| E2  | Onboarding interview flow                          | P1       | done   | Pilot | Form is primary (Feature 012); Assistant helper + Path A–D wired to Dashboard/Upload/agent |
 | E3  | Mapping assistance + config help                   | P1       | todo   | Pilot | Feature 014 live `suggest_column_map` tool                       |
 | E4  | Cost-transparency + confirmation guardrails        | P0       | done   | Pilot | Cost note + CONFIRM DELETE/CHANGE; cheapest-first                |
 | E5  | Tenant isolation tests for AI context              | P0       | done   | Pilot | `agent-isolation.test.ts` + assertNoCrossTenantContext           |

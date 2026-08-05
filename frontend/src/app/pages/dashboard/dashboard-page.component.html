@@ -27,6 +27,14 @@
   @if (loadError()) {
     <p-message severity="error" styleClass="hint">{{ loadError() }}</p-message>
   }
+  @if (intakeNudge()) {
+    <p-message severity="info" styleClass="hint" data-tour="intake-nudge">
+      {{ intakeNudge() }}
+      <a routerLink="/onboarding">Continue intake</a>
+      ·
+      <a routerLink="/assistant">Ask the Assistant</a>
+    </p-message>
+  }
 
   <div class="kpi-grid" data-tour="dashboard-kpis">
     @for (kpi of kpis(); track kpi.label) {
@@ -76,6 +84,9 @@
           </div>
           <p class="confidence-meaning">{{ confidence().meaning }}</p>
           <p class="confidence-guidance">{{ confidence().guidance }}</p>
+          @if (intakePathNote()) {
+            <p class="muted improve-hint" data-tour="intake-path">{{ intakePathNote() }}</p>
+          }
           @if (confidence().improveHint) {
             <p class="muted improve-hint">What would help: {{ confidence().improveHint }}</p>
           }

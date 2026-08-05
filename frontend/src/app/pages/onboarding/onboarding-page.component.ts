@@ -55,6 +55,34 @@ const STEPS = [
   'Data inventory',
 ] as const;
 
+/** Signed-out outline — titles match STEPS; blurbs are public-safe. */
+const STEP_PREVIEW: ReadonlyArray<{ title: string; blurb: string }> = [
+  {
+    title: 'Welcome',
+    blurb: 'Why we ask about meter-read exports (not CRWA membership billing).',
+  },
+  {
+    title: 'System & location',
+    blurb: 'Town / system name, territory address, and map town.',
+  },
+  {
+    title: 'Contacts',
+    blurb: 'Primary operator email and optional billing clerk.',
+  },
+  {
+    title: 'System size',
+    blurb: 'Meter and well counts, read schedule, units, cycle notes.',
+  },
+  {
+    title: 'Export / billing reads',
+    blurb: 'CIS or spreadsheet habit, CSV/Excel, column names you recognize.',
+  },
+  {
+    title: 'Data inventory',
+    blurb: 'Path A–D (Thin → Strong) and what history you can export now.',
+  },
+];
+
 @Component({
   selector: 'app-onboarding-page',
   imports: [
@@ -75,6 +103,7 @@ export class OnboardingPageComponent implements OnInit {
   private readonly router = inject(Router);
 
   readonly steps = STEPS;
+  readonly stepPreview = STEP_PREVIEW;
   step = signal(0);
   busy = signal(false);
   error = signal('');
@@ -155,6 +184,24 @@ export class OnboardingPageComponent implements OnInit {
   async save(advance = false, finish = false): Promise<void> {
     const cur = this.intake();
     if (!cur || !this.auth.isLoggedIn()) return;
+
+    // Light validation before leaving System / Contacts (steps 1–2).
+    if (advance && !finish) {
+      const gate = this.validateBeforeAdvance(cur, this.step());
+      if (gate) {
+        this.error.set(gate);
+        return;
+      }
+    }
+    if (finish) {
+      const gate = this.validateBeforeAdvance(cur, 1) || this.validateBeforeAdvance(cur, 2);
+      if (gate) {
+        this.error.set(gate);
+        this.step.set(!cur.systemName.trim() ? 1 : 2);
+        return;
+      }
+    }
+
     this.busy.set(true);
     this.error.set('');
     this.status.set('');
@@ -191,6 +238,20 @@ export class OnboardingPageComponent implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** Block advance past System/Contacts without the same fields complete requires. */
+  private validateBeforeAdvance(cur: OnboardingIntake, stepIdx: number): string | null {
+    if (stepIdx === 1 && !cur.systemName.trim()) {
+      return 'Add a system / town name before continuing.';
+    }
+    if (stepIdx === 2 && !cur.primaryContactEmail.trim()) {
+      return 'Add a primary operator email before continuing.';
+    }
+    if (stepIdx === 2 && cur.primaryContactEmail.trim() && !cur.primaryContactEmail.includes('@')) {
+      return 'Primary email looks incomplete — check the address.';
+    }
+    return null;
   }
 
   back(): void {

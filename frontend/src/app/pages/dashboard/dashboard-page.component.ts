@@ -27,6 +27,7 @@ import {
   type ChartData,
   type ConfidenceLevel,
 } from '../../shared/chart-builders';
+import { parseIntakeSummary } from '../../shared/intake-summary';
 
 interface LiveAlert {
   id: string;
@@ -99,6 +100,10 @@ export class DashboardPageComponent implements OnInit {
   liveAlerts = signal<LiveAlert[]>([]);
   loadError = signal('');
   meterCount = signal(0);
+  /** Incomplete intake → calm banner (Feature 012). */
+  intakeNudge = signal('');
+  /** Path A–D from intake next to Confidence. */
+  intakePathNote = signal('');
 
   balance = signal<BalanceView>({
     periodLabel: 'No period yet',
@@ -168,14 +173,43 @@ export class DashboardPageComponent implements OnInit {
     this.busy.set(true);
     try {
       // Tenant isolation: Authorization Bearer only — API resolves tenant_id from JWT.
-      const [alertsRes, balanceRes] = await Promise.all([
+      const [alertsRes, balanceRes, onboardingRes] = await Promise.all([
         fetch(`${environment.apiBaseUrl}/alerts`, {
           headers: { authorization: `Bearer ${token}` },
         }),
         fetch(`${environment.apiBaseUrl}/balance`, {
           headers: { authorization: `Bearer ${token}` },
         }),
+        fetch(`${environment.apiBaseUrl}/onboarding`, {
+          headers: { authorization: `Bearer ${token}` },
+        }),
       ]);
+
+      try {
+        if (onboardingRes.ok) {
+          const onb = await onboardingRes.json();
+          const summary = parseIntakeSummary(onb);
+          if (summary && !summary.complete) {
+            const stepNum = Math.min(summary.currentStep + 1, summary.stepCount);
+            this.intakeNudge.set(
+              `Finish member intake (step ${stepNum} of ${summary.stepCount}). `,
+            );
+          } else {
+            this.intakeNudge.set('');
+          }
+          this.intakePathNote.set(
+            summary?.pathLabel
+              ? `From member intake: ${summary.pathLabel}.`
+              : '',
+          );
+        } else {
+          this.intakeNudge.set('');
+          this.intakePathNote.set('');
+        }
+      } catch {
+        this.intakeNudge.set('');
+        this.intakePathNote.set('');
+      }
 
       const alertsBody = await alertsRes.json();
       if (!alertsRes.ok) {

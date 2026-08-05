@@ -30,6 +30,8 @@ export interface AgentTurnInput {
   municipality?: string | null;
   /** Operator email for first-name greeting. */
   operatorEmail?: string | null;
+  /** Optional member-intake summary (Feature 012) — never raw tenant slug. */
+  intakeSummary?: string | null;
 }
 
 export interface AgentReply {
@@ -102,8 +104,11 @@ export function detectNeedsConfirm(message: string): {
 }
 
 /** Onboarding inventory / Confidence expectations (H1 thin + E6). */
-export function onboardingInventoryReply(operatorName = "there"): string {
-  return [
+export function onboardingInventoryReply(
+  operatorName = "there",
+  intakeSummary?: string | null,
+): string {
+  const lines = [
     `Hi ${operatorName} — I can help you get Water Saver set up for your system.`,
     "Quick data inventory (paths A–D):",
     "A) Current cycle only → we start Thin; stuck/diagnostic flags stay useful; statistical stays Watch.",
@@ -111,7 +116,11 @@ export function onboardingInventoryReply(operatorName = "there"): string {
     "C) ~6–18 months / two seasons → approaching Solid; comparative alerts can become Actionable.",
     "D) Multi-year archive → prefer bulk/multi-file upload; Confidence Strong faster, still check coverage gaps.",
     "What history can you export today? Any past months or years of meter readings?",
-  ].join("\n");
+  ];
+  if (intakeSummary?.trim()) {
+    lines.push("", `From your member intake: ${intakeSummary.trim()}`);
+  }
+  return lines.join("\n");
 }
 
 export function templateAgentReply(input: AgentTurnInput): AgentReply {
@@ -124,18 +133,21 @@ export function templateAgentReply(input: AgentTurnInput): AgentReply {
     input.municipality ?? null,
   );
   const first = operatorFirstName({ email: input.operatorEmail ?? null });
+  const intakeNote = input.intakeSummary?.trim() || null;
 
   let reply: string;
   if (
-    /\b(onboard|getting started|new system|inventory|history do i need)\b/i.test(
+    /\b(onboard|getting started|new system|inventory|history do i need|continue intake)\b/i.test(
       input.message,
     )
   ) {
-    reply = `${onboardingInventoryReply(first)}\n\nFor a guided setup wizard with your town, contacts, meter counts, and export habits, open **Onboarding** in the main menu (or /onboarding).\n\n${coaching}`;
+    reply = `${onboardingInventoryReply(first, intakeNote)}\n\nFor the structured checklist (town, contacts, meter counts, export habits), open **Onboarding** (/onboarding). I am the helper — the form is primary.\n\n${coaching}`;
   } else if (
     /\b(confidence|watch|actionable|thin|solid)\b/i.test(input.message)
   ) {
-    reply = coaching;
+    reply = intakeNote
+      ? `${coaching}\n\nMember intake note: ${intakeNote}`
+      : coaching;
   } else if (/\bcost|billing|price|expensive\b/i.test(lower)) {
     reply = `${AGENT_COST_NOTE}\n\nMembership dues (pilot vs paid) are separate from AI usage — see Billing for status.`;
   } else if (
