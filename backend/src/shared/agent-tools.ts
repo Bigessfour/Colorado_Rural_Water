@@ -96,9 +96,11 @@ export async function runAgentTool(
 
   if (tool === "suggest_column_map") {
     const headers =
-      message.match(/headers?\s*[:=]?\s*([^\n.]+)/i)?.[1]?.trim() ||
+      message.match(/headers?\s*[:=]?\s*([^\n]+)/i)?.[1]?.trim() ||
       "acct, addr, read, date";
-    const parts = headers
+    // Stop at sentence end if operator added prose after the list.
+    const headerList = headers.split(/(?<=\w)\.\s+/)[0] ?? headers;
+    const parts = headerList
       .split(/[,|;]+/)
       .map((h) => h.trim())
       .filter(Boolean);

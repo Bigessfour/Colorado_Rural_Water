@@ -200,6 +200,13 @@
         @if (!auth.isLoggedIn()) {
           <p class="signin-hint"><a routerLink="/login">Sign in</a> to import readings.</p>
         }
+        <p-button
+          label="Ask Assistant to map"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="!headers.length"
+          (onClick)="askAssistantForMapping()"
+        />
         <p-button label="Check first" [outlined]="true" [loading]="busy" (onClick)="ingest(true)" />
         <p-button label="Import readings" [loading]="busy" (onClick)="ingest(false)" />
       </div>

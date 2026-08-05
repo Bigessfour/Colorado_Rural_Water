@@ -48,6 +48,7 @@ Agents and humans use this section to decide what “done” means. Prefer this 
 - Custom ML / Bayesian leak models
 - Exhaustive billing-system connectors
 - Formal address parse beyond single-line service address
+- Agent-driven mutating tools / auto config writes (confirm gates exist; productize only after Spec §0 moves this off vNext)
 - Complex multi-step agent-driven AWS resource provisioning (beyond Feature 014 RAG)
 - Native mobile apps
 

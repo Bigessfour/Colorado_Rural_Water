@@ -7,7 +7,7 @@
 
 import { Component, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { FileUpload, FileUploadModule, type FileUploadHandlerEvent } from 'primeng/fileupload';
@@ -165,6 +165,7 @@ interface SheetOption {
 })
 export class UploadPageComponent {
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   /** Clears PrimeNG's "Pending" badge after customUpload (it never auto-clears). */
   @ViewChild('uploader') private uploader?: FileUpload;
@@ -507,6 +508,22 @@ export class UploadPageComponent {
       }
     }
     return mapping;
+  }
+
+  /** Hand real CSV/Excel headers to /assistant for mapping suggestions (Phase D). */
+  async askAssistantForMapping(): Promise<void> {
+    if (!this.headers.length) return;
+    const prompt = [
+      'Help map these CSV headers for meter upload.',
+      `headers: ${this.headers.join(', ')}`,
+      'Suggest a column map. I will confirm on Upload before import.',
+    ].join(' ');
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('ws_assistant_ask', prompt);
+    }
+    await this.router.navigate(['/assistant'], {
+      queryParams: { deepen: '1' },
+    });
   }
 
   /** dryRun=true previews parse results; false commits locations + readings for the JWT tenant. */

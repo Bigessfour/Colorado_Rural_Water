@@ -1,6 +1,15 @@
 # LangSmith observability (Feature 002)
 
-## Enable tracing
+## Product vs Assessment
+
+| Path | Runtime | LangSmith |
+|------|---------|-----------|
+| Cognito SPA (`composeDemo: false`) | Lambda `GET/POST /agent` | **Not required** — CloudWatch `agent.turn` logs + Dynamo CONV# |
+| Compose Assessment (`composeDemo: true`) | Flask RAG + LangGraph tools | **Yes** — project Water_Saver for Feature 002 evidence |
+
+Do not treat LangSmith as a Cognito / Feature 014 ship gate.
+
+## Enable tracing (Compose / Assessment)
 
 1. API key from [smith.langchain.com](https://smith.langchain.com) → Settings → API Keys.
 2. Gitignored `.env` / `.env.secrets`:
@@ -28,7 +37,7 @@ Look for runs: `water-saver-alert-triage`, `LangGraph`, `classify` / `gather_con
 
 ## Tenant constraints
 
-Traces attach metadata `tenant_id` / `feature=002`. Tools and graph nodes are scoped to the caller tenant only.
+Traces attach metadata `tenant_id` / `feature=002`. Tools and graph nodes are scoped to the caller tenant only. Compose tool observations are **sample** strings (not live Dynamo).
 
 ## Proven (2026-08-03)
 

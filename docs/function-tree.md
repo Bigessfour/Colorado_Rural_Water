@@ -127,6 +127,6 @@ flowchart LR
   end
 ```
 
-Assessment Features **001 / 007 / 008** prove Compose LangChain RAG. Feature **014** is the Cognito product path (KB + tools + CONV#).
+Assessment Features **001 / 002 / 007 / 008** prove Compose LangChain RAG + stub tools (`backend/rag/agent_tools.py`, labeled SAMPLE). Feature **014** is the Cognito product path (Bedrock KB + live Dynamo tools + CONV#). Product SPA (`composeDemo: false`) never depends on Flask FAISS tools. LangSmith traces Assessment Compose only — not Cognito Lambda.
 
-See [action-items.md](./action-items.md) · [PROVE_FEATURES.md](./PROVE_FEATURES.md) · [evidence/014-cognito-rag-assistant.md](../evidence/014-cognito-rag-assistant.md).
+See [action-items.md](./action-items.md) · [PROVE_FEATURES.md](./PROVE_FEATURES.md) · [evidence/014-cognito-rag-assistant.md](../evidence/014-cognito-rag-assistant.md) · [evidence/langsmith/README.md](../evidence/langsmith/README.md).
