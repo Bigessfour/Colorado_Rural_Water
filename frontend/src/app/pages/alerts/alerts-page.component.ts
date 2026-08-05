@@ -6,7 +6,7 @@
 
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
@@ -112,6 +112,7 @@ interface MeterHistoryView {
 })
 export class AlertsPageComponent implements OnInit {
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   alerts = signal<AlertRow[]>([]);
   confidenceNote = signal('Sign in to load alerts for your system.');
@@ -466,6 +467,25 @@ export class AlertsPageComponent implements OnInit {
     } finally {
       this.explainBusyId.set(null);
     }
+  }
+
+  /** Hand off to /assistant with alertId for live tool grounding (Phase B). */
+  async askAssistant(alert: AlertRow): Promise<void> {
+    const prompt = [
+      `Explain this ${alert.mode} alert.`,
+      `alertId: ${alert.id}`,
+      alert.kind === 'meter' && alert.meterId ? `meterId: ${alert.meterId}` : '',
+      alert.serviceAddress ? `Address: ${alert.serviceAddress}` : '',
+      alert.summary,
+    ]
+      .filter(Boolean)
+      .join(' ');
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('ws_assistant_ask', prompt);
+    }
+    await this.router.navigate(['/assistant'], {
+      queryParams: { deepen: '1' },
+    });
   }
 
   statusLabel(alert: AlertRow): string {

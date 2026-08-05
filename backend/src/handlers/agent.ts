@@ -6,7 +6,11 @@ import {
   type AgentTurnInput,
 } from "../shared/agent-context.js";
 import { checkAndIncrementAgentRate } from "../shared/agent-rate-limit.js";
-import { pickAgentTool, runAgentTool } from "../shared/agent-tools.js";
+import {
+  isEmptyOrNotFoundObservation,
+  pickAgentTool,
+  runAgentTool,
+} from "../shared/agent-tools.js";
 import { assessTenantConfidence } from "../shared/alert-engine.js";
 import { parseAuthFromClaims, requireTenantId } from "../shared/auth.js";
 import { converseText, DEFAULT_BEDROCK_MODEL_ID } from "../shared/bedrock.js";
@@ -177,6 +181,12 @@ export const handler: AuthedHandler = async (event) => {
     /\b(tell me more|know more|explain (the )?feature|what can i enter|how (do|can) i get a report)\b/i.test(
       message,
     ) || /\bfeature:\s*/i.test(message);
+  // Deep-link / specific alert-meter asks must hit live tools even when the
+  // message also contains Watch / Confidence keywords (templateHandles).
+  const wantsLiveAlertOrMeter =
+    /\balertId\s*[:=]/i.test(message) ||
+    /\bmeterId\s*[:=]/i.test(message) ||
+    /\bexplain this (alert|watch|meter)\b/i.test(message);
   // Cheapest-first: keep deterministic template replies for Confidence / billing /
   // onboarding / confirm gates — do not overwrite with KB + Converse.
   const templateHandles =
@@ -185,14 +195,15 @@ export const handler: AuthedHandler = async (event) => {
     /\b(onboard|confidence|watch|actionable|thin|solid|cost|billing|price)\b/i.test(
       message,
     );
-  const useRagAndModel = !templateHandles || wantsFeatureDeepDive;
+  const useRagAndModel =
+    !templateHandles || wantsFeatureDeepDive || wantsLiveAlertOrMeter;
 
   if (useRagAndModel) {
     const tool = pickAgentTool(message);
     toolName = tool === "none" ? null : tool;
     const toolResult =
       tool === "none"
-        ? { tool, observation: "" }
+        ? { tool, observation: "", notFound: false as boolean | undefined }
         : await runAgentTool(tool, tenantId, message);
 
     const kb = await retrieveKnowledge({ question: message, tenantId });
@@ -223,6 +234,43 @@ export const handler: AuthedHandler = async (event) => {
 
     const place = friendlyMunicipalityName(tenantId, municipality);
     const first = operatorFirstName({ email: auth.email });
+
+    // Hard refuse: specific lookup missed and no KB to lean on — do not invent.
+    const toolMiss = isEmptyOrNotFoundObservation(
+      toolResult.observation,
+      toolResult.notFound,
+    );
+    const kbEmpty = !(kb.context || "").trim();
+    if (
+      (tool === "get_alert" || tool === "get_meter_summary") &&
+      toolResult.notFound
+    ) {
+      reply = {
+        ...reply,
+        reply: [
+          `I don't see that in ${place}'s data right now.`,
+          "Check Alerts or Meters for the current list, or ask about open alerts / Confidence.",
+          "I will not invent meters or alert ids.",
+        ].join(" "),
+        model: "template",
+        modelId: null,
+      };
+      return finishAgentTurn({
+        conv,
+        tenantId,
+        userId: auth.userId,
+        message,
+        reply,
+        sources,
+        retrievalMode,
+        toolName,
+        tokenUsage,
+        confidence,
+        requestId,
+        rateRemaining: rate.remaining,
+      });
+    }
+
     const system = [
       "You are Water Saver, a calm, friendly assistant for rural Colorado water operators.",
       `You are helping ${first} with water operations for ${place}.`,
@@ -232,6 +280,7 @@ export const handler: AuthedHandler = async (event) => {
       "Never claim a confirmed leak from Thin Watch flags. Prefer “worth a look when you can.”",
       "For treatment / chlorine / regulatory questions, prefer Context from colorado-ops or cited knowledge.",
       "If those docs are missing, say you do not have enough information — do not invent dosing rates.",
+      "If Tool observation says not found or is empty and Context is empty, say it is not in this system's data — do not invent meters, alerts, or gallons.",
       "Guidance is not a substitute for a certified operator or CDPHE.",
       "When Context includes CDPHE online URLs, include those live links in your answer.",
       "Cite source filenames and URLs when possible.",
@@ -261,6 +310,33 @@ export const handler: AuthedHandler = async (event) => {
       .slice(-6)
       .map((h) => `${h.role}: ${h.text}`)
       .join("\n");
+
+    // Free-form with no grounding: skip Bedrock invention.
+    if (tool === "none" && toolMiss && kbEmpty && !wantsFeatureDeepDive) {
+      reply = {
+        ...reply,
+        reply: [
+          `I do not have enough information in ${place}'s data or runbooks for that.`,
+          "Try asking about open alerts, Confidence, uploads, or a specific alertId / meterId from Alerts.",
+        ].join(" "),
+        model: "template",
+        modelId: null,
+      };
+      return finishAgentTurn({
+        conv,
+        tenantId,
+        userId: auth.userId,
+        message,
+        reply,
+        sources,
+        retrievalMode,
+        toolName,
+        tokenUsage,
+        confidence,
+        requestId,
+        rateRemaining: rate.remaining,
+      });
+    }
 
     const polished = await converseText({
       system,

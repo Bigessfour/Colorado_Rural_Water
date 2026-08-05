@@ -103,6 +103,13 @@
                 (onClick)="explain(alert)"
               />
             }
+            <p-button
+              label="Ask Assistant"
+              size="small"
+              severity="secondary"
+              [text]="true"
+              (onClick)="askAssistant(alert)"
+            />
             @if (alert.status !== 'resolved') {
               <p-button
                 label="Act on alert"
