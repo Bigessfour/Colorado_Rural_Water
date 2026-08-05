@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 /**
- * Feature 011 — seed ≥5 Colorado meter pins (+1 without coords) for the demo tenant.
+ * Feature 011 — seed Colorado meter pins for the demo tenant.
  *
  * Usage:
- *   API_BASE=https://….execute-api.us-east-1.amazonaws.com/prod \
+ *   API_BASE=https://….execute-api.us-east-1.amazonaws.com \
  *   BEARER_TOKEN=eyJ… \   # Cognito IdToken (must include custom:tenant_id)
  *   node scripts/seed-meter-coords.mjs
+ *
+ * Optional:
+ *   BULK_FILL=1 — pin every meter still missing coords with a small deterministic
+ *   jitter around Wiley (demo only; keep meter 1099 unmapped).
  *
  * AccessToken will 403 (missing tenant claim). Use IdToken.
  */
@@ -125,6 +129,28 @@ async function main() {
         ? `updated ${row.meterId} → ${row.latitude ?? "null"}, ${row.longitude ?? "null"}`
         : `update fail ${row.meterId} ${updated.status} ${JSON.stringify(updated.json)}`,
     );
+  }
+
+  if (process.env.BULK_FILL === "1") {
+    const center = { lat: 38.1542, lng: -102.7199 };
+    const { createHash } = await import("node:crypto");
+    const listedAgain = await api("GET", "/meters");
+    const meters = listedAgain.json.meters || [];
+    let pinned = 0;
+    for (const m of meters) {
+      if (m.meterId === "1099") continue;
+      if (m.latitude != null && m.longitude != null) continue;
+      const h = createHash("sha256").update(m.meterId).digest();
+      const lat = +(center.lat + ((h[0] / 255) - 0.5) * 0.07).toFixed(6);
+      const lng = +(center.lng + ((h[1] / 255) - 0.5) * 0.07).toFixed(6);
+      const updated = await api("PUT", `/meters/${encodeURIComponent(m.meterId)}`, {
+        latitude: lat,
+        longitude: lng,
+      });
+      if (updated.ok) pinned += 1;
+      else console.log(`bulk fail ${m.meterId}`, updated.status, updated.json);
+    }
+    console.log(`BULK_FILL pinned ${pinned} meters near Wiley (demo jitter)`);
   }
 }
 

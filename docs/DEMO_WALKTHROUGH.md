@@ -39,4 +39,9 @@
 ## Avoid in this demo
 
 - Claiming “we found a leak”
-- CRWA roll-up, AI chat, MFA setup walkthrough (Pilot — Account page exists but skip unless asked), threshold editing, multi-year bulk history
+- CRWA roll-up, AI chat, MFA setup walkthrough (Pilot — under **More** in the nav; skip unless asked), threshold editing, multi-year bulk history
+
+## Nav (2026-08-05)
+
+Primary row = Kelly path: Dashboard → Upload → Meters → Sources → Alerts → Review.  
+Pilot surfaces (Assistant, Onboarding, Reports, Settings, Account, Admin/CRWA) live under **More**.

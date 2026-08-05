@@ -79,6 +79,49 @@
   color: var(--ws-nav-active-fg);
 }
 
+/* Pilot / secondary surfaces — keep F1 path calm in the primary row */
+.nav-more {
+  position: relative;
+}
+
+.nav-more > summary {
+  list-style: none;
+  cursor: pointer;
+  color: var(--ws-teal-soft);
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.35rem;
+  user-select: none;
+}
+
+.nav-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-more > summary:hover,
+.nav-more[open] > summary {
+  background: var(--ws-nav-hover);
+}
+
+.nav-more-panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 10.5rem;
+  padding: 0.4rem;
+  border-radius: 0.45rem;
+  background: var(--ws-shell-bg);
+  border: 1px solid color-mix(in srgb, var(--ws-teal-soft) 28%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 18%, transparent);
+}
+
+.nav-more-panel a {
+  white-space: nowrap;
+}
+
 .auth {
   display: flex;
   align-items: center;

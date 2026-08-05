@@ -22,25 +22,32 @@
     <a routerLink="/meters" routerLinkActive="active">Meters</a>
     <a routerLink="/sources" routerLinkActive="active">Sources</a>
     <a routerLink="/alerts" routerLinkActive="active">Alerts</a>
-    @if (composeDemo || auth.isLoggedIn()) {
-      <a routerLink="/assistant" routerLinkActive="active">Assistant</a>
-    }
-    @if (auth.isLoggedIn()) {
-      <a routerLink="/onboarding" routerLinkActive="active">Onboarding</a>
-      <a routerLink="/reports" routerLinkActive="active">Reports</a>
-      <a routerLink="/settings" routerLinkActive="active">Settings</a>
-      <a routerLink="/account" routerLinkActive="active">Account</a>
-    }
-    @if (auth.canManageUsers()) {
-      <a routerLink="/admin" routerLinkActive="active">Admin</a>
-    }
-    @if (auth.isSystemAdmin()) {
-      <a routerLink="/billing" routerLinkActive="active">Billing</a>
-    }
-    @if (auth.isCrwaAdmin()) {
-      <a routerLink="/crwa" routerLinkActive="active">CRWA</a>
-    }
     <a routerLink="/review" routerLinkActive="active">Review</a>
+    @if (composeDemo || auth.isLoggedIn()) {
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-panel">
+          @if (composeDemo || auth.isLoggedIn()) {
+            <a routerLink="/assistant" routerLinkActive="active">Assistant</a>
+          }
+          @if (auth.isLoggedIn()) {
+            <a routerLink="/onboarding" routerLinkActive="active">Onboarding</a>
+            <a routerLink="/reports" routerLinkActive="active">Reports</a>
+            <a routerLink="/settings" routerLinkActive="active">Settings</a>
+            <a routerLink="/account" routerLinkActive="active">Account</a>
+          }
+          @if (auth.canManageUsers()) {
+            <a routerLink="/admin" routerLinkActive="active">Admin</a>
+          }
+          @if (auth.isSystemAdmin()) {
+            <a routerLink="/billing" routerLinkActive="active">Billing</a>
+          }
+          @if (auth.isCrwaAdmin()) {
+            <a routerLink="/crwa" routerLinkActive="active">CRWA</a>
+          }
+        </div>
+      </details>
+    }
   </nav>
   <div class="auth">
     <p-selectbutton
