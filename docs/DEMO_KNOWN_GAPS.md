@@ -5,12 +5,13 @@ Use this if Kelly or a grader asks what’s unfinished. Do **not** present these
 | Gap                           | Status                 | Notes                                                                                     |
 | ----------------------------- | ---------------------- | ----------------------------------------------------------------------------------------- |
 | Public HTTPS SPA (CloudFront) | **Live** (2026-08-04)  | `https://duqk1pqvmrsuh.cloudfront.net` — redeploy via `./scripts/deploy-spa.sh`           |
-| Reports hub downloads         | **Live** (2026-08-04)  | Terraform applied: `water-saver-dev-reports` + API routes; prove signed-in downloads next |
+| Reports hub downloads         | **Live** (2026-08-04)  | Terraform applied: `water-saver-dev-reports` + API routes                                 |
 | Account MFA live prove        | Partial / Pilot        | Template + Vitest; skip in F1 unless asked                                                |
 | Cognito JWT RAG (Feature 014) | **Live** (2026-08-05)  | Product: Bedrock KB + Dynamo tools + CONV#; Compose FAISS/stub tools = Assessment-only (`composeDemo: true`) |
 | CRWA payment processor        | Externally blocked     | Manual ledger / offline billing only                                                      |
-| Tenant map center live seed   | Partial                | Backend + SPA wired; Wiley map-center seed optional                                       |
-| Multi-year bulk history       | Out of scope for Kelly | Spec §0                                                                                   |
+| Tenant map center + meter pins | **Live** (2026-08-05) | Wiley map center on `/me`; 319/320 meters pinned (1099 left unmapped on purpose)          |
+| Member intake (town-wiley)    | **Complete** (2026-08-05) | Path D + CIS/column hints; dashboard nudge cleared                                     |
+| Multi-year bulk history UX    | Out of scope for Kelly | Spec §0 (24mo already loaded for demo)                                                    |
 
 ## Fixed during 2026-08-04 demo prep (no longer gaps)
 

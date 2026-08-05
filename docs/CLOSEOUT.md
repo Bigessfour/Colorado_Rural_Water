@@ -1,6 +1,6 @@
 # Water Saver — Engineering Closeout (2026-08-03)
 
-**Verdict:** **Code Done** for Kelly gate + finishable Pilot. **Ops remaining** before Kelly’s live walkthrough (invite + F2 smoke boxes). Payment Epic I3+ stays externally blocked.
+**Verdict:** **Code Done** for Kelly gate + finishable Pilot. **Ops remaining:** Steve sends the invite ([KELLY_INVITE.md](KELLY_INVITE.md)). Demo data polished 2026-08-05 (intake Path D, map pins, source dedupe, calmer nav). Payment Epic I3+ stays externally blocked.
 
 ## Shipped on `main`
 
