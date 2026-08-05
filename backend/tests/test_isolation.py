@@ -61,12 +61,14 @@ def test_triage_graph_tenant_scoped():
     )
     assert out["tenant_id"] == "town-wiley"
     assert out["severity"] in ("low", "medium", "high")
-    assert "town-wiley" in out["reply"]
+    assert "Town of Wiley" in out["reply"]
+    assert "town-wiley" not in out["reply"]
 
 
 def test_tool_agent_uses_tenant_tool():
     out = run_tool_agent("list my alerts please", tenant_id="town-wiley", user_id="op1")
     assert out["tenant_id"] == "town-wiley"
     assert out["tool"] == "list_alerts"
-    assert "town-wiley" in out["observation"]
+    assert "Town of Wiley" in out["observation"]
+    assert "town-wiley" not in out["observation"]
     assert out["guardrails"]["noCrossTenantData"] is True

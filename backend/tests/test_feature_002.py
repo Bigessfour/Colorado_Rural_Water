@@ -19,7 +19,8 @@ def test_langgraph_triage_returns_steps():
         "gather_context",
         "draft",
     ]
-    assert "town-wiley" in out["reply"]
+    assert "Town of Wiley" in out["reply"]
+    assert "town-wiley" not in out["reply"]
 
 
 def test_tool_agent_uses_langchain_structured_tools():
@@ -34,7 +35,8 @@ def test_tool_agent_uses_langchain_structured_tools():
     )
     assert out["tool"] == "list_alerts"
     assert out["tenant_id"] == "town-wiley"
-    assert "town-wiley" in out["observation"]
+    assert "Town of Wiley" in out["observation"]
+    assert "town-wiley" not in out["observation"]
     assert out["guardrails"]["noCrossTenantData"] is True
     assert "list_alerts" in out["tools_available"]
 
