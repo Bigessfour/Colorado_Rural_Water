@@ -33,6 +33,15 @@ describe("agent-tools pickAgentTool", () => {
     );
   });
 
+  it("parses long header lists for suggest_column_map routing", () => {
+    assert.equal(
+      pickAgentTool(
+        "Help map these CSV headers for meter upload. headers: acct, addr, read, date, serial",
+      ),
+      "suggest_column_map",
+    );
+  });
+
   it("routes usage / confidence", () => {
     assert.equal(
       pickAgentTool("How is our Confidence and usage history?"),

@@ -17,8 +17,13 @@ import { converseText, DEFAULT_BEDROCK_MODEL_ID } from "../shared/bedrock.js";
 import {
   createConversationStoreFromEnv,
   createMeterStoreFromEnv,
+  createOnboardingStoreFromEnv,
   createTenantStoreFromEnv,
 } from "../shared/dynamo-store.js";
+import {
+  onboardingPathLabel,
+  type OnboardingIntake,
+} from "../shared/onboarding-intake.js";
 import {
   badRequest,
   forbidden,
@@ -121,13 +126,16 @@ export const handler: AuthedHandler = async (event) => {
   }
 
   const meterStore = createMeterStoreFromEnv();
-  const [locations, readings, prior, otherTenantIds] = await Promise.all([
+  const onboardingStore = createOnboardingStoreFromEnv();
+  const [locations, readings, prior, otherTenantIds, intake] = await Promise.all([
     meterStore.listLocations(tenantId),
     meterStore.listReadings(tenantId),
     conv.listRecent(tenantId, auth.userId, 12),
     loadOtherTenantIds(tenantId),
+    onboardingStore.getOnboardingIntake(tenantId).catch(() => null),
   ]);
   const confidence = assessTenantConfidence(readings, locations.length);
+  const intakeSummary = formatIntakeSummaryForAgent(intake);
 
   let municipality: string | null = null;
   try {
@@ -146,6 +154,7 @@ export const handler: AuthedHandler = async (event) => {
     confidence,
     municipality,
     operatorEmail: auth.email || null,
+    intakeSummary,
   };
 
   // Isolation before rate charge — forbidden turns must not consume a slot.
@@ -285,6 +294,9 @@ export const handler: AuthedHandler = async (event) => {
       "When Context includes CDPHE online URLs, include those live links in your answer.",
       "Cite source filenames and URLs when possible.",
       "Keep answers short and plain-language.",
+      intakeSummary
+        ? `Member intake (this system only): ${intakeSummary}`
+        : "No member intake saved yet — point operators to /onboarding for the structured checklist.",
       wantsFeatureDeepDive
         ? [
             "The operator asked for a deeper feature walkthrough.",
@@ -495,4 +507,28 @@ async function finishAgentTurn(args: {
     request_id: args.requestId,
     rateRemaining: args.rateRemaining,
   });
+}
+
+/** Plain-language intake bits for prompts — never raw tenant ids. */
+function formatIntakeSummaryForAgent(
+  intake: OnboardingIntake | null,
+): string | null {
+  if (!intake) return null;
+  const bits: string[] = [];
+  bits.push(onboardingPathLabel(intake.onboardingPath));
+  if (intake.meterCountEstimate != null) {
+    bits.push(`~${intake.meterCountEstimate} meters estimated`);
+  }
+  if (intake.municipalBillingSystem?.trim()) {
+    bits.push(`CIS/export: ${intake.municipalBillingSystem.trim()}`);
+  }
+  if (intake.exportColumnHints?.trim()) {
+    bits.push(`column hints: ${intake.exportColumnHints.trim()}`);
+  }
+  if (!intake.completedAt) {
+    bits.push(
+      `intake in progress (step ${Math.min(intake.currentStep + 1, 6)} of 6)`,
+    );
+  }
+  return bits.join("; ");
 }

@@ -5,9 +5,9 @@
  * Tenant from JWT only. Large bulk drops use S3 ops path (mapping already saved).
  */
 
-import { Component, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { FileUpload, FileUploadModule, type FileUploadHandlerEvent } from 'primeng/fileupload';
@@ -20,6 +20,7 @@ import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
 import { autoPinMissingFromApi } from '../../shared/meter-auto-pin';
 import type { GeocodeBias } from '../../shared/geocode.service';
+import { parseIntakeSummary } from '../../shared/intake-summary';
 
 type CanonicalField =
   | 'meterId'
@@ -163,8 +164,9 @@ interface SheetOption {
   templateUrl: './upload-page.component.html',
   styleUrl: './upload-page.component.scss',
 })
-export class UploadPageComponent {
+export class UploadPageComponent implements OnInit {
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   /** Clears PrimeNG's "Pending" badge after customUpload (it never auto-clears). */
   @ViewChild('uploader') private uploader?: FileUpload;
@@ -175,6 +177,9 @@ export class UploadPageComponent {
     'Try a practice Excel file from sample-data/ — start with Town_of_Steve_Meter_Export_MESSY.xlsx (messy-readings-july.csv also works). “Messy” means imperfect columns like a real billing export, so you can try the mapper safely.';
   /** Cap long skip/warning lists in the progress card. */
   readonly warningDisplayLimit = 8;
+
+  /** From member intake — CIS / column hints (never auto-applies mapping). */
+  intakeHint = signal('');
 
   headers: string[] = [];
   mapping: Partial<Record<CanonicalField, string>> = {};
@@ -507,6 +512,67 @@ export class UploadPageComponent {
       }
     }
     return mapping;
+  }
+
+  /** Hand real CSV/Excel headers to /assistant for mapping suggestions (Phase D). */
+  async askAssistantForMapping(): Promise<void> {
+    if (!this.headers.length) return;
+    const prompt = [
+      'Help map these CSV headers for meter upload.',
+      `headers: ${this.headers.join(', ')}`,
+      'Suggest a column map. I will confirm on Upload before import.',
+    ].join(' ');
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('ws_assistant_ask', prompt);
+    }
+    await this.router.navigate(['/assistant'], {
+      queryParams: { deepen: '1' },
+    });
+  }
+
+  ngOnInit(): void {
+    void this.loadIntakeHint();
+  }
+
+  private async loadIntakeHint(): Promise<void> {
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.intakeHint.set('');
+      return;
+    }
+    try {
+      const res = await fetch(`${environment.apiBaseUrl}/onboarding`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        this.intakeHint.set('');
+        return;
+      }
+      const body = await res.json();
+      const summary = parseIntakeSummary(body);
+      if (!summary) {
+        this.intakeHint.set('');
+        return;
+      }
+      const bits: string[] = [];
+      if (summary.pathLabel) bits.push(summary.pathLabel);
+      if (summary.municipalBillingSystem) {
+        bits.push(`CIS / export: ${summary.municipalBillingSystem}`);
+      }
+      if (summary.exportFormat && summary.exportFormat !== 'unknown') {
+        bits.push(`format ${summary.exportFormat}`);
+      }
+      if (summary.exportColumnHints) {
+        bits.push(`column hints from intake: ${summary.exportColumnHints}`);
+      }
+      this.intakeHint.set(
+        bits.length
+          ? `From member intake — ${bits.join('; ')}. Confirm mapping below before import.`
+          : '',
+      );
+    } catch {
+      this.intakeHint.set('');
+    }
   }
 
   /** dryRun=true previews parse results; false commits locations + readings for the JWT tenant. */

@@ -345,7 +345,8 @@ export class AgentPageComponent implements OnInit {
   }
 
   askOnboarding(): void {
-    this.draft = 'Help me get started — what history do I need?';
+    this.draft =
+      'Continue intake — what history do I need, and should I use the Onboarding checklist?';
     void this.send();
   }
 }

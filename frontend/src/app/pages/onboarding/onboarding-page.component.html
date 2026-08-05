@@ -10,6 +10,25 @@
     <p-message severity="warn" styleClass="hint">
       <a routerLink="/login">Sign in</a> to complete intake for {{ auth.placeName() }}.
     </p-message>
+    <p-card header="What we will ask" styleClass="block preview-card">
+      <p class="preview-lede">
+        Six short steps — separate from CRWA membership billing. We only ask about your system and
+        meter-read exports.
+      </p>
+      <ol class="preview-steps">
+        @for (item of stepPreview; track item.title) {
+          <li>
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.blurb }}</span>
+          </li>
+        }
+      </ol>
+      <p class="preview-footer">
+        Prefer talking it through?
+        <a routerLink="/login">Sign in</a>, then open the
+        <a routerLink="/assistant">Assistant</a> — or use this structured checklist after sign-in.
+      </p>
+    </p-card>
   }
 
   @if (error()) {
@@ -37,8 +56,9 @@
             fine).
           </p>
           <p>
-            You can also ask the <a routerLink="/assistant">Assistant</a> about getting started and
-            building Confidence anytime.
+            You can also ask the <a routerLink="/assistant">Assistant</a> to explain Path A–D or
+            “Continue intake” anytime — the form here is the primary checklist; the Assistant is the
+            helper.
           </p>
         }
         @case (1) {
@@ -242,40 +262,36 @@
 
       <div class="actions">
         @if (step() > 0) {
-          <button
+          <p-button
             type="button"
-            pButton
             label="Back"
             severity="secondary"
-            (click)="back()"
+            (onClick)="back()"
             [disabled]="busy()"
-          ></button>
+          />
         }
         @if (step() < steps.length - 1) {
-          <button
+          <p-button
             type="button"
-            pButton
             label="Save & continue"
-            (click)="save(true)"
+            (onClick)="save(true)"
             [loading]="busy()"
-          ></button>
+          />
         } @else {
-          <button
+          <p-button
             type="button"
-            pButton
             label="Finish intake"
-            (click)="save(false, true)"
+            (onClick)="save(false, true)"
             [loading]="busy()"
-          ></button>
+          />
         }
-        <button
+        <p-button
           type="button"
-          pButton
           label="Save draft"
           severity="secondary"
-          (click)="save(false)"
+          (onClick)="save(false)"
           [disabled]="busy()"
-        ></button>
+        />
       </div>
     </p-card>
   }

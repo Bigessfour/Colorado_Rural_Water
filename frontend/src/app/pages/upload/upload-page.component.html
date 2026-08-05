@@ -12,6 +12,12 @@
   <p-message severity="info" styleClass="hint" data-ptest="upload-sample">{{
     sampleHint
   }}</p-message>
+  @if (intakeHint()) {
+    <p-message severity="info" styleClass="hint" data-tour="intake-upload-hint">
+      {{ intakeHint() }}
+      <a routerLink="/onboarding">Edit intake</a>
+    </p-message>
+  }
   @if (!auth.isLoggedIn()) {
     <p class="signin-hint">
       <a routerLink="/login">Sign in</a> to import readings for {{ auth.placeName() }}.
@@ -200,6 +206,13 @@
         @if (!auth.isLoggedIn()) {
           <p class="signin-hint"><a routerLink="/login">Sign in</a> to import readings.</p>
         }
+        <p-button
+          label="Ask Assistant to map"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="!headers.length"
+          (onClick)="askAssistantForMapping()"
+        />
         <p-button label="Check first" [outlined]="true" [loading]="busy" (onClick)="ingest(true)" />
         <p-button label="Import readings" [loading]="busy" (onClick)="ingest(false)" />
       </div>
