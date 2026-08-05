@@ -1,15 +1,16 @@
 /**
- * Water balance calculator — Spec §7a / ticket G3.
+ * Water balance calculator — Spec §7a / ticket G3 (Kelly dashboard In/Out/Unaccounted).
  * In (source production) − Out (customer billed usage) = unaccounted.
  *
+ * Talk track: never dig on `insufficient` (one-sided or empty period).
  * Period keying (MVP): calendar UTC YYYY-MM from reading timestamps.
  * Per Spec §7a, periods should eventually align with each utility’s
  * billing/reading cycle (configurable; G4/G5). Do not treat YYYY-MM as
  * the final product model — it is the pilot default only.
  */
 
-import type { MeterReading } from './meter-location.js';
-import type { SourceReading } from './source-reading.js';
+import type { MeterReading } from "./meter-location.js";
+import type { SourceReading } from "./source-reading.js";
 
 export interface WaterBalancePeriod {
   /** YYYY-MM (UTC calendar month — pilot default; see file header). */
@@ -24,7 +25,7 @@ export interface WaterBalancePeriod {
    * insufficient = missing In and/or Out for the period (one-sided or empty).
    * Never surface loss/gain from thin one-sided data — operators must not dig now.
    */
-  status: 'loss' | 'gain' | 'ok' | 'insufficient';
+  status: "loss" | "gain" | "ok" | "insufficient";
   sourceReadingCount: number;
   meterDeltaCount: number;
 }
@@ -36,9 +37,9 @@ export interface WaterBalanceResult extends WaterBalancePeriod {
 
 export function periodKeyFromIso(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
+  if (Number.isNaN(d.getTime())) return "";
   const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   return `${y}-${m}`;
 }
 
@@ -46,18 +47,18 @@ export function periodLabel(period: string): string {
   const m = period.match(/^(\d{4})-(\d{2})$/);
   if (!m) return period;
   const monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
   const idx = Number(m[2]) - 1;
   return `${monthNames[idx] ?? m[2]} ${m[1]}`;
@@ -70,11 +71,16 @@ export function periodLabel(period: string): string {
  * Re-ingest of the same (sourceId, period) replaces rather than sums duplicates.
  * Cumulative-mode: deltas between successive cumulative readings (unchanged).
  */
-export function sumSourceProduction(readings: SourceReading[], period: string): {
+export function sumSourceProduction(
+  readings: SourceReading[],
+  period: string,
+): {
   gallons: number;
   count: number;
 } {
-  const inPeriod = readings.filter((r) => periodKeyFromIso(r.timestamp) === period);
+  const inPeriod = readings.filter(
+    (r) => periodKeyFromIso(r.timestamp) === period,
+  );
   let gallons = 0;
   let count = 0;
 
@@ -88,7 +94,7 @@ export function sumSourceProduction(readings: SourceReading[], period: string): 
   // Period volumes: latest reading per source in this calendar month.
   const periodLatest = new Map<string, SourceReading>();
   for (const r of inPeriod) {
-    if (r.volumeMode !== 'period') continue;
+    if (r.volumeMode !== "period") continue;
     const prev = periodLatest.get(r.sourceId);
     if (!prev || r.timestamp >= prev.timestamp) {
       periodLatest.set(r.sourceId, r);
@@ -104,11 +110,11 @@ export function sumSourceProduction(readings: SourceReading[], period: string): 
   const periodSourceIds = new Set(periodLatest.keys());
 
   for (const r of inPeriod) {
-    if (r.volumeMode !== 'cumulative') continue;
+    if (r.volumeMode !== "cumulative") continue;
     if (periodSourceIds.has(r.sourceId)) continue;
     // Cumulative: usage for this reading = delta from previous cumulative for same source.
     const series = (bySource.get(r.sourceId) ?? [])
-      .filter((x) => x.volumeMode === 'cumulative')
+      .filter((x) => x.volumeMode === "cumulative")
       .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
     const idx = series.findIndex(
       (x) => x.timestamp === r.timestamp && x.value === r.value,
@@ -125,7 +131,10 @@ export function sumSourceProduction(readings: SourceReading[], period: string): 
 }
 
 /** Sum customer billed usage whose "to" reading falls in YYYY-MM. */
-export function sumCustomerUsage(readings: MeterReading[], period: string): {
+export function sumCustomerUsage(
+  readings: MeterReading[],
+  period: string,
+): {
   gallons: number;
   deltaCount: number;
 } {
@@ -140,10 +149,13 @@ export function sumCustomerUsage(readings: MeterReading[], period: string): {
   let deltaCount = 0;
 
   for (const series of byMeter.values()) {
-    const sorted = [...series].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    const sorted = [...series].sort((a, b) =>
+      a.timestamp.localeCompare(b.timestamp),
+    );
     for (let i = 1; i < sorted.length; i += 1) {
       if (periodKeyFromIso(sorted[i].timestamp) !== period) continue;
-      const usage = sorted[i].cumulativeReading - sorted[i - 1].cumulativeReading;
+      const usage =
+        sorted[i].cumulativeReading - sorted[i - 1].cumulativeReading;
       if (usage < 0) continue;
       gallons += usage;
       deltaCount += 1;
@@ -169,15 +181,15 @@ export function calculatePeriodBalance(
       ? null
       : round1((unaccountedGal / produced.gallons) * 100);
 
-  let status: WaterBalancePeriod['status'] = 'insufficient';
+  let status: WaterBalancePeriod["status"] = "insufficient";
   if (thin) {
-    status = 'insufficient';
+    status = "insufficient";
   } else if (unaccountedGal > 0) {
-    status = 'loss';
+    status = "loss";
   } else if (unaccountedGal < 0) {
-    status = 'gain';
+    status = "gain";
   } else {
-    status = 'ok';
+    status = "ok";
   }
 
   return {
@@ -201,7 +213,7 @@ export function calculateWaterBalance(
 ): WaterBalanceResult {
   const trendMonths = options?.trendMonths ?? 12;
   const periods = collectPeriods(sourceReadings, meterReadings);
-  let period = options?.period?.trim() || '';
+  let period = options?.period?.trim() || "";
   if (!period || !/^\d{4}-\d{2}$/.test(period)) {
     period = periods[periods.length - 1] ?? currentUtcPeriod();
   }
@@ -241,9 +253,9 @@ function expandTrendPeriods(
   known: string[],
 ): string[] {
   const out: string[] = [];
-  let [y, m] = endPeriod.split('-').map(Number);
+  let [y, m] = endPeriod.split("-").map(Number);
   for (let i = 0; i < count; i += 1) {
-    const key = `${y}-${String(m).padStart(2, '0')}`;
+    const key = `${y}-${String(m).padStart(2, "0")}`;
     out.unshift(key);
     m -= 1;
     if (m < 1) {
@@ -260,7 +272,7 @@ function expandTrendPeriods(
 
 function currentUtcPeriod(): string {
   const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 function round1(n: number): number {

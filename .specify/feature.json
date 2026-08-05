@@ -1,11 +1,3 @@
 {
-  "activeFeature": "005-github-actions-compose",
-  "completedFeatures": ["001-langchain-mem0-rag"],
-  "assessment": "III",
-  "product": "water-saver",
-  "awsAccount": "388691194728",
-  "awsProfile": "codeplatoon",
-  "awsRegion": "us-east-1",
-  "requiredTag": "Assessment-iii",
-  "notes": "001 verified 2026-08-03 (Compose RAG + Mem0 + isolation). Next: prove full three-tier Compose UI (005)."
+  "feature_directory": "specs/013-kelly-ship-prove"
 }

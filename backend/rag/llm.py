@@ -2,7 +2,6 @@ import logging
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models.chat_models import BaseChatModel
-
 from rag.settings import AWS_REGION, BEDROCK_CHAT_MODEL, BEDROCK_EMBED_MODEL
 
 logger = logging.getLogger(__name__)

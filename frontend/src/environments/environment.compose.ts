@@ -13,7 +13,8 @@ export const environment = {
   agentPath: '/api/agent',
   historyPath: '/api/history',
   demoTenantId: 'town-wiley',
-  demoUserId: 'compose-demo',
+  /** Local part becomes first name in Assistant welcome (“Demo”). */
+  demoUserId: 'demo.operator',
   cognito: {
     region: 'us-east-1',
     userPoolId: '',

@@ -60,6 +60,7 @@ Bonus track: LangGraph, LangSmith, tool agent, destroy + conditional Actions, TF
 
 - This constitution overrides conflicting agent suggestions for Assessment III work.
 - Amendments: update this file, note reason in PR / feature `plan.md`.
-- Active feature recorded in `.specify/feature.json`.
+- Active feature path: `.specify/feature.json` → `feature_directory` (Spec Kit may overwrite; keep project metadata in `project.json` only).
+- Assessment / AWS / completed features: `.specify/project.json`.
 
 **Version:** 1.0.0 — Assessment III pivot (2026-08-03)

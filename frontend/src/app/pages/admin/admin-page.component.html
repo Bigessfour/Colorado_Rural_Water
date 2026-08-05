@@ -1,8 +1,8 @@
 <section class="page">
   <h1>Admin</h1>
   <p class="lede">
-    Provision municipalities (CRWA), manage membership billing status, and invite users within your system
-    (System Admin). Tenant comes from your sign-in — never from the form.
+    Provision municipalities (CRWA), manage membership billing, and invite users for your water
+    system. Invites always stay inside the system you signed into.
   </p>
 
   @if (!auth.isLoggedIn()) {
@@ -29,10 +29,7 @@
 
   @if (auth.isLoggedIn()) {
     <p class="who">
-      Signed in as {{ auth.email() }}
-      @if (auth.tenantId()) {
-        · system <strong>{{ auth.tenantId() }}</strong>
-      }
+      Signed in as {{ auth.email() }} · <strong>{{ auth.placeName() }}</strong>
       ·
       @for (role of auth.roles(); track role) {
         <p-tag [value]="roleLabel(role)" severity="secondary" styleClass="role-tag" />
@@ -43,18 +40,43 @@
   @if (auth.isCrwaAdmin()) {
     <p-card header="Provision municipality" styleClass="block">
       <p class="card-lede">
-        Creates the tenant record, billing profile (pilot or paid), and one initial user (default: System
-        Admin). No payment processor — offline / pilot only.
+        Creates the municipality, membership profile (pilot or paid), and one initial user (default:
+        System Admin). No payment processor yet — offline / pilot only.
       </p>
       <form class="form form-wide" (ngSubmit)="provisionTenant()">
         <label>
           System id (slug)
-          <input pInputText name="tenantId" [(ngModel)]="tenantId" placeholder="town-wiley" required />
+          <input
+            pInputText
+            name="tenantId"
+            [(ngModel)]="tenantId"
+            placeholder="town-wiley"
+            required
+          />
         </label>
         <label>
           Display name
-          <input pInputText name="displayName" [(ngModel)]="displayName" placeholder="Town of Wiley" required />
+          <input
+            pInputText
+            name="displayName"
+            [(ngModel)]="displayName"
+            placeholder="Town of Wiley"
+            required
+          />
         </label>
+        <label>
+          Map town (Colorado)
+          <input
+            pInputText
+            name="mapTown"
+            [(ngModel)]="mapTown"
+            placeholder="Wiley, CO (defaults to display name)"
+          />
+        </label>
+        <p class="field-hint">
+          Used to center the meters map for this system. On create we look up the town and save the
+          map center. Fine-tune meter pins later under Meters.
+        </p>
         <label>
           Initial user email
           <input
@@ -128,7 +150,13 @@
         }
         <label>
           Internal notes (optional)
-          <textarea pTextarea name="billingNotes" [(ngModel)]="billingNotes" rows="2" class="w-full"></textarea>
+          <textarea
+            pTextarea
+            name="billingNotes"
+            [(ngModel)]="billingNotes"
+            rows="2"
+            class="w-full"
+          ></textarea>
         </label>
         <p-button type="submit" label="Provision system" [loading]="busy()" [disabled]="busy()" />
       </form>
@@ -180,8 +208,8 @@
 
     <p-card header="Membership billing actions" styleClass="block">
       <p class="card-lede">
-        Record offline payments, extend pilots, or change status. Writes an audit event under the tenant
-        ledger — no payment processor.
+        Record offline payments, extend pilots, or change status. Each change is logged for that
+        municipality — no payment processor yet.
       </p>
       <form class="form form-wide" (ngSubmit)="runBillingAction()">
         <label>
@@ -246,9 +274,20 @@
         }
         <label>
           Note (optional)
-          <textarea pTextarea name="actionNote" [(ngModel)]="actionNote" rows="2" class="w-full"></textarea>
+          <textarea
+            pTextarea
+            name="actionNote"
+            [(ngModel)]="actionNote"
+            rows="2"
+            class="w-full"
+          ></textarea>
         </label>
-        <p-button type="submit" label="Apply billing action" [loading]="busy()" [disabled]="busy()" />
+        <p-button
+          type="submit"
+          label="Apply billing action"
+          [loading]="busy()"
+          [disabled]="busy()"
+        />
       </form>
     </p-card>
   }
@@ -256,8 +295,7 @@
   @if (auth.isSystemAdmin()) {
     <p-card header="Invite user to your system" styleClass="block">
       <p class="card-lede">
-        Invites stay inside <strong>{{ auth.tenantId() ?? 'your system' }}</strong>. Client tenant overrides are
-        rejected by the API.
+        Invites stay inside <strong>{{ auth.placeName() }}</strong> only.
         @if (auth.isSystemAdmin()) {
           · <a routerLink="/billing">View membership billing</a>
         }

@@ -1,7 +1,7 @@
 # Feature 008: System UI / Browser Bonus
 
 **Rubric:** 15% bonus
-**Status:** planned → implementing
+**Status:** CLOSED (honest verify 2026-08-04 — Compose AI + Cognito upload/dashboard/ack)
 **Product:** Water Saver (Colorado Rural Water)
 **Isolation:** `tenant_id` on all AI / data paths
 
@@ -11,9 +11,9 @@ Operators of small Colorado rural water systems get AI assistance that stays ins
 
 ## Acceptance criteria (official rubric language)
 
-- [ ] System-level operator UI in browser demonstrates full stack end-to-end
-- [ ] Path: upload → process → AI insight / alert → acknowledge
-- [ ] Clear path for the 1-on-1 demo
+- [x] System-level operator UI in browser demonstrates full stack end-to-end
+- [x] Path: upload → process → AI insight / alert → acknowledge
+- [x] Clear path for the 1-on-1 demo
 
 ## Non-goals
 
@@ -29,11 +29,11 @@ Operators of small Colorado rural water systems get AI assistance that stays ins
 
 ## Demo evidence
 
-See [`../RUBRIC_COVERAGE.md`](../RUBRIC_COVERAGE.md) row for Feature 008.
+[`evidence/008-system-ui-browser-demo.md`](../../evidence/008-system-ui-browser-demo.md)
 
 ## Acceptance Criteria
 
-- [ ] Browser UI demonstrates a full operator path without requiring CLI-only steps for the demo.
-- [ ] Path includes at least: sign-in (or seeded session) → upload or select sample meter data → see dashboard/alert → use AI feature → acknowledge or act on result.
-- [ ] UI is reachable after Compose/deploy (documented URL).
-- [ ] Demo script lists the clicks that prove the three-tier + AI integration live.
+- [x] Browser UI demonstrates a full operator path without requiring CLI-only steps for the demo.
+- [x] Path includes at least: sign-in (or seeded session) → upload or select sample meter data → see dashboard/alert → use AI feature → acknowledge or act on result.
+- [x] UI is reachable after Compose/deploy (documented URL).
+- [x] Demo script lists the clicks that prove the three-tier + AI integration live.

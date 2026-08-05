@@ -4,8 +4,10 @@ module "cognito" {
   count  = var.enable_cognito ? 1 : 0
   source = "./modules/cognito"
 
-  project_name = var.project_name
-  environment  = var.environment
+  project_name  = var.project_name
+  environment   = var.environment
+  callback_urls = local.cognito_callback_urls
+  logout_urls   = local.cognito_logout_urls
 }
 
 output "cognito_user_pool_id" {

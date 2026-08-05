@@ -1,0 +1,42 @@
+@if (tour.active()) {
+  <div class="tour-root" role="dialog" aria-modal="true" aria-label="Product tour">
+    <!-- Full-screen blocker so clicks cannot fall through the dimmed page. -->
+    <div class="tour-dim" (click)="tour.skip()"></div>
+    @if (tour.highlightRect(); as rect) {
+      <div
+        class="tour-hole"
+        [style.top.px]="rect.top - 8"
+        [style.left.px]="rect.left - 8"
+        [style.width.px]="rect.width + 16"
+        [style.height.px]="rect.height + 16"
+      ></div>
+    }
+    <aside class="tour-card">
+      <p class="eyebrow">{{ tour.progressLabel() }}</p>
+      <h2>{{ tour.currentStep().title }}</h2>
+      <p class="body">{{ tour.currentStep().body }}</p>
+      <div class="actions">
+        <p-button
+          label="Would you like to know more?"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="tour.knowMore()"
+        />
+        <div class="nav">
+          <p-button
+            label="Back"
+            severity="secondary"
+            [text]="true"
+            [disabled]="tour.index() === 0"
+            (onClick)="tour.prev()"
+          />
+          <p-button label="Skip tour" severity="secondary" [text]="true" (onClick)="tour.skip()" />
+          <p-button
+            [label]="tour.index() >= tour.steps.length - 1 ? 'Done' : 'Next'"
+            (onClick)="tour.next()"
+          />
+        </div>
+      </div>
+    </aside>
+  </div>
+}

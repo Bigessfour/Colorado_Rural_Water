@@ -1,15 +1,15 @@
 <section class="page">
   <h1>CRWA roll-up</h1>
   <p class="lede">
-    Live sanitized summary — water balance and Data Confidence across municipalities. No customer
-    names or service addresses.
+    Live summary across member systems — water balance and Data Confidence only. No customer names
+    or service addresses.
   </p>
 
   <p-card header="Why Confidence appears here" styleClass="intro">
     <p>
       Confidence is how much comparable history and coverage a system has — not leak-detector
-      accuracy. Use it to coach Thin pilots differently from Strong archives so operators are not
-      pushed into false digs.
+      accuracy. Use it to coach newer Thin systems differently from Strong archives so operators are
+      not pushed into false digs.
     </p>
     @if (generatedAt()) {
       <p class="muted">Generated {{ generatedAt() }}</p>
@@ -45,10 +45,7 @@
           <td>{{ unaccountedLabel(row) }}</td>
           <td>{{ row.periodLabel }}</td>
           <td>
-            <p-tag
-              [severity]="confidenceSeverity(row.confidence)"
-              [value]="row.confidence"
-            />
+            <p-tag [severity]="confidenceSeverity(row.confidence)" [value]="row.confidence" />
           </td>
           <td>{{ row.monthsOfHistory }}</td>
           <td>{{ row.billingStatus }}</td>
@@ -61,7 +58,7 @@
             @if (busy()) {
               Loading…
             } @else {
-              No municipalities yet — provision a tenant from Admin.
+              No municipalities yet — provision a system from Admin.
             }
           </td>
         </tr>

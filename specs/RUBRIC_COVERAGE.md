@@ -19,6 +19,8 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 | LangSmith observability                  | B    | [002](002-langgraph-langsmith-agent/) | done (verified) | same evidence · Water_Saver LangSmith run URLs · [`evidence/langsmith/`](../evidence/langsmith/)                                      |
 | Custom autonomous agent (tool-using)     | B    | [002](002-langgraph-langsmith-agent/) | done (verified) | same evidence · `agent_tools.py` (`StructuredTool`)                                                                                   |
 
+**Product path (Pilot, not rubric):** Cognito JWT RAG lives under [014](014-cognito-rag-assistant/) — Bedrock Knowledge Bases + Dynamo `CONV#`. Compose FAISS/Mem0 above remains the Assessment III evidence spine.
+
 ## 2. Terraform (10%)
 
 | Brief item                                | Type | Feature                              | Status          | Evidence                                                                                             |
@@ -32,26 +34,26 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 
 ## 3. GitHub Actions (30%)
 
-| Brief item                       | Type | Feature                             | Status          | Evidence                                                                                         |
-| -------------------------------- | ---- | ----------------------------------- | --------------- | ------------------------------------------------------------------------------------------------ |
+| Brief item                       | Type | Feature                             | Status          | Evidence                                                                                                                                  |
+| -------------------------------- | ---- | ----------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Automate build / test / images   | R    | [005](005-github-actions-compose/)  | done (verified) | [`evidence/005-github-actions-compose.md`](../evidence/005-github-actions-compose.md) — compose build/test; **no ECR**; RAG not a CI gate |
-| Dockerfiles + Compose three-tier | R    | [005](005-github-actions-compose/)  | done (verified) | same — `--wait` + hard `/health` `/ready` + frontend                                                     |
-| No hard-coded secrets            | R    | [005](005-github-actions-compose/)  | done (verified) | `.env.example`, GH secret names, `gh-secrets-example.sh`                                                 |
-| Testing, logging, health checks  | R    | [005](005-github-actions-compose/)  | done (verified) | node + pytest + `scripts/smoke.sh` (`SMOKE_REQUIRE_RAG` opt-in)                                          |
-| Conditional PR vs main           | B    | [006](006-github-actions-advanced/) | done (verified) | [plan 30865855551](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865855551) · hard-fail `terraform.yml` |
-| Destroy workflow                 | B    | [006](006-github-actions-advanced/) | done (verified) | `destroy.yml` dry_run; local plan -destroy (92) until file on `main`                                                  |
-| Python unit tests in pipeline    | B    | [006](006-github-actions-advanced/) | done (via 005)  | `ci.yml` pytest job                                                                                                  |
-| Ansible                          | B    | —                                   | **skip**        | Compose path preferred                                                                           |
+| Dockerfiles + Compose three-tier | R    | [005](005-github-actions-compose/)  | done (verified) | same — `--wait` + hard `/health` `/ready` + frontend                                                                                      |
+| No hard-coded secrets            | R    | [005](005-github-actions-compose/)  | done (verified) | `.env.example`, GH secret names, `gh-secrets-example.sh`                                                                                  |
+| Testing, logging, health checks  | R    | [005](005-github-actions-compose/)  | done (verified) | node + pytest + `scripts/smoke.sh` (`SMOKE_REQUIRE_RAG` opt-in)                                                                           |
+| Conditional PR vs main           | B    | [006](006-github-actions-advanced/) | done (verified) | [plan 30865855551](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865855551) · hard-fail `terraform.yml`               |
+| Destroy workflow                 | B    | [006](006-github-actions-advanced/) | done (verified) | `destroy.yml` dry_run; local plan -destroy (92) until file on `main`                                                                      |
+| Python unit tests in pipeline    | B    | [006](006-github-actions-advanced/) | done (via 005)  | `ci.yml` pytest job                                                                                                                       |
+| Ansible                          | B    | —                                   | **skip**        | Compose path preferred                                                                                                                    |
 
 ## 4. Integrations (15%)
 
-| Brief item                      | Type | Feature                             | Status | Evidence                                 |
-| ------------------------------- | ---- | ----------------------------------- | ------ | ---------------------------------------- |
-| Bedrock for AI                  | R    | [007](007-integrations-bedrock-ui/) | done   | `backend/rag/llm.py`, Lambda Bedrock IAM |
-| Backend API for AI/RAG/agent    | R    | [007](007-integrations-bedrock-ui/) | done   | `/api/rag`, `/agent`                     |
-| Frontend UI (Angular + PrimeNG) | R    | [007](007-integrations-bedrock-ui/) | done   | `/assistant`                             |
-| Authenticated tenant scope      | R    | [007](007-integrations-bedrock-ui/) | done   | JWT `tenant_id`                          |
-| System UI browser demo          | B    | [008](008-system-ui-browser-demo/)  | done   | `docs/ASSESSMENT_III_DEMO.md`            |
+| Brief item                      | Type | Feature                             | Status          | Evidence                                                                                                         |
+| ------------------------------- | ---- | ----------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Bedrock for AI                  | R    | [007](007-integrations-bedrock-ui/) | done (verified) | [`evidence/007-integrations-bedrock-ui.md`](../evidence/007-integrations-bedrock-ui.md) · ChatBedrock Compose    |
+| Backend API for AI/RAG/agent    | R    | [007](007-integrations-bedrock-ui/) | done (verified) | `POST /api/rag` 200; `/agent` + `/alerts/explain` wired                                                          |
+| Frontend UI (Angular + PrimeNG) | R    | [007](007-integrations-bedrock-ui/) | done (verified) | `/assistant` Chrome prove · screenshot                                                                           |
+| Authenticated tenant scope      | R    | [007](007-integrations-bedrock-ui/) | done (verified) | Compose `town-wiley` headers; JWT path for AWS                                                                   |
+| System UI browser demo          | B    | [008](008-system-ui-browser-demo/)  | done (verified) | [`evidence/008-system-ui-browser-demo.md`](../evidence/008-system-ui-browser-demo.md) · Compose AI + Cognito ack |
 
 ## 5. Documentation (20%)
 
@@ -68,14 +70,14 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 
 ## Definition of Done checklist
 
-- [ ] `docker compose up` brings up healthy three-tier stack
+- [x] `docker compose up` brings up healthy three-tier stack — [`evidence/005-github-actions-compose.md`](../evidence/005-github-actions-compose.md), [`evidence/008-system-ui-browser-demo.md`](../evidence/008-system-ui-browser-demo.md)
 - [x] RAG + Mem0 path works and is tenant-safe
-- [ ] Bedrock reachable from backend and usable from frontend
-- [ ] Terraform plan/apply + remote state documented
+- [x] Bedrock reachable from backend and usable from frontend
+- [x] Terraform plan/apply + remote state documented — [`evidence/003-terraform-iac.md`](../evidence/003-terraform-iac.md), [`evidence/004-terraform-best-practices.md`](../evidence/004-terraform-best-practices.md), [Actions plan 30865855551](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865855551)
 - [x] GitHub Actions: PR path + main path; destroy workflow exists
-- [ ] ≥2 diagrams + reproducible README
-- [ ] This matrix shows every required line and claimed bonus with evidence links
-- [ ] 1-on-1 demo script walks rubric then Water Saver product value
+- [x] ≥2 diagrams + reproducible README — `docs/diagrams/*.mmd`, [README.md](../README.md), [GETTING_STARTED_ASSESSMENT.md](../GETTING_STARTED_ASSESSMENT.md)
+- [x] This matrix shows every required line and claimed bonus with evidence links
+- [x] 1-on-1 demo script walks rubric then Water Saver product value — [ASSESSMENT_III_DEMO.md](../docs/ASSESSMENT_III_DEMO.md), [KELLY_ZOOM_WALKTHROUGH.md](../docs/KELLY_ZOOM_WALKTHROUGH.md)
 
 ---
 
@@ -83,10 +85,10 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 
 **Acceptance criteria**
 
-- [ ] Multi-tenant isolation preserved: no cross-tenant data in DB queries, S3 paths, memory, or prompts.
-- [ ] No secrets in git (`.env`, real `*.tfvars`, API keys, tokens).
-- [ ] RUBRIC_COVERAGE.md maps each official rubric line → feature ID → status → evidence path.
-- [ ] Water Saver domain remains primary; Assessment III capabilities are enhancements, not a separate toy app.
+- [x] Multi-tenant isolation preserved: no cross-tenant data in DB queries, S3 paths, memory, or prompts.
+- [x] No secrets in git (`.env`, real `*.tfvars`, API keys, tokens).
+- [x] RUBRIC_COVERAGE.md maps each official rubric line → feature ID → status → evidence path.
+- [x] Water Saver domain remains primary; Assessment III capabilities are enhancements, not a separate toy app.
 
 Per-feature grading checklists live at the bottom of each `specs/00X-.../spec.md` under **Acceptance Criteria**.
 
@@ -94,6 +96,7 @@ Per-feature grading checklists live at the bottom of each `specs/00X-.../spec.md
 
 ## Optional product (not Assessment III %)
 
-| Item                      | Feature               | Status  | Notes                                                     |
-| ------------------------- | --------------------- | ------- | --------------------------------------------------------- |
-| Meter map (Leaflet + OSM) | [011](011-meter-map/) | planned | Deferred until 001–010 smoke green; does not block rubric |
+| Item                      | Feature                           | Status       | Notes                                                                                                                            |
+| ------------------------- | --------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Meter map (Leaflet + OSM) | [011](011-meter-map/)             | verified     | Optional product polish — [`evidence/011-meter-map.md`](../evidence/011-meter-map.md); does not score Assessment III %           |
+| Cognito JWT RAG Assistant | [014](014-cognito-rag-assistant/) | implementing | Product Pilot path — [`evidence/014-cognito-rag-assistant.md`](../evidence/014-cognito-rag-assistant.md); Compose remains rubric |

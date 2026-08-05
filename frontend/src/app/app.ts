@@ -13,8 +13,8 @@ import { ReviewPanelComponent } from './review/review-panel.component';
     } @else if (review.active() && !review.sessionId()) {
       <aside class="review-nudge" aria-label="Start Kelly review">
         <p>
-          Kelly review mode is on. Open <a routerLink="/review">/review</a> and press Start (or sign
-          in first).
+          Review mode is on. Open <a routerLink="/review">Review</a> and press Start (sign in first
+          if needed).
         </p>
       </aside>
     }

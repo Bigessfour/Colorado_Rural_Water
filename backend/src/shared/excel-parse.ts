@@ -3,20 +3,23 @@
  * Prefers "Meter Reads" / July sheets; never auto-uses Clerk Notes.
  */
 
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 import {
   applyMapping,
+  emptyRowCounts,
   guessColumnMapping,
   parseTableMatrix,
+  retainMappingForHeaders,
   type ColumnMapping,
   type IngestParseResult,
   type MappedReadingRow,
-} from './csv-parse.js';
+} from "./csv-parse.js";
 
 /** Decoded workbook hard cap (rural exports are small; guards Lambda / zip bombs). */
 export const MAX_EXCEL_BYTES = 5 * 1024 * 1024;
 /** Max base64 characters for excelBase64 (~4/3 of decoded + padding). */
-export const MAX_EXCEL_BASE64_CHARS = Math.ceil((MAX_EXCEL_BYTES * 4) / 3) + 128;
+export const MAX_EXCEL_BASE64_CHARS =
+  Math.ceil((MAX_EXCEL_BYTES * 4) / 3) + 128;
 export const MAX_EXCEL_SHEETS = 32;
 /** Cap rows SheetJS materializes per sheet (zip-bomb / dense-sheet DoS). */
 export const MAX_EXCEL_SHEET_ROWS = 50_000;
@@ -71,7 +74,9 @@ export function classifySheet(name: string): ExcelSheetInfo {
   };
 }
 
-export function listWorkbookSheets(buffer: Buffer | ArrayBuffer | Uint8Array): ExcelSheetInfo[] {
+export function listWorkbookSheets(
+  buffer: Buffer | ArrayBuffer | Uint8Array,
+): ExcelSheetInfo[] {
   const wb = readWorkbook(buffer);
   return wb.SheetNames.map(classifySheet);
 }
@@ -100,18 +105,21 @@ export function parseCustomerReadingsExcel(
     options.sheetName ??
     preferDataSheet(sheets) ??
     sheets.find((s) => s.dataSheet)?.name ??
-    '';
+    "";
 
   if (!selected) {
     return {
       mapping: {},
       mappingGuessed: false,
       rows: [],
-      errors: ['This workbook has no usable meter-data sheets (Clerk Notes alone is ignored).'],
+      errors: [
+        "This workbook has no usable meter-data sheets (Clerk Notes alone is ignored).",
+      ],
       warnings: [],
       sheets,
-      selectedSheet: '',
+      selectedSheet: "",
       mergedSheets: [],
+      ...emptyRowCounts(),
     };
   }
 
@@ -127,6 +135,7 @@ export function parseCustomerReadingsExcel(
       sheets,
       selectedSheet: selected,
       mergedSheets: [],
+      ...emptyRowCounts(),
     };
   }
 
@@ -136,34 +145,52 @@ export function parseCustomerReadingsExcel(
   let rows: MappedReadingRow[] = [...primary.rows];
   let mapping = primary.mapping;
   let errors = [...primary.errors];
+  let rowsSeen = primary.rowsSeen;
+  let rowsSkipped = primary.rowsSkipped;
+  let rowsDeduped = 0;
 
   if (options.mergeArchive) {
     const archiveName = findArchiveSheet(sheets);
     if (archiveName && archiveName !== selected) {
       const archive = parseSheet(wb, archiveName, options.mapping);
       mergedSheets.push(archiveName);
+      rowsSeen += archive.rowsSeen;
+      rowsSkipped += archive.rowsSkipped;
       if (archive.errors.length) {
         warnings.push(
-          `Archive sheet "${archiveName}" could not be fully parsed: ${archive.errors.join(' ')}`,
+          `Archive sheet "${archiveName}" could not be fully parsed: ${archive.errors.join(" ")}`,
         );
       } else {
-        warnings.push(`Merged archive sheet "${archiveName}" (${archive.rows.length} row(s)).`);
+        warnings.push(
+          `Merged archive sheet "${archiveName}" (${archive.rows.length} row(s)).`,
+        );
       }
       warnings.push(...archive.warnings.map((w) => `[${archiveName}] ${w}`));
       // Copy addresses from primary onto archive rows so history can commit before locations exist.
       const addressByMeter = new Map<string, string>();
       for (const r of rows) {
-        if (r.serviceAddress.trim()) addressByMeter.set(r.meterId, r.serviceAddress.trim());
+        if (r.serviceAddress.trim())
+          addressByMeter.set(r.meterId, r.serviceAddress.trim());
       }
       const enrichedArchive = archive.rows.map((r) =>
         r.serviceAddress.trim()
           ? r
-          : { ...r, serviceAddress: addressByMeter.get(r.meterId) ?? '' },
+          : { ...r, serviceAddress: addressByMeter.get(r.meterId) ?? "" },
       );
+      const beforeDedupe = rows.length + enrichedArchive.length;
       rows = dedupeRows([...rows, ...enrichedArchive]);
-      if (!mapping.meterId && archive.mapping.meterId) mapping = { ...archive.mapping, ...mapping };
+      rowsDeduped = Math.max(0, beforeDedupe - rows.length);
+      if (rowsDeduped > 0) {
+        warnings.push(
+          `Removed ${rowsDeduped} duplicate row(s) when merging archive sheet (same meter/date/reading).`,
+        );
+      }
+      if (!mapping.meterId && archive.mapping.meterId)
+        mapping = { ...archive.mapping, ...mapping };
     } else if (!archiveName) {
-      warnings.push('mergeArchive was requested but no archive sheet was found.');
+      warnings.push(
+        "mergeArchive was requested but no archive sheet was found.",
+      );
     }
   }
 
@@ -176,21 +203,25 @@ export function parseCustomerReadingsExcel(
     sheets,
     selectedSheet: selected,
     mergedSheets,
+    rowsSeen,
+    rowsAccepted: rows.length,
+    rowsSkipped,
+    rowsDeduped: rowsDeduped > 0 ? rowsDeduped : undefined,
   };
 }
 
 /** Decode base64 (with optional data-URL prefix) to Buffer. Rejects oversized payloads early. */
 export function bufferFromBase64(base64: string): Buffer {
-  const cleaned = base64.replace(/^data:[^;]+;base64,/, '').trim();
+  const cleaned = base64.replace(/^data:[^;]+;base64,/, "").trim();
   if (!cleaned) {
-    throw new Error('excelBase64 is empty');
+    throw new Error("excelBase64 is empty");
   }
   if (cleaned.length > MAX_EXCEL_BASE64_CHARS) {
     throw new Error(
       `Excel payload is too large (max ${MAX_EXCEL_BYTES} bytes decoded / ~${MAX_EXCEL_BASE64_CHARS} base64 chars).`,
     );
   }
-  const buf = Buffer.from(cleaned, 'base64');
+  const buf = Buffer.from(cleaned, "base64");
   assertExcelBufferWithinLimit(buf);
   return buf;
 }
@@ -202,15 +233,20 @@ export function bufferFromBase64(base64: string): Buffer {
 export function looksLikeExcelBuffer(buf: Buffer): boolean {
   if (buf.length < 4) return false;
   // D0 CF 11 E0 OLE compound / xls
-  if (buf[0] === 0xd0 && buf[1] === 0xcf && buf[2] === 0x11 && buf[3] === 0xe0) {
+  if (
+    buf[0] === 0xd0 &&
+    buf[1] === 0xcf &&
+    buf[2] === 0x11 &&
+    buf[3] === 0xe0
+  ) {
     return true;
   }
   // PK.. zip — require OOXML path markers somewhere in the archive bytes
   if (buf[0] === 0x50 && buf[1] === 0x4b) {
     return (
-      buf.includes(Buffer.from('[Content_Types].xml')) ||
-      buf.includes(Buffer.from('xl/workbook')) ||
-      buf.includes(Buffer.from('xl/worksheets'))
+      buf.includes(Buffer.from("[Content_Types].xml")) ||
+      buf.includes(Buffer.from("xl/workbook")) ||
+      buf.includes(Buffer.from("xl/worksheets"))
     );
   }
   return false;
@@ -218,7 +254,7 @@ export function looksLikeExcelBuffer(buf: Buffer): boolean {
 
 export function assertExcelBufferWithinLimit(buf: Buffer | Uint8Array): void {
   if (!buf.length) {
-    throw new Error('Excel file is empty');
+    throw new Error("Excel file is empty");
   }
   if (buf.length > MAX_EXCEL_BYTES) {
     throw new Error(
@@ -240,17 +276,20 @@ function parseSheet(
       rows: [],
       errors: [`Sheet "${sheetName}" was not found in this workbook.`],
       warnings: [],
+      ...emptyRowCounts(),
     };
   }
 
-  const matrix = XLSX.utils.sheet_to_json<Array<string | number | boolean | null>>(sheet, {
+  const matrix = XLSX.utils.sheet_to_json<
+    Array<string | number | boolean | null>
+  >(sheet, {
     header: 1,
-    defval: '',
+    defval: "",
     raw: false,
   }) as unknown as string[][];
 
   const stringMatrix = matrix.map((row) =>
-    (row ?? []).map((cell) => (cell == null ? '' : String(cell).trim())),
+    (row ?? []).map((cell) => (cell == null ? "" : String(cell).trim())),
   );
 
   const parsed = parseTableMatrix(stringMatrix);
@@ -263,14 +302,24 @@ function parseSheet(
         `Sheet "${sheetName}" looks empty, or we could not find a header row in the first rows.`,
       ],
       warnings: [],
+      ...emptyRowCounts(),
     };
   }
 
   const guessed = guessColumnMapping(parsed.headers);
-  const mapping = { ...guessed, ...mappingOverride };
+  const { kept: safeOverride, droppedColumns } = retainMappingForHeaders(
+    parsed.headers,
+    mappingOverride,
+  );
+  const mapping = { ...guessed, ...safeOverride };
   const requireAddress = Boolean(mapping.serviceAddress);
   const result = applyMapping(parsed, mapping, { requireAddress });
-  result.mappingGuessed = !mappingOverride || Object.keys(mappingOverride).length === 0;
+  result.mappingGuessed = Object.keys(safeOverride).length === 0;
+  if (droppedColumns.length) {
+    result.warnings.unshift(
+      `Sheet "${sheetName}": ignored saved column map for missing headers (${droppedColumns.join(", ")}); guessed from this sheet instead.`,
+    );
+  }
 
   if (parsed.headerRowIndex > 0) {
     result.warnings.unshift(
@@ -298,23 +347,24 @@ function dedupeRows(rows: MappedReadingRow[]): MappedReadingRow[] {
   return out;
 }
 
-function readWorkbook(buffer: Buffer | ArrayBuffer | Uint8Array): XLSX.WorkBook {
-  const data =
-    Buffer.isBuffer(buffer)
-      ? buffer
-      : buffer instanceof ArrayBuffer
-        ? Buffer.from(buffer)
-        : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+function readWorkbook(
+  buffer: Buffer | ArrayBuffer | Uint8Array,
+): XLSX.WorkBook {
+  const data = Buffer.isBuffer(buffer)
+    ? buffer
+    : buffer instanceof ArrayBuffer
+      ? Buffer.from(buffer)
+      : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   assertExcelBufferWithinLimit(data);
   // Sheet-name pass first (bookSheets) so we reject oversized workbooks before full parse.
-  const stub = XLSX.read(data, { type: 'buffer', bookSheets: true });
+  const stub = XLSX.read(data, { type: "buffer", bookSheets: true });
   if (stub.SheetNames.length > MAX_EXCEL_SHEETS) {
     throw new Error(
       `Workbook has ${stub.SheetNames.length} sheets (max ${MAX_EXCEL_SHEETS}). Export only meter-data sheets.`,
     );
   }
   return XLSX.read(data, {
-    type: 'buffer',
+    type: "buffer",
     cellDates: true,
     sheetRows: MAX_EXCEL_SHEET_ROWS,
   });

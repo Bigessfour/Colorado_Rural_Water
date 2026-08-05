@@ -1,0 +1,51 @@
+%% Assessment III — AWS product flow (primary architecture)
+flowchart TB
+  subgraph Client["Operator Browser"]
+    SPA[Angular + PrimeNG SPA<br/>CloudFront duqk1pqvmrsuh]
+  end
+
+  subgraph Edge["Edge / Auth"]
+    COG[Amazon Cognito<br/>email + password<br/>JWT with custom:tenant_id]
+  end
+
+  subgraph API["API Layer"]
+    APIGW[API Gateway HTTP API<br/>JWT authorizer]
+  end
+
+  subgraph Compute["Serverless Compute"]
+    L1[Lambda: ingest / upload]
+    L2[Lambda: alerts / balance]
+    L3[Lambda: meters / sources]
+    L4[Lambda: agent / explain]
+    L5[Lambda: review / admin / reports]
+  end
+
+  subgraph Data["Data and Storage"]
+    S3[S3 Uploads<br/>tenant-scoped keys]
+    DDB[(DynamoDB<br/>water-saver-dev-data)]
+  end
+
+  subgraph AI["AI"]
+    BR[Amazon Bedrock<br/>Nova Lite + Titan Embed]
+  end
+
+  SPA -->|1. Sign-in| COG
+  SPA -->|2. Bearer JWT| APIGW
+  APIGW --> L1
+  APIGW --> L2
+  APIGW --> L3
+  APIGW --> L4
+  APIGW --> L5
+  L1 --> S3
+  L1 --> DDB
+  L2 --> DDB
+  L3 --> DDB
+  L4 --> DDB
+  L5 --> DDB
+  L4 --> BR
+
+  style COG fill:#ff9900,color:#000
+  style APIGW fill:#ff9900,color:#000
+  style BR fill:#ff9900,color:#000
+  style DDB fill:#3b48cc,color:#fff
+  style S3 fill:#3b48cc,color:#fff

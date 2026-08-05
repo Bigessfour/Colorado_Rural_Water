@@ -1,6 +1,14 @@
+/**
+ * Operator home — Kelly demo centerpiece.
+ * Loads GET /alerts + GET /balance with the Cognito Bearer token only
+ * (no client tenant switch). Talk track: In/Out/Unaccounted, Data Confidence
+ * (history depth, not leak %), Watch vs Actionable alert counts.
+ */
+
 import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TagModule } from 'primeng/tag';
@@ -43,12 +51,21 @@ interface BalanceView {
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [CardModule, TagModule, ChartModule, DecimalPipe, MessageModule, RouterLink],
+  imports: [
+    CardModule,
+    TagModule,
+    ChartModule,
+    DecimalPipe,
+    MessageModule,
+    RouterLink,
+    ButtonModule,
+  ],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.scss',
 })
 export class DashboardPageComponent implements OnInit {
   readonly auth = inject(AuthService);
+  busy = signal(false);
 
   kpis = signal([
     { label: 'Meters monitored', value: '—', hint: 'After first upload' },
@@ -65,11 +82,15 @@ export class DashboardPageComponent implements OnInit {
     seasonality: 'Unknown until more cycles',
     meaning:
       'Confidence measures how much comparable history and meter coverage we have — not how sure we are of a leak.',
-    guidance: 'Sign in after ingest to refresh live Confidence from your readings.',
+    guidance: 'Sign in after uploading readings to refresh live Confidence.',
     improveHint: '',
     plainLanguage: '',
     signals: [
-      { name: 'Customer usage outliers', level: 'Thin' as ConfidenceLevel | '—', mode: 'Watch' as const },
+      {
+        name: 'Customer usage outliers',
+        level: 'Thin' as ConfidenceLevel | '—',
+        mode: 'Watch' as const,
+      },
       { name: 'Water balance', level: 'Thin' as ConfidenceLevel | '—', mode: 'Watch' as const },
       { name: 'Stuck / diagnostic meters', level: '—' as const, mode: 'Actionable' as const },
     ],
@@ -87,7 +108,7 @@ export class DashboardPageComponent implements OnInit {
     unaccountedPct: null,
     status: 'insufficient',
     live: false,
-    hint: 'Ingest customer meters and source readings, then refresh.',
+    hint: 'Upload customer meters and source readings, then refresh.',
   });
 
   usageChartData = signal<ChartData>({ labels: [], datasets: [] });
@@ -98,9 +119,7 @@ export class DashboardPageComponent implements OnInit {
   balanceInsufficient = signal(true);
 
   confidenceChartData = signal<ChartData>(buildConfidenceChart('Thin'));
-  healthChartData = signal<ChartData>(
-    buildHealthDonut({ normal: 0, watch: 0, actionable: 0 }),
-  );
+  healthChartData = signal<ChartData>(buildHealthDonut({ normal: 0, watch: 0, actionable: 0 }));
   showHealth = signal(false);
 
   readonly usageChartOptions = usageChartOptions;
@@ -139,13 +158,16 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 
+  /** Parallel live refresh — KPIs, confidence, balance bars, health donut. */
   async refreshLive(): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) {
       this.loadError.set('');
       return;
     }
+    this.busy.set(true);
     try {
+      // Tenant isolation: Authorization Bearer only — API resolves tenant_id from JWT.
       const [alertsRes, balanceRes] = await Promise.all([
         fetch(`${environment.apiBaseUrl}/alerts`, {
           headers: { authorization: `Bearer ${token}` },
@@ -171,40 +193,40 @@ export class DashboardPageComponent implements OnInit {
       );
       this.meterCount.set(meterCount);
 
-      const meterAlerts = ((alertsBody.alerts ?? []) as Array<{
-        id: string;
-        mode: 'Watch' | 'Actionable';
-        meterId?: string;
-        serviceAddress?: string;
-        summary: string;
-        confidenceNote: string;
-      }>).map(
-        (a): LiveAlert => ({
-          id: a.id,
-          mode: a.mode,
-          kind: 'meter',
-          meterId: a.meterId,
-          serviceAddress: a.serviceAddress,
-          summary: a.summary,
-          confidenceNote: a.confidenceNote,
-        }),
-      );
-      const balanceAlerts = ((alertsBody.balanceAlerts ?? []) as Array<{
-        id: string;
-        mode: 'Watch' | 'Actionable';
-        summary: string;
-        confidenceNote: string;
-        periodLabel?: string;
-      }>).map(
-        (a): LiveAlert => ({
-          id: a.id,
-          mode: a.mode ?? 'Watch',
-          kind: 'balance',
-          summary: a.summary,
-          confidenceNote: a.confidenceNote,
-          serviceAddress: a.periodLabel,
-        }),
-      );
+      const meterAlerts = (
+        (alertsBody.alerts ?? []) as Array<{
+          id: string;
+          mode: 'Watch' | 'Actionable';
+          meterId?: string;
+          serviceAddress?: string;
+          summary: string;
+          confidenceNote: string;
+        }>
+      ).map((a): LiveAlert => ({
+        id: a.id,
+        mode: a.mode,
+        kind: 'meter',
+        meterId: a.meterId,
+        serviceAddress: a.serviceAddress,
+        summary: a.summary,
+        confidenceNote: a.confidenceNote,
+      }));
+      const balanceAlerts = (
+        (alertsBody.balanceAlerts ?? []) as Array<{
+          id: string;
+          mode: 'Watch' | 'Actionable';
+          summary: string;
+          confidenceNote: string;
+          periodLabel?: string;
+        }>
+      ).map((a): LiveAlert => ({
+        id: a.id,
+        mode: a.mode ?? 'Watch',
+        kind: 'balance',
+        summary: a.summary,
+        confidenceNote: a.confidenceNote,
+        serviceAddress: a.periodLabel,
+      }));
       const alerts = [...balanceAlerts, ...meterAlerts];
       const watch = alerts.filter((a) => a.mode === 'Watch').length;
       const actionable = alerts.filter((a) => a.mode === 'Actionable').length;
@@ -214,7 +236,7 @@ export class DashboardPageComponent implements OnInit {
       this.showHealth.set(meterCount > 0);
       this.confidenceChartData.set(buildConfidenceChart(level));
 
-      let balanceHint = 'Ingest customer + source readings for live In/Out.';
+      let balanceHint = 'Upload customer + source readings for live In/Out.';
       let balanceKpi = '—';
       let balanceKpiHint = 'Unaccounted';
       let balanceStatus: BalanceView['status'] = 'insufficient';
@@ -310,7 +332,11 @@ export class DashboardPageComponent implements OnInit {
       });
 
       this.kpis.set([
-        { label: 'Meters monitored', value: String(meterCount || '—'), hint: 'From ingest store' },
+        {
+          label: 'Meters monitored',
+          value: String(meterCount || '—'),
+          hint: 'From your meter list',
+        },
         {
           label: 'Open alerts',
           value: String(alerts.length),
@@ -326,6 +352,8 @@ export class DashboardPageComponent implements OnInit {
       this.liveAlerts.set(alerts.slice(0, 8));
     } catch (err) {
       this.loadError.set(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      this.busy.set(false);
     }
   }
 

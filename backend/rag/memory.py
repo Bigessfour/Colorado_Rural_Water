@@ -2,8 +2,7 @@ import logging
 from typing import Any, Dict, List
 
 from langchain_core.chat_history import InMemoryChatMessageHistory
-from langchain_core.messages import AIMessage, HumanMessage
-
+from langchain_core.messages import HumanMessage
 from rag.settings import MEM0_API_KEY
 
 logger = logging.getLogger(__name__)

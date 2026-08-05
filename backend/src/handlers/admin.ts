@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
-import type { AuthedHandler } from '../shared/apigw.js';
+import { randomUUID } from "node:crypto";
+import type { AuthedHandler } from "../shared/apigw.js";
 import {
   isAssignableTenantRole,
   parseAuthFromClaims,
@@ -7,7 +7,7 @@ import {
   requireTenantId,
   type AssignableTenantRole,
   type AuthContext,
-} from '../shared/auth.js';
+} from "../shared/auth.js";
 import {
   crwaBillingView,
   defaultBillingFields,
@@ -20,26 +20,39 @@ import {
   type BillingFields,
   type PaymentMethod,
   type PlanCode,
-} from '../shared/billing.js';
-import { createCognitoAdminFromEnv, type CognitoAdminClient } from '../shared/cognito-admin.js';
-import { buildCrwaRollupRow, sanitizeRollupForResponse } from '../shared/crwa-rollup.js';
+} from "../shared/billing.js";
+import {
+  createCognitoAdminFromEnv,
+  type CognitoAdminClient,
+} from "../shared/cognito-admin.js";
+import {
+  buildCrwaRollupRow,
+  sanitizeRollupForResponse,
+} from "../shared/crwa-rollup.js";
 import {
   createMeterStoreFromEnv,
   createSourceStoreFromEnv,
   createTenantStoreFromEnv,
-} from '../shared/dynamo-store.js';
-import { badRequest, forbidden, json, ok, unauthorized } from '../shared/http.js';
+} from "../shared/dynamo-store.js";
+import {
+  badRequest,
+  forbidden,
+  json,
+  ok,
+  unauthorized,
+} from "../shared/http.js";
 import {
   generateTemporaryPassword,
   normalizeDisplayName,
   normalizeEmail,
+  normalizeMapCenterFields,
   normalizeMeterCountEstimate,
   normalizeOptionalEmail,
   normalizeOptionalIsoDate,
   normalizeTenantId,
   type TenantProfile,
   type TenantStore,
-} from '../shared/tenant-admin.js';
+} from "../shared/tenant-admin.js";
 
 /**
  * Admin APIs (Pilot D1–D3 + Epic I0–I2 + D4 roll-up):
@@ -58,23 +71,30 @@ import {
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
-  if (!claims || typeof claims !== 'object') {
+  if (!claims || typeof claims !== "object") {
     return unauthorized();
   }
 
   const auth = parseAuthFromClaims(claims as Record<string, unknown>);
   const method = event.requestContext.http.method;
-  const path = event.rawPath ?? event.requestContext.http.path ?? '';
+  const path = event.rawPath ?? event.requestContext.http.path ?? "";
 
   try {
     const store = createTenantStoreFromEnv();
     const cognito = createCognitoAdminFromEnv();
 
-    if (method === 'GET' && (path === '/billing' || path.endsWith('/billing')) && !path.includes('/admin/')) {
+    if (
+      method === "GET" &&
+      (path === "/billing" || path.endsWith("/billing")) &&
+      !path.includes("/admin/")
+    ) {
       return getMunicipalityBilling(auth, store);
     }
 
-    if (method === 'GET' && (path === '/admin/rollup' || path.endsWith('/admin/rollup'))) {
+    if (
+      method === "GET" &&
+      (path === "/admin/rollup" || path.endsWith("/admin/rollup"))
+    ) {
       return getCrwaRollup(auth, store);
     }
 
@@ -82,34 +102,42 @@ export const handler: AuthedHandler = async (event) => {
       /^\/admin\/tenants\/([^/]+)\/billing(?:\/([^/]+))?$/,
     );
     if (adminBillingMatch) {
-      const pathTenant = normalizeTenantId(decodeURIComponent(adminBillingMatch[1] ?? ''));
+      const pathTenant = normalizeTenantId(
+        decodeURIComponent(adminBillingMatch[1] ?? ""),
+      );
       if (!pathTenant.ok) return badRequest(pathTenant.error);
       const action = adminBillingMatch[2];
-      if (method === 'GET' && !action) {
+      if (method === "GET" && !action) {
         return getCrwaTenantBilling(auth, pathTenant.tenantId, store);
       }
-      if (method === 'POST' && action) {
-        return applyBillingAction(auth, pathTenant.tenantId, action, event.body, store);
+      if (method === "POST" && action) {
+        return applyBillingAction(
+          auth,
+          pathTenant.tenantId,
+          action,
+          event.body,
+          store,
+        );
       }
       return badRequest(`Unsupported ${method} ${path}`);
     }
 
-    if (method === 'POST' && path.endsWith('/admin/tenants')) {
+    if (method === "POST" && path.endsWith("/admin/tenants")) {
       return provisionTenant(auth, event.body, store, cognito);
     }
-    if (method === 'GET' && path.endsWith('/admin/tenants')) {
+    if (method === "GET" && path.endsWith("/admin/tenants")) {
       return listTenants(auth, store);
     }
-    if (method === 'POST' && path.endsWith('/admin/users/invite')) {
+    if (method === "POST" && path.endsWith("/admin/users/invite")) {
       return inviteUser(auth, event.body, store, cognito);
     }
-    if (method === 'GET' && path.endsWith('/admin/users')) {
+    if (method === "GET" && path.endsWith("/admin/users")) {
       return listUsers(auth, store);
     }
 
     return badRequest(`Unsupported ${method} ${path}`);
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Admin request failed';
+    const message = err instanceof Error ? err.message : "Admin request failed";
     if (/Requires one of|Forbidden|Missing tenant/i.test(message)) {
       return forbidden(message);
     }
@@ -127,17 +155,17 @@ async function provisionTenant(
   cognito: CognitoAdminClient,
 ) {
   try {
-    requireAnyRole(auth, ['crwa_admin']);
+    requireAnyRole(auth, ["crwa_admin"]);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
-  if (!bodyRaw) return badRequest('JSON body is required');
+  if (!bodyRaw) return badRequest("JSON body is required");
   let body: Record<string, unknown>;
   try {
     body = JSON.parse(bodyRaw) as Record<string, unknown>;
   } catch {
-    return badRequest('JSON body is required');
+    return badRequest("JSON body is required");
   }
 
   const id = normalizeTenantId(body.tenantId);
@@ -147,16 +175,19 @@ async function provisionTenant(
   const email = normalizeEmail(body.initialUserEmail);
   if (!email.ok) return badRequest(email.error);
 
-  let role: AssignableTenantRole = 'system_admin';
+  let role: AssignableTenantRole = "system_admin";
   if (body.initialUserRole !== undefined) {
     if (!isAssignableTenantRole(body.initialUserRole)) {
-      return badRequest('initialUserRole must be operator or system_admin');
+      return badRequest("initialUserRole must be operator or system_admin");
     }
     role = body.initialUserRole;
   }
 
   const billingParsed = parseProvisionBilling(body);
   if (!billingParsed.ok) return badRequest(billingParsed.error);
+
+  const mapParsed = normalizeMapCenterFields(body, name.displayName);
+  if (!mapParsed.ok) return badRequest(mapParsed.error);
 
   const existing = await store.getTenantProfile(id.tenantId);
   if (existing) {
@@ -174,7 +205,7 @@ async function provisionTenant(
       temporaryPassword,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Cognito create failed';
+    const msg = err instanceof Error ? err.message : "Cognito create failed";
     if (/UsernameExistsException|already exists/i.test(msg)) {
       return badRequest(`User ${email.email} already exists in Cognito`);
     }
@@ -188,6 +219,10 @@ async function provisionTenant(
     createdByUserId: auth.userId,
     createdByEmail: auth.email,
     initialUserEmail: email.email,
+    mapTown: mapParsed.mapTown,
+    mapCenterLat: mapParsed.mapCenterLat,
+    mapCenterLng: mapParsed.mapCenterLng,
+    mapZoom: mapParsed.mapZoom,
     ...billingParsed.fields,
   };
 
@@ -205,8 +240,8 @@ async function provisionTenant(
       tenantId: id.tenantId,
       eventId: randomUUID(),
       createdAt: now,
-      eventType: 'provision',
-      source: 'admin_manual',
+      eventType: "provision",
+      source: "admin_manual",
       billingStatusAfter: profile.billingStatus,
       actorUserId: auth.userId,
       actorEmail: auth.email,
@@ -214,7 +249,7 @@ async function provisionTenant(
       pilotExpiresAt: profile.pilotExpiresAt,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Dynamo write failed';
+    const msg = err instanceof Error ? err.message : "Dynamo write failed";
     if (/ConditionalCheckFailed/i.test(msg)) {
       return badRequest(`Tenant ${id.tenantId} already exists`);
     }
@@ -227,16 +262,16 @@ async function provisionTenant(
       email: email.email,
       role,
       temporaryPassword,
-      note: 'Share this temporary password out-of-band. User must change it on first sign-in.',
+      note: "Share this temporary password out-of-band. User must change it on first sign-in.",
     },
   });
 }
 
 async function getCrwaRollup(auth: AuthContext, store: TenantStore) {
   try {
-    requireAnyRole(auth, ['crwa_admin']);
+    requireAnyRole(auth, ["crwa_admin"]);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
   const profiles = await store.listTenantProfiles();
@@ -263,9 +298,9 @@ async function getCrwaRollup(auth: AuthContext, store: TenantStore) {
 
 async function listTenants(auth: AuthContext, store: TenantStore) {
   try {
-    requireAnyRole(auth, ['crwa_admin']);
+    requireAnyRole(auth, ["crwa_admin"]);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
   const tenants = await store.listTenantProfiles();
   return ok({
@@ -274,11 +309,15 @@ async function listTenants(auth: AuthContext, store: TenantStore) {
   });
 }
 
-async function getCrwaTenantBilling(auth: AuthContext, tenantId: string, store: TenantStore) {
+async function getCrwaTenantBilling(
+  auth: AuthContext,
+  tenantId: string,
+  store: TenantStore,
+) {
   try {
-    requireAnyRole(auth, ['crwa_admin']);
+    requireAnyRole(auth, ["crwa_admin"]);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
   const profile = await store.getTenantProfile(tenantId);
   if (!profile) {
@@ -295,21 +334,21 @@ async function getCrwaTenantBilling(auth: AuthContext, tenantId: string, store: 
 
 async function getMunicipalityBilling(auth: AuthContext, store: TenantStore) {
   try {
-    requireAnyRole(auth, ['system_admin']);
+    requireAnyRole(auth, ["system_admin"]);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
   let tenantId: string;
   try {
     tenantId = requireTenantId(auth);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
   const profile = await store.getTenantProfile(tenantId);
   if (!profile) {
-    return json(404, { error: 'Billing profile not found for this system' });
+    return json(404, { error: "Billing profile not found for this system" });
   }
   const events = await store.listBillingEvents(tenantId, 50);
   return ok({
@@ -328,9 +367,9 @@ async function applyBillingAction(
   store: TenantStore,
 ) {
   try {
-    requireAnyRole(auth, ['crwa_admin']);
+    requireAnyRole(auth, ["crwa_admin"]);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
   const profile = await store.getTenantProfile(tenantId);
@@ -343,13 +382,13 @@ async function applyBillingAction(
     try {
       body = JSON.parse(bodyRaw) as Record<string, unknown>;
     } catch {
-      return badRequest('Body must be JSON');
+      return badRequest("Body must be JSON");
     }
   }
 
   // Never honor client tenant override.
   if (body.tenantId !== undefined && String(body.tenantId) !== tenantId) {
-    return forbidden('tenantId cannot be overridden by the client');
+    return forbidden("tenantId cannot be overridden by the client");
   }
 
   const now = new Date().toISOString();
@@ -362,83 +401,116 @@ async function applyBillingAction(
   let pilotExpiresAt: string | undefined;
 
   switch (action) {
-    case 'record-payment': {
-      eventType = 'record_payment';
+    case "record-payment": {
+      eventType = "record_payment";
       next = {
         ...next,
-        billingStatus: 'active',
-        billingMode: next.billingMode === 'processor' ? 'processor' : 'manual',
+        billingStatus: "active",
+        billingMode: next.billingMode === "processor" ? "processor" : "manual",
         lastPaymentAt: now,
         pilotExpiresAt: undefined,
       };
-      if (body.amountCents !== undefined && body.amountCents !== null && body.amountCents !== '') {
-        const n = typeof body.amountCents === 'number' ? body.amountCents : Number(body.amountCents);
+      if (
+        body.amountCents !== undefined &&
+        body.amountCents !== null &&
+        body.amountCents !== ""
+      ) {
+        const n =
+          typeof body.amountCents === "number"
+            ? body.amountCents
+            : Number(body.amountCents);
         if (!Number.isFinite(n) || n < 0 || n > 100_000_000) {
-          return badRequest('amountCents must be a non-negative number');
+          return badRequest("amountCents must be a non-negative number");
         }
         amountCents = Math.round(n);
       }
-      currency = typeof body.currency === 'string' && body.currency.trim() ? body.currency.trim().toUpperCase() : 'USD';
+      currency =
+        typeof body.currency === "string" && body.currency.trim()
+          ? body.currency.trim().toUpperCase()
+          : "USD";
       if (body.method !== undefined) {
         if (!isPaymentMethod(body.method)) {
-          return badRequest('method must be check, ach, card, or other');
+          return badRequest("method must be check, ach, card, or other");
         }
         method = body.method;
       } else {
-        method = 'other';
+        method = "other";
       }
-      note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) : undefined;
+      note =
+        typeof body.note === "string"
+          ? body.note.trim().slice(0, 500)
+          : undefined;
       break;
     }
-    case 'extend-pilot': {
-      eventType = 'extend_pilot';
+    case "extend-pilot": {
+      eventType = "extend_pilot";
       const exp = normalizeOptionalIsoDate(body.pilotExpiresAt);
       if (!exp.ok) return badRequest(exp.error);
-      if (!exp.iso) return badRequest('pilotExpiresAt is required to extend pilot');
+      if (!exp.iso)
+        return badRequest("pilotExpiresAt is required to extend pilot");
       next = {
         ...next,
-        billingStatus: 'pilot',
-        billingMode: 'pilot',
+        billingStatus: "pilot",
+        billingMode: "pilot",
         pilotExpiresAt: exp.iso,
       };
       pilotExpiresAt = exp.iso;
-      note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) : undefined;
+      note =
+        typeof body.note === "string"
+          ? body.note.trim().slice(0, 500)
+          : undefined;
       break;
     }
-    case 'mark-past-due': {
-      eventType = 'mark_past_due';
-      next = { ...next, billingStatus: 'past_due' };
-      note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) : undefined;
+    case "mark-past-due": {
+      eventType = "mark_past_due";
+      next = { ...next, billingStatus: "past_due" };
+      note =
+        typeof body.note === "string"
+          ? body.note.trim().slice(0, 500)
+          : undefined;
       break;
     }
-    case 'suspend': {
-      eventType = 'suspend';
-      next = { ...next, billingStatus: 'suspended' };
-      note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) : undefined;
+    case "suspend": {
+      eventType = "suspend";
+      next = { ...next, billingStatus: "suspended" };
+      note =
+        typeof body.note === "string"
+          ? body.note.trim().slice(0, 500)
+          : undefined;
       break;
     }
-    case 'reactivate': {
-      eventType = 'reactivate';
-      const asPilot = body.asPilot === true || body.billingStatus === 'pilot';
+    case "reactivate": {
+      eventType = "reactivate";
+      const asPilot = body.asPilot === true || body.billingStatus === "pilot";
       next = {
         ...next,
-        billingStatus: asPilot ? 'pilot' : 'active',
-        billingMode: asPilot ? 'pilot' : next.billingMode === 'processor' ? 'processor' : 'manual',
+        billingStatus: asPilot ? "pilot" : "active",
+        billingMode: asPilot
+          ? "pilot"
+          : next.billingMode === "processor"
+            ? "processor"
+            : "manual",
       };
-      note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) : undefined;
+      note =
+        typeof body.note === "string"
+          ? body.note.trim().slice(0, 500)
+          : undefined;
       break;
     }
     default:
       return badRequest(
-        'Unknown billing action. Use record-payment, extend-pilot, mark-past-due, suspend, or reactivate',
+        "Unknown billing action. Use record-payment, extend-pilot, mark-past-due, suspend, or reactivate",
       );
   }
 
-  if (typeof body.billingNotes === 'string') {
-    next = { ...next, billingNotes: body.billingNotes.trim().slice(0, 1000) || undefined };
+  if (typeof body.billingNotes === "string") {
+    next = {
+      ...next,
+      billingNotes: body.billingNotes.trim().slice(0, 1000) || undefined,
+    };
   }
   if (body.planCode !== undefined) {
-    if (!isPlanCode(body.planCode)) return badRequest('planCode is invalid');
+    if (!isPlanCode(body.planCode)) return badRequest("planCode is invalid");
     next = { ...next, planCode: body.planCode };
   }
 
@@ -447,7 +519,7 @@ async function applyBillingAction(
     eventId: randomUUID(),
     createdAt: now,
     eventType,
-    source: 'admin_manual',
+    source: "admin_manual",
     billingStatusAfter: next.billingStatus,
     amountCents,
     currency,
@@ -477,38 +549,38 @@ async function inviteUser(
   cognito: CognitoAdminClient,
 ) {
   try {
-    requireAnyRole(auth, ['system_admin']);
+    requireAnyRole(auth, ["system_admin"]);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
   let tenantId: string;
   try {
     tenantId = requireTenantId(auth);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
-  if (!bodyRaw) return badRequest('JSON body is required');
+  if (!bodyRaw) return badRequest("JSON body is required");
   let body: Record<string, unknown>;
   try {
     body = JSON.parse(bodyRaw) as Record<string, unknown>;
   } catch {
-    return badRequest('Body must be JSON');
+    return badRequest("Body must be JSON");
   }
 
   // Never honor client-supplied tenantId for invite.
   if (body.tenantId !== undefined && String(body.tenantId) !== tenantId) {
-    return forbidden('tenantId cannot be overridden by the client');
+    return forbidden("tenantId cannot be overridden by the client");
   }
 
   const email = normalizeEmail(body.email);
   if (!email.ok) return badRequest(email.error);
 
-  let role: AssignableTenantRole = 'operator';
+  let role: AssignableTenantRole = "operator";
   if (body.role !== undefined) {
     if (!isAssignableTenantRole(body.role)) {
-      return badRequest('role must be operator or system_admin');
+      return badRequest("role must be operator or system_admin");
     }
     role = body.role;
   }
@@ -527,7 +599,7 @@ async function inviteUser(
       temporaryPassword,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Cognito create failed';
+    const msg = err instanceof Error ? err.message : "Cognito create failed";
     if (/UsernameExistsException|already exists/i.test(msg)) {
       return badRequest(`User ${email.email} already exists in Cognito`);
     }
@@ -545,7 +617,7 @@ async function inviteUser(
       createdByEmail: auth.email,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Dynamo write failed';
+    const msg = err instanceof Error ? err.message : "Dynamo write failed";
     if (/ConditionalCheckFailed/i.test(msg)) {
       return badRequest(`User ${email.email} is already in this system`);
     }
@@ -558,23 +630,23 @@ async function inviteUser(
       email: email.email,
       role,
       temporaryPassword,
-      note: 'Share this temporary password out-of-band. User must change it on first sign-in.',
+      note: "Share this temporary password out-of-band. User must change it on first sign-in.",
     },
   });
 }
 
 async function listUsers(auth: AuthContext, store: TenantStore) {
   try {
-    requireAnyRole(auth, ['system_admin', 'crwa_admin']);
+    requireAnyRole(auth, ["system_admin", "crwa_admin"]);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
   let tenantId: string;
   try {
     tenantId = requireTenantId(auth);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
   const users = await store.listTenantUsers(tenantId);
@@ -592,18 +664,21 @@ async function listUsers(auth: AuthContext, store: TenantStore) {
 function parseProvisionBilling(
   body: Record<string, unknown>,
 ): { ok: true; fields: BillingFields } | { ok: false; error: string } {
-  let pilotOrPaid: 'pilot' | 'paid' | undefined;
+  let pilotOrPaid: "pilot" | "paid" | undefined;
   if (body.pilotOrPaid !== undefined) {
-    if (body.pilotOrPaid !== 'pilot' && body.pilotOrPaid !== 'paid') {
-      return { ok: false, error: 'pilotOrPaid must be pilot or paid' };
+    if (body.pilotOrPaid !== "pilot" && body.pilotOrPaid !== "paid") {
+      return { ok: false, error: "pilotOrPaid must be pilot or paid" };
     }
     pilotOrPaid = body.pilotOrPaid;
   }
 
-  let billingStatus = undefined as BillingFields['billingStatus'] | undefined;
+  let billingStatus = undefined as BillingFields["billingStatus"] | undefined;
   if (body.billingStatus !== undefined) {
     if (!isBillingStatus(body.billingStatus)) {
-      return { ok: false, error: 'billingStatus must be pilot, active, past_due, or suspended' };
+      return {
+        ok: false,
+        error: "billingStatus must be pilot, active, past_due, or suspended",
+      };
     }
     billingStatus = body.billingStatus;
   }
@@ -611,7 +686,7 @@ function parseProvisionBilling(
   let planCode: PlanCode | undefined;
   if (body.planCode !== undefined) {
     if (!isPlanCode(body.planCode)) {
-      return { ok: false, error: 'planCode is invalid' };
+      return { ok: false, error: "planCode is invalid" };
     }
     planCode = body.planCode;
   }
@@ -626,17 +701,25 @@ function parseProvisionBilling(
   if (!pilotExp.ok) return pilotExp;
 
   let retentionMonths: number | undefined;
-  if (body.retentionMonths !== undefined && body.retentionMonths !== null && body.retentionMonths !== '') {
+  if (
+    body.retentionMonths !== undefined &&
+    body.retentionMonths !== null &&
+    body.retentionMonths !== ""
+  ) {
     const n =
-      typeof body.retentionMonths === 'number' ? body.retentionMonths : Number(body.retentionMonths);
+      typeof body.retentionMonths === "number"
+        ? body.retentionMonths
+        : Number(body.retentionMonths);
     if (!Number.isFinite(n) || n < 1 || n > 120) {
-      return { ok: false, error: 'retentionMonths must be between 1 and 120' };
+      return { ok: false, error: "retentionMonths must be between 1 and 120" };
     }
     retentionMonths = Math.floor(n);
   }
 
   const billingNotes =
-    typeof body.billingNotes === 'string' ? body.billingNotes.trim().slice(0, 1000) || undefined : undefined;
+    typeof body.billingNotes === "string"
+      ? body.billingNotes.trim().slice(0, 1000) || undefined
+      : undefined;
 
   return {
     ok: true,
@@ -659,6 +742,10 @@ function sanitizeCrwaTenant(t: TenantProfile) {
     displayName: t.displayName,
     createdAt: t.createdAt,
     initialUserEmail: t.initialUserEmail,
+    mapTown: t.mapTown ?? null,
+    mapCenterLat: t.mapCenterLat ?? null,
+    mapCenterLng: t.mapCenterLng ?? null,
+    mapZoom: t.mapZoom ?? null,
     ...crwaBillingView(t),
   };
 }
@@ -689,7 +776,7 @@ function sanitizePublicEvent(e: BillingEvent) {
     amountCents: e.amountCents,
     currency: e.currency,
     method: e.method,
-    note: e.eventType === 'record_payment' ? e.note : undefined,
+    note: e.eventType === "record_payment" ? e.note : undefined,
     pilotExpiresAt: e.pilotExpiresAt,
   };
 }

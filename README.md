@@ -7,6 +7,7 @@ Operators upload messy meter CSV/Excel files, see clear usage trends, and get pr
 **Status:** MVP + Assessment III full-credit track (Compose / Actions / LangChain+Mem0)
 **Spec:** [docs/SPEC.md](docs/SPEC.md) · Assessment Spec-Kit: [specs/RUBRIC_COVERAGE.md](specs/RUBRIC_COVERAGE.md)
 **Agent rules (non-negotiable):** [AGENTS.md](AGENTS.md) / [agent.md](agent.md)
+**Spec Kit (SDD):** [docs/spec-kit.md](docs/spec-kit.md) · workspace: [docs/spec-kit-workspace.md](docs/spec-kit-workspace.md)
 **AWS account:** [docs/AWS_ACCOUNT.md](docs/AWS_ACCOUNT.md) (`388691194728` / `codeplatoon` / `us-east-1`, tag `Assessment-iii`)
 **Tickets:** [docs/TICKETS.md](docs/TICKETS.md) · [GitHub Issues](https://github.com/Bigessfour/Colorado_Rural_Water/issues)
 **Tenant isolation:** [docs/TENANT_ISOLATION.md](docs/TENANT_ISOLATION.md)

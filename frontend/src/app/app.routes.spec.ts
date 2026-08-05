@@ -10,7 +10,9 @@ function collectPaths(rs: typeof routes, prefix = ''): string[] {
         ? prefix || '/'
         : `${prefix}/${path}`.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
     if (r.component) {
-      out.push(path === 'login' ? '/login' : full === '' ? '/' : full.startsWith('/') ? full : `/${full}`);
+      out.push(
+        path === 'login' ? '/login' : full === '' ? '/' : full.startsWith('/') ? full : `/${full}`,
+      );
     }
     if (r.children) {
       const childPrefix = path === '' ? prefix : `${prefix}/${path}`;
@@ -30,6 +32,9 @@ describe('app.routes', () => {
       '/meters',
       '/sources',
       '/alerts',
+      '/onboarding',
+      '/reports',
+      '/settings',
       '/assistant',
       '/account',
       '/admin',

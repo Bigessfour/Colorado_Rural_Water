@@ -19,6 +19,11 @@ case "${MODE}" in
 	sed -n '2,10p' "$0"
 	exit 0
 	;;
+*)
+	echo "Unknown mode: ${MODE}" >&2
+	sed -n '2,10p' "$0"
+	exit 1
+	;;
 esac
 
 run_backend_node() {
@@ -70,6 +75,7 @@ fast)
 	run_backend_node
 	run_pytest
 	docker compose config --quiet
+	bash scripts/spec-kit-smoke.sh
 	echo "OK — fast path green (skipped compose build/up)"
 	;;
 compose)
@@ -80,5 +86,9 @@ all)
 	run_pytest
 	run_compose
 	echo "OK — full local CI green"
+	;;
+*)
+	echo "Unknown mode: ${MODE}" >&2
+	exit 1
 	;;
 esac

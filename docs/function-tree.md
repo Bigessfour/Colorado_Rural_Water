@@ -2,6 +2,7 @@
 
 **Auto-generated raw data:** [function-inventory.generated.md](./function-inventory.generated.md) (TS scanner — `frontend/src` + `backend/src`; run `npm run inventory`)
 **Status overlay:** [action-items.md](./action-items.md)
+**Last scan:** 2026-08-04 — **206** tracked · **182** with proof · **24** without (scanner)
 
 ```mermaid
 flowchart TB
@@ -101,10 +102,31 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    AgentApi[GET/POST /agent] --> Guard[agent-context isolation + confirm]
-    Guard --> Template[templateAgentReply]
-    Guard -.-> Bedrock[bedrock optional]
-    Explain[POST /alerts/explain] --> ExplainTpl[explainAlertTemplate]
+  subgraph compose [Compose_8080_Assessment]
+    AsstUI["/assistant"]
+    RagApi["POST /api/rag"]
+    ChatBedrock["ChatBedrock + FAISS"]
+    Mem0["Mem0 MemoryClient"]
+    AsstUI --> RagApi --> ChatBedrock
+    RagApi --> Mem0
+  end
+  subgraph aws [Cognito_JWT_Product_014]
+    AgentApi["GET/POST /agent"]
+    Guard["agent-context isolation + confirm"]
+    Tools["live agent-tools"]
+    KB["Bedrock KB Retrieve filter"]
+    Local["local corpus fallback"]
+    Converse["Converse Nova + Guardrail"]
+    Conv["Dynamo CONV#"]
+    AgentApi --> Guard --> Tools
+    Guard --> KB
+    KB --> Converse
+    KB -.-> Local
+    Local --> Converse
+    Converse --> Conv
+  end
 ```
 
-See [action-items.md](./action-items.md) for proof status per function.
+Assessment Features **001 / 007 / 008** prove Compose LangChain RAG. Feature **014** is the Cognito product path (KB + tools + CONV#).
+
+See [action-items.md](./action-items.md) · [PROVE_FEATURES.md](./PROVE_FEATURES.md) · [evidence/014-cognito-rag-assistant.md](../evidence/014-cognito-rag-assistant.md).

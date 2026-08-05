@@ -6,33 +6,33 @@
 
 ## What Feature 005 honestly proves
 
-| Gate | Proved | Not proved (out of 005 / deferred) |
-| ---- | ------ | ---------------------------------- |
-| Node unit tests on GH | Yes | — |
-| Pytest RAG *isolation* (no live Bedrock) | Yes | Live Mem0/Bedrock answers in CI |
-| `docker compose build` on GH | Yes | Push images to ECR/registry |
-| Three-tier up + health | Yes — `/health`, `/ready`, frontend `:8080` | Operator Cognito SPA walkthrough |
-| Secrets not in git | Yes | Terraform plan/apply (Feature **006**) |
-| PR triggers CI | Yes | Auto-deploy to AWS on merge |
+| Gate                                     | Proved                                      | Not proved (out of 005 / deferred)     |
+| ---------------------------------------- | ------------------------------------------- | -------------------------------------- |
+| Node unit tests on GH                    | Yes                                         | —                                      |
+| Pytest RAG _isolation_ (no live Bedrock) | Yes                                         | Live Mem0/Bedrock answers in CI        |
+| `docker compose build` on GH             | Yes                                         | Push images to ECR/registry            |
+| Three-tier up + health                   | Yes — `/health`, `/ready`, frontend `:8080` | Operator Cognito SPA walkthrough       |
+| Secrets not in git                       | Yes                                         | Terraform plan/apply (Feature **006**) |
+| PR triggers CI                           | Yes                                         | Auto-deploy to AWS on merge            |
 
 ## Rubric → implementation
 
-| Rubric item | Implementation | Proof |
-| --- | --- | --- |
-| Build / test / images | `.github/workflows/ci.yml` — node, pytest, compose **build** | GH Actions CI on PR #11 |
-| Dockerfiles + Compose three-tier | `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml` | Compose job `--wait` + smoke |
-| No hard-coded secrets | `.env.example`, gitignored `.env` | `scripts/gh-secrets-example.sh` |
-| Secrets via GH / ASM | GH secret *names* present; ASM stub from Terraform | Values never printed |
-| Testing + health | `npm test`, pytest, hard `/health`+`/ready` (+ frontend) | `scripts/smoke.sh` (RAG opt-in) |
-| Minimal-manual release | PR → CI; docs in README | Path-filtered `pull_request` / `push` to `main` |
+| Rubric item                      | Implementation                                                    | Proof                                           |
+| -------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------- |
+| Build / test / images            | `.github/workflows/ci.yml` — node, pytest, compose **build**      | GH Actions CI on PR #11                         |
+| Dockerfiles + Compose three-tier | `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml` | Compose job `--wait` + smoke                    |
+| No hard-coded secrets            | `.env.example`, gitignored `.env`                                 | `scripts/gh-secrets-example.sh`                 |
+| Secrets via GH / ASM             | GH secret _names_ present; ASM stub from Terraform                | Values never printed                            |
+| Testing + health                 | `npm test`, pytest, hard `/health`+`/ready` (+ frontend)          | `scripts/smoke.sh` (RAG opt-in)                 |
+| Minimal-manual release           | PR → CI; docs in README                                           | Path-filtered `pull_request` / `push` to `main` |
 
 ## Smoke contract (anti-flake)
 
 Default CI/local smoke (**hard**):
 
-1. Wait until `GET /health` → 200  
-2. Wait until `GET /ready` → `status=ready`  
-3. Optional `SMOKE_FRONTEND_URL` → 200  
+1. Wait until `GET /health` → 200
+2. Wait until `GET /ready` → `status=ready`
+3. Optional `SMOKE_FRONTEND_URL` → 200
 4. **Does not** call `/api/rag` (Bedrock missing → 500 would flake)
 
 Opt-in live AI prove:

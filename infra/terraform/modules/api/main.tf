@@ -1,7 +1,10 @@
 terraform {
+  required_version = ">= 1.5.0"
+
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
     }
   }
 }
@@ -46,6 +49,20 @@ data "aws_iam_policy_document" "lambda_data" {
     resources = ["${var.uploads_bucket_arn}/tenants/*"]
   }
 
+  # SDK GetObject / multipart helpers may call ListBucket; keep prefix-scoped.
+  statement {
+    sid = "UploadsListBucket"
+    actions = [
+      "s3:ListBucket",
+    ]
+    resources = [var.uploads_bucket_arn]
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["tenants/*"]
+    }
+  }
+
   statement {
     sid = "DynamoDataAccess"
     actions = [
@@ -58,10 +75,16 @@ data "aws_iam_policy_document" "lambda_data" {
     resources = [var.data_table_arn]
 
     # Require partition keys under TENANT#… (app isolation still required for cross-tenant).
+    # Null=false avoids ForAllValues vacuous-true when LeadingKeys is absent.
     condition {
       test     = "ForAllValues:StringLike"
       variable = "dynamodb:LeadingKeys"
       values   = ["TENANT#*"]
+    }
+    condition {
+      test     = "Null"
+      variable = "dynamodb:LeadingKeys"
+      values   = ["false"]
     }
   }
 
@@ -84,16 +107,22 @@ data "aws_iam_policy_document" "lambda_data" {
     resources = [var.cognito_user_pool_arn]
   }
 
-  # Epic E / C6 — cheapest Bedrock model (Nova Lite) in this region only.
+  # Epic E / C6 — cheapest Bedrock models (Nova Lite / Micro).
+  # On-demand foundation-model ARNs (no account) + US inference-profile ARNs (account-scoped).
+  # See: https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-prereq.html
   statement {
     sid = "BedrockConverse"
     actions = [
       "bedrock:InvokeModel",
+      "bedrock:InvokeModelWithResponseStream",
       "bedrock:Converse",
+      "bedrock:ConverseStream",
     ]
     resources = [
       "arn:aws:bedrock:${data.aws_region.current.region}::foundation-model/amazon.nova-lite-v1:0",
       "arn:aws:bedrock:${data.aws_region.current.region}::foundation-model/amazon.nova-micro-v1:0",
+      "arn:aws:bedrock:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.amazon.nova-lite-v1:0",
+      "arn:aws:bedrock:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.amazon.nova-micro-v1:0",
     ]
   }
 
@@ -128,6 +157,11 @@ locals {
     BEDROCK_ENABLED      = "1"
     REVIEW_NOTIFY_TO     = var.review_notify_to
     REVIEW_FROM_EMAIL    = var.review_from_email
+    # Feature 014 — resolved via SSM after bedrock-kb module apply (avoids TF cycle).
+    KNOWLEDGE_SSM_PREFIX  = "/${local.name_prefix}"
+    AGENT_RATE_LIMIT_HOUR = "60"
+    BEDROCK_GUARDRAIL_ID  = var.bedrock_guardrail_id
+    BEDROCK_GUARDRAIL_VER = var.bedrock_guardrail_version
   }
 }
 
@@ -139,6 +173,9 @@ resource "aws_lambda_function" "health" {
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
   timeout          = 10
+  environment {
+    variables = local.lambda_env
+  }
 }
 
 resource "aws_lambda_function" "me" {
@@ -149,6 +186,10 @@ resource "aws_lambda_function" "me" {
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
   timeout          = 10
+  # DATA_TABLE required — GET /me loads tenant mapTown / map center for geocode bias.
+  environment {
+    variables = local.lambda_env
+  }
 }
 
 resource "aws_lambda_function" "upload_url" {
@@ -283,8 +324,8 @@ resource "aws_lambda_function" "agent" {
   runtime          = "nodejs22.x"
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
-  timeout          = 45
-  memory_size      = 512
+  timeout          = 90
+  memory_size      = 1024
   environment {
     variables = local.lambda_env
   }
@@ -299,6 +340,33 @@ resource "aws_lambda_function" "review" {
   source_code_hash = filebase64sha256(var.lambda_zip_path)
   timeout          = 30
   memory_size      = 256
+  environment {
+    variables = local.lambda_env
+  }
+}
+
+resource "aws_lambda_function" "onboarding" {
+  function_name    = "${local.name_prefix}-onboarding"
+  role             = aws_iam_role.lambda.arn
+  handler          = "onboarding.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 15
+  environment {
+    variables = local.lambda_env
+  }
+}
+
+resource "aws_lambda_function" "reports" {
+  function_name    = "${local.name_prefix}-reports"
+  role             = aws_iam_role.lambda.arn
+  handler          = "reports.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 30
+  memory_size      = 512
   environment {
     variables = local.lambda_env
   }
@@ -420,6 +488,20 @@ resource "aws_apigatewayv2_integration" "review" {
   api_id                 = aws_apigatewayv2_api.http.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.review.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "onboarding" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.onboarding.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "reports" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.reports.invoke_arn
   payload_format_version = "2.0"
 }
 
@@ -693,6 +775,38 @@ resource "aws_apigatewayv2_route" "review_submit_post" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "onboarding_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /onboarding"
+  target             = "integrations/${aws_apigatewayv2_integration.onboarding.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "onboarding_put" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "PUT /onboarding"
+  target             = "integrations/${aws_apigatewayv2_integration.onboarding.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "reports_work_orders_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /reports/work-orders"
+  target             = "integrations/${aws_apigatewayv2_integration.reports.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "reports_summary_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /reports/summary"
+  target             = "integrations/${aws_apigatewayv2_integration.reports.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
@@ -791,6 +905,22 @@ resource "aws_lambda_permission" "review_apigw" {
   statement_id  = "AllowAPIGatewayInvokeReview"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.review.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "onboarding_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeOnboarding"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.onboarding.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "reports_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeReports"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.reports.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }

@@ -59,7 +59,7 @@ describe('ReviewHowtoPageComponent', () => {
     expect(ensureSession).toHaveBeenCalled();
     expect(fixture.componentInstance.steps.length).toBe(REVIEW_STEPS.length);
     const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Kelly review');
+    expect(text).toContain('Your review');
     expect(text).toContain('Start review');
   });
 

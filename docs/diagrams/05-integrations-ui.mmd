@@ -1,0 +1,28 @@
+%% Assessment III — Integrations + UI (15%)
+flowchart LR
+  subgraph UI["Angular + PrimeNG"]
+    Login["/login"]
+    Dash["/dashboard"]
+    Upload["/upload"]
+    Alerts["/alerts"]
+    Sources["/sources"]
+    Agent["/assistant"]
+    Reports["/reports"]
+  end
+
+  subgraph Backend["API + AI"]
+    Cognito[Cognito JWT]
+    Lambda[Lambda handlers]
+    Bedrock[Bedrock]
+  end
+
+  Login --> Cognito
+  Dash --> Cognito
+  Upload --> Cognito
+  Alerts --> Cognito
+  Sources --> Cognito
+  Agent --> Cognito
+  Reports --> Cognito
+  Cognito --> Lambda
+  Agent --> Bedrock
+  Lambda --> Bedrock

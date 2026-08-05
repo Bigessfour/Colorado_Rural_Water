@@ -6,6 +6,19 @@
   margin: 0 0 0.35rem;
 }
 
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.page-head .lede {
+  margin-bottom: 0;
+}
+
 .lede {
   font-family: 'Source Sans 3', system-ui, sans-serif;
   color: #4a6368;
@@ -74,14 +87,20 @@
 
 .confidence-head {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 200px);
   gap: 1rem;
+  align-items: center;
   font-family: 'Source Sans 3', system-ui, sans-serif;
 }
 
 @media (max-width: 720px) {
   .confidence-head {
     grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .confidence-head > div:first-child {
+    justify-self: stretch;
   }
 }
 
@@ -156,14 +175,107 @@
 .chart-wrap {
   height: 220px;
   margin-bottom: 0.5rem;
+  position: relative;
 }
 
 .chart-wrap--hero {
   height: 260px;
 }
 
+/* Square donut slot that scales with the card column (Chart.js needs a real box size). */
 .chart-wrap--donut {
-  height: 180px;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1;
+  height: auto;
+  min-height: 140px;
+  margin: 0 auto;
+}
+
+.chart-wrap--health {
+  max-width: 200px;
+}
+
+/* PrimeNG Chart fills the wrap when maintainAspectRatio is false. */
+:host ::ng-deep .chart-wrap .p-chart,
+:host ::ng-deep .chart-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.health-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 200px);
+  gap: 1rem;
+  align-items: center;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+}
+
+@media (max-width: 720px) {
+  .health-head {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .health-copy {
+    justify-self: stretch;
+  }
+}
+
+.health-lede {
+  margin: 0 0 0.75rem;
+  color: #4a6368;
+  line-height: 1.45;
+  font-size: 0.95rem;
+}
+
+.health-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.health-legend li {
+  display: grid;
+  grid-template-columns: 0.85rem 1fr;
+  gap: 0.55rem;
+  align-items: start;
+}
+
+.health-legend strong {
+  display: block;
+  color: #0f3d42;
+  font-size: 0.92rem;
+}
+
+.health-legend span:not(.swatch) {
+  display: block;
+  color: #5a7277;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.swatch {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 0.2rem;
+  margin-top: 0.2rem;
+}
+
+.swatch--normal {
+  background: #2f6b4f;
+}
+
+.swatch--watch {
+  background: #b8860b;
+}
+
+.swatch--actionable {
+  background: #a33b1a;
 }
 
 .chart-wrap--muted {

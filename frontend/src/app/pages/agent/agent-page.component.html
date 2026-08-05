@@ -1,10 +1,24 @@
-<section class="page">
-  <h1>Assistant</h1>
-  <p class="lede">
-    Onboarding help, Confidence coaching, and calm explanations — scoped to your system only.
-  </p>
+<section class="page page--narrow" data-tour="assistant-chat">
+  <header class="page-head">
+    <h1>Assistant</h1>
+    <p class="lede">
+      Hi {{ auth.firstName() }} — your Water Saver helper for {{ auth.placeName() }}. Ask in plain
+      language; answers stay inside your system.
+    </p>
+  </header>
 
-  <p-message severity="info" styleClass="hint">{{ costNote() }}</p-message>
+  <ul class="can-do">
+    <li>Get started with what history and meter data to gather</li>
+    <li>Understand “worth a look” vs “needs a check” alerts without the jargon</li>
+    <li>Ask about treatment, monitoring, or Colorado drinking-water guidance</li>
+    <li>Get mapping and upload tips when something looks off</li>
+  </ul>
+
+  <p class="cost-note">{{ costNote() }}</p>
+  <p class="cost-note">
+    Guidance here is educational — your approved plans and certified operator judgment always come
+    first.
+  </p>
   @if (coaching()) {
     <p-message severity="info" styleClass="hint">{{ coaching() }}</p-message>
   }
@@ -17,30 +31,63 @@
     <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
   }
 
-  @if (!auth.isLoggedIn()) {
-    <p class="signin-hint"><a routerLink="/login">Sign in</a> to use the assistant.</p>
+  @if (!canChat()) {
+    <p class="signin-hint"><a routerLink="/login">Sign in</a> to chat with the Assistant.</p>
   }
 
   <p-card styleClass="chat-card">
     <div class="toolbar">
       <p-button
-        label="Start onboarding inventory"
+        label="Help me get started"
         severity="secondary"
         [outlined]="true"
-        [disabled]="!auth.isLoggedIn() || busy()"
+        [disabled]="!canChat() || busy()"
         (onClick)="askOnboarding()"
       />
-      <p-tag value="Tenant-scoped" severity="success" />
+      <p-button
+        label="Clear chat"
+        severity="secondary"
+        [text]="true"
+        [disabled]="busy()"
+        (onClick)="clearLocalChat()"
+      />
+      <p-tag value="Private to your system" severity="success" />
+      @if (busy()) {
+        <span class="busy-hint">Thinking…</span>
+      }
     </div>
 
     <div class="transcript" aria-live="polite">
       @for (msg of messages(); track $index) {
-        <div class="bubble" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
+        <div
+          class="bubble"
+          [class.user]="msg.role === 'user'"
+          [class.assistant]="msg.role === 'assistant'"
+        >
           <div class="who">{{ msg.role === 'user' ? 'You' : 'Water Saver' }}</div>
-          <div class="text">{{ msg.text }}</div>
+          @if (msg.role === 'assistant') {
+            <div class="text md" [innerHTML]="msg.text | safeMarkdown"></div>
+            @if (msg.sources?.length) {
+              <ul class="sources" aria-label="Sources">
+                @for (src of msg.sources; track src.source + $index) {
+                  <li>
+                    @if (src.uri) {
+                      <a [href]="src.uri" target="_blank" rel="noopener noreferrer">{{
+                        src.source
+                      }}</a>
+                    } @else {
+                      <span>{{ src.source }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          } @else {
+            <div class="text">{{ msg.text }}</div>
+          }
         </div>
       } @empty {
-        <p class="empty">Ask about Confidence, onboarding history, or mapping tips.</p>
+        <p class="empty">Try: “What should I upload first?” or “Explain this Watch alert.”</p>
       }
     </div>
 
@@ -48,17 +95,21 @@
       <textarea
         pTextarea
         name="agentDraft"
-        [(ngModel)]="draft"
+        [ngModel]="draft"
+        (ngModelChange)="onDraftChange($event)"
+        (input)="onDraftInput($event)"
         rows="3"
         fluid
-        placeholder="Ask in everyday language…"
-        [disabled]="busy() || !auth.isLoggedIn()"
+        placeholder="Ask about alerts, uploads, treatment, or getting started…"
+        [disabled]="busy() || !canChat()"
+        (keydown)="onComposerKeydown($event)"
       ></textarea>
       <p-button
-        type="submit"
+        type="button"
         label="Send"
         [loading]="busy()"
-        [disabled]="busy() || !draft.trim() || !auth.isLoggedIn()"
+        [disabled]="busy() || !canChat() || !canSend()"
+        (onClick)="send()"
       />
     </form>
   </p-card>

@@ -1,14 +1,23 @@
 # Copy to backend.tf when the state bucket exists (Features 003/004).
+# Prefer committing backend.tf once the bucket is created (CI needs it).
+#
 # Bootstrap (Code Platoon):
 #   aws s3 mb s3://water-saver-tf-state-388691194728 --region us-east-1 --profile codeplatoon
 #   aws s3api put-bucket-versioning --bucket water-saver-tf-state-388691194728 \
 #     --versioning-configuration Status=Enabled --profile codeplatoon
+#   aws s3api put-bucket-encryption --bucket water-saver-tf-state-388691194728 --profile codeplatoon \
+#     --server-side-encryption-configuration \
+#     '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+#   aws s3api put-public-access-block --bucket water-saver-tf-state-388691194728 --profile codeplatoon \
+#     --public-access-block-configuration \
+#     BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 #   aws s3api put-bucket-tagging --bucket water-saver-tf-state-388691194728 --profile codeplatoon \
 #     --tagging 'TagSet=[{Key=Assessment-iii,Value=true},{Key=Project,Value=water-saver}]'
 #   cp backend.tf.example backend.tf
-#   terraform init -migrate-state
+#   AWS_PROFILE=codeplatoon terraform init -migrate-state
 #
 # Workspaces: terraform workspace new/select dev
+# CI: omit profile in backend.tf so env credentials work.
 
 terraform {
   backend "s3" {
@@ -17,6 +26,5 @@ terraform {
     region       = "us-east-1"
     encrypt      = true
     use_lockfile = true
-    profile      = "codeplatoon"
   }
 }

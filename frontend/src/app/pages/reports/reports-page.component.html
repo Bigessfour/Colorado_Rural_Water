@@ -1,0 +1,158 @@
+<section class="page">
+  <h1>Reports</h1>
+  <p class="lede">
+    Reports for {{ auth.placeName() }} — browse the catalog, run downloads, and see recent activity
+    from this browser session.
+  </p>
+
+  @if (!auth.isLoggedIn()) {
+    <p-message severity="warn" styleClass="hint">
+      <a routerLink="/login">Sign in</a> to generate reports for {{ auth.placeName() }}.
+    </p-message>
+  }
+
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+  @if (notice()) {
+    <p-message severity="success" styleClass="hint">{{ notice() }}</p-message>
+  }
+
+  <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
+    <p-tablist>
+      <p-tab value="catalog">All report processes</p-tab>
+      <p-tab value="run">Run reports</p-tab>
+      <p-tab value="activity">Recent activity</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <p-tabpanel value="catalog">
+        <p-card styleClass="table-card">
+          <p-table [value]="catalog" [tableStyle]="{ 'min-width': '52rem' }">
+            <ng-template #header>
+              <tr>
+                <th>Report</th>
+                <th>Category</th>
+                <th>Formats</th>
+                <th>Status</th>
+                <th>Last run (this device)</th>
+                <th>Action</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-row>
+              <tr>
+                <td>
+                  <strong>{{ row.name }}</strong>
+                  <div class="row-desc">{{ row.description }}</div>
+                </td>
+                <td>{{ categoryLabel(row.category) }}</td>
+                <td>{{ row.formats.join(', ') }}</td>
+                <td>
+                  <p-tag [value]="statusLabel(row)" [severity]="statusSeverity(row)" />
+                </td>
+                <td>{{ lastRun(row.id) }}</td>
+                <td class="row-actions">
+                  <p-button
+                    [label]="actionLabel(row)"
+                    size="small"
+                    [loading]="busy()"
+                    [disabled]="row.requiresAuth && !auth.isLoggedIn()"
+                    (onClick)="runReport(row)"
+                  />
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-card>
+      </p-tabpanel>
+
+      <p-tabpanel value="run">
+        <p-card header="Flagged meters work order" styleClass="block">
+          <p class="card-lede">
+            Trouble-ticket export for field crews — includes map links when coordinates exist.
+          </p>
+          <div class="actions">
+            <p-button
+              label="Download CSV"
+              [loading]="busy()"
+              [disabled]="!auth.isLoggedIn()"
+              (onClick)="downloadWorkOrders('csv')"
+            />
+            <p-button
+              label="Download Excel (XLSX)"
+              severity="secondary"
+              [loading]="busy()"
+              [disabled]="!auth.isLoggedIn()"
+              (onClick)="downloadWorkOrders('xlsx')"
+            />
+            <a routerLink="/alerts" class="link">View alerts feed</a>
+          </div>
+        </p-card>
+
+        <p-card header="Monthly operations summary" styleClass="block">
+          <p class="card-lede">
+            KPI snapshot for superintendents — opens in a new tab. Use the browser Print dialog →
+            Save as PDF (there is no separate PDF file download).
+          </p>
+          <div class="actions">
+            <p-button
+              label="Open print / PDF summary"
+              [loading]="busy()"
+              [disabled]="!auth.isLoggedIn()"
+              (onClick)="openSummaryReport()"
+            />
+            <a routerLink="/dashboard" class="link">Dashboard charts</a>
+          </div>
+        </p-card>
+
+        <p-card header="Legacy flagged CSV (Alerts API)" styleClass="block">
+          <p class="card-lede">
+            Original C4 export path — same data as Alerts → Export flagged CSV.
+          </p>
+          <div class="actions">
+            <p-button
+              label="Download flagged CSV"
+              severity="secondary"
+              [loading]="busy()"
+              [disabled]="!auth.isLoggedIn()"
+              (onClick)="downloadAlertsCsv()"
+            />
+          </div>
+        </p-card>
+      </p-tabpanel>
+
+      <p-tabpanel value="activity">
+        <p-card styleClass="table-card">
+          @if (activity().length === 0) {
+            <p class="muted">No report runs yet this session. Use the catalog or Run tabs.</p>
+          } @else {
+            <p-table [value]="activity()" [tableStyle]="{ 'min-width': '40rem' }">
+              <ng-template #header>
+                <tr>
+                  <th>When</th>
+                  <th>Report</th>
+                  <th>Format</th>
+                  <th>Status</th>
+                  <th>Detail</th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-row>
+                <tr>
+                  <td>{{ row.at | date: 'short' }}</td>
+                  <td>{{ row.name }}</td>
+                  <td>{{ row.format }}</td>
+                  <td>
+                    <p-tag
+                      [value]="row.status"
+                      [severity]="row.status === 'success' ? 'success' : 'danger'"
+                    />
+                  </td>
+                  <td>{{ row.detail }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          }
+        </p-card>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</section>

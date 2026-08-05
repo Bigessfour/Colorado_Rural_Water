@@ -1,7 +1,8 @@
 # Feature 001: LangChain + Mem0 RAG Core
 
 **Rubric:** 25% required
-**Status:** done (verified 2026-08-03; LangChain documented APIs re-proven same day)
+**Status:** done / closed (verified 2026-08-03; LangChain documented APIs re-proven same day)
+**Note:** GitHub Actions CI is Feature 005 — not required to close 001.
 **Product:** Water Saver (Colorado Rural Water)
 **Isolation:** `tenant_id` on all AI / data paths
 

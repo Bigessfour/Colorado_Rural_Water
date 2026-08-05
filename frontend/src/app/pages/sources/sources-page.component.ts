@@ -1,3 +1,9 @@
+/**
+ * Named water sources (wells/springs) + production readings — Kelly demo steps 3–4.
+ * Dashboard water balance needs both sides: these sources (In) + customer meters (Out).
+ * Fixture: sample-data/messy-source-readings-july.csv.
+ */
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -67,7 +73,8 @@ export class SourcesPageComponent implements OnInit {
   readingNotes = '';
 
   csvText = '';
-  ingestHint = 'Try sample-data/messy-source-readings-july.csv — period production volumes.';
+  ingestHint =
+    'Practice file: sample-data/messy-source-readings-july.csv (production volumes by period; “messy” = imperfect columns for a safe mapper demo).';
 
   ngOnInit(): void {
     void this.refresh();
@@ -93,7 +100,7 @@ export class SourcesPageComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       this.csvText = String(reader.result ?? '');
-      this.status.set(`Loaded ${file.name} — ready to ingest source readings.`);
+      this.status.set(`Loaded ${file.name} — ready to import source readings.`);
     };
     reader.readAsText(file);
   }
@@ -262,7 +269,7 @@ export class SourcesPageComponent implements OnInit {
   async ingestCsv(dryRun = false): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) {
-      this.error.set('Sign in to ingest source readings.');
+      this.error.set('Sign in to import source readings.');
       return;
     }
     if (!this.csvText.trim()) {
@@ -283,15 +290,15 @@ export class SourcesPageComponent implements OnInit {
       });
       const body = await res.json();
       if (!res.ok) {
-        this.error.set(body.error ?? `Ingest failed (${res.status})`);
+        this.error.set(body.error ?? `Import failed (${res.status})`);
         return;
       }
       if (dryRun) {
-        this.status.set(`Dry run OK — ${body.rowCount ?? 0} row(s) would be written.`);
+        this.status.set(`Check OK — ${body.rowCount ?? 0} row(s) ready to import.`);
         return;
       }
       this.status.set(
-        `Ingested ${body.readingsWritten ?? 0} source reading(s)` +
+        `Imported ${body.readingsWritten ?? 0} source reading(s)` +
           (body.sourcesCreated ? `; created ${body.sourcesCreated} source(s)` : '') +
           '.',
       );

@@ -1,3 +1,9 @@
+/**
+ * Cognito sign-in — Kelly demo step 1.
+ * Demo user must have `custom:tenant_id` set in Cognito (never chosen in the form).
+ * MFA / NEW_PASSWORD_REQUIRED challenges are Pilot extras — skip unless asked.
+ */
+
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -6,10 +12,7 @@ import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputOtpModule } from 'primeng/inputotp';
-import {
-  AuthService,
-  type PendingAuthChallenge,
-} from '../../core/auth.service';
+import { AuthService, type PendingAuthChallenge } from '../../core/auth.service';
 
 type LoginStep = 'credentials' | 'mfa' | 'new_password' | 'mfa_setup';
 
@@ -172,7 +175,7 @@ export class LoginPageComponent {
         this.step.set('mfa');
         this.hint.set(
           result.challenge.challengeName === 'SMS_MFA'
-            ? 'Enter the SMS code Cognito sent you.'
+            ? 'Enter the SMS code we sent you.'
             : 'Enter the 6-digit code from your authenticator app.',
         );
         break;

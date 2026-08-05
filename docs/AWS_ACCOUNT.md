@@ -30,9 +30,11 @@ aws sts get-caller-identity --profile codeplatoon
 | Groups       | `operators`, `system_admins`, `crwa_admins`              |
 | MFA          | per Cognito pool config                                  |
 | HTTP API     | `https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com` |
+| SPA (CDN)    | `https://duqk1pqvmrsuh.cloudfront.net`                   |
 | Health       | `GET …/health` (public)                                  |
 | Me           | `GET …/me` (JWT)                                         |
 | Uploads      | `water-saver-dev-uploads-388691194728`                   |
+| SPA bucket   | `water-saver-dev-spa-388691194728`                       |
 | Data table   | `water-saver-dev-data`                                   |
 | AI secret    | `water-saver-dev-ai-runtime`                             |
 

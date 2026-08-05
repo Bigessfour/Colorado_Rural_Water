@@ -58,6 +58,9 @@ backend/.venv/
 
 # RAG index cache
 .rag/
+
+# Spec Kit extension download/cache (installed extensions under .specify/extensions/ stay tracked)
+.specify/extensions/.cache/
 mcp/primeng/node_modules/
 infra/terraform/build/
 

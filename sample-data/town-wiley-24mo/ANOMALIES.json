@@ -1,0 +1,147 @@
+{
+  "description": "Intentional anomalies for Water Saver exercise",
+  "stuck_meters": ["M-1012", "M-1047", "M-1118", "M-1203", "M-1271"],
+  "high_usage_meters": ["M-1033", "M-1089", "M-1156", "M-1244"],
+  "gap_meters": ["M-1055", "M-1170", "M-1288"],
+  "name_change_meters": ["M-1076", "M-1191"],
+  "diagnostic_meters": ["M-1022", "M-1140", "M-1260"],
+  "zero_spike_meters": ["M-1101"],
+  "events": [
+    {
+      "type": "gap",
+      "meter": "M-1055",
+      "month": "2025-04"
+    },
+    {
+      "type": "gap",
+      "meter": "M-1170",
+      "month": "2025-04"
+    },
+    {
+      "type": "gap",
+      "meter": "M-1288",
+      "month": "2025-04"
+    },
+    {
+      "type": "gap",
+      "meter": "M-1055",
+      "month": "2025-05"
+    },
+    {
+      "type": "gap",
+      "meter": "M-1170",
+      "month": "2025-05"
+    },
+    {
+      "type": "gap",
+      "meter": "M-1288",
+      "month": "2025-05"
+    },
+    {
+      "type": "name_change",
+      "meter": "M-1076",
+      "month": "2025-10"
+    },
+    {
+      "type": "name_change",
+      "meter": "M-1191",
+      "month": "2025-10"
+    },
+    {
+      "type": "gap",
+      "meter": "M-1055",
+      "month": "2025-11"
+    },
+    {
+      "type": "gap",
+      "meter": "M-1170",
+      "month": "2025-11"
+    },
+    {
+      "type": "gap",
+      "meter": "M-1288",
+      "month": "2025-11"
+    },
+    {
+      "type": "zero_spike",
+      "meter": "M-1101",
+      "month": "2025-12"
+    },
+    {
+      "type": "diagnostic",
+      "meter": "M-1022",
+      "month": "2026-02",
+      "flag": "TAMPER"
+    },
+    {
+      "type": "diagnostic",
+      "meter": "M-1140",
+      "month": "2026-02",
+      "flag": "LOW_BATTERY"
+    },
+    {
+      "type": "diagnostic",
+      "meter": "M-1260",
+      "month": "2026-02",
+      "flag": "LOW_BATTERY"
+    },
+    {
+      "type": "stuck_start",
+      "meter": "M-1012",
+      "month": "2026-03"
+    },
+    {
+      "type": "stuck_start",
+      "meter": "M-1047",
+      "month": "2026-03"
+    },
+    {
+      "type": "stuck_start",
+      "meter": "M-1118",
+      "month": "2026-03"
+    },
+    {
+      "type": "stuck_start",
+      "meter": "M-1203",
+      "month": "2026-03"
+    },
+    {
+      "type": "stuck_start",
+      "meter": "M-1271",
+      "month": "2026-03"
+    },
+    {
+      "type": "missing_source_month",
+      "source": "Well 2 - South",
+      "month": "2025-07"
+    }
+  ],
+  "months": [
+    "2024-08",
+    "2024-09",
+    "2024-10",
+    "2024-11",
+    "2024-12",
+    "2025-01",
+    "2025-02",
+    "2025-03",
+    "2025-04",
+    "2025-05",
+    "2025-06",
+    "2025-07",
+    "2025-08",
+    "2025-09",
+    "2025-10",
+    "2025-11",
+    "2025-12",
+    "2026-01",
+    "2026-02",
+    "2026-03",
+    "2026-04",
+    "2026-05",
+    "2026-06",
+    "2026-07"
+  ],
+  "meter_count": 300,
+  "wells": ["Well 1 - North", "Well 2 - South"]
+}

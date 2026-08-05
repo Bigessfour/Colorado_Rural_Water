@@ -1,14 +1,16 @@
 # Plan — Feature 008: System UI / Browser Bonus
 
+**Status:** CLOSED 2026-08-04 — dual spine polish + browser prove.
+
 ## Context
 
 Assessment III full-credit track layered on Water Saver. AWS account `388691194728` / `codeplatoon` / `us-east-1` (Assessment-iii tag required).
 
-## Approach
+## Approach (as executed)
 
-1. Keep Kelly vertical slice (Cognito, upload, dashboard, alerts, tenant isolation).
-2. Deliver this feature's acceptance criteria without breaking dual-runtime (Compose + AWS serverless).
-3. Port patterns from `aico-assessment-iii` where they fit; never port Code Platoon account wiring.
+1. Demo-spine polish only (not full SPA redesign).
+2. Dual script: Compose AI + Cognito operator path.
+3. P0 blockers then P1 calm UX; Chrome prove + evidence.
 
 ## Technical notes
 

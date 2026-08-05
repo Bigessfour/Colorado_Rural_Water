@@ -1,0 +1,13 @@
+%% Assessment III / Kelly — product happy path (close the demo)
+flowchart LR
+  A[Messy CSV / Excel] --> B[Upload + Visual Mapper]
+  B --> C[Tenant-scoped ingest<br/>S3 + Dynamo]
+  C --> D[Dashboard<br/>KPIs + Trends]
+  C --> E[Water Balance<br/>In vs Out]
+  C --> F[Data Confidence]
+  C --> G[Prioritized Alerts<br/>Watch vs Actionable]
+  G --> H[Acknowledge]
+  D --> I[Calm rural-operator UX]
+  E --> I
+  F --> I
+  G --> I

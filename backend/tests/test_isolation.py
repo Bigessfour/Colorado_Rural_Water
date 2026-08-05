@@ -1,14 +1,14 @@
 """Tenant isolation unit tests (Assessment III — Feature 001/002)."""
-import pytest
 
+import pytest
+from rag.agent_tools import run_tool_agent
+from rag.graph import run_alert_triage_graph
 from rag.memory import append_turn, clear_sessions_for_tests, history_messages
 from rag.tenant import (
     assert_no_cross_tenant_context,
     find_cross_tenant_leaks,
     memory_user_id,
 )
-from rag.graph import run_alert_triage_graph
-from rag.agent_tools import run_tool_agent
 
 
 def test_memory_user_id_format():
@@ -61,12 +61,14 @@ def test_triage_graph_tenant_scoped():
     )
     assert out["tenant_id"] == "town-wiley"
     assert out["severity"] in ("low", "medium", "high")
-    assert "town-wiley" in out["reply"]
+    assert "Town of Wiley" in out["reply"]
+    assert "town-wiley" not in out["reply"]
 
 
 def test_tool_agent_uses_tenant_tool():
     out = run_tool_agent("list my alerts please", tenant_id="town-wiley", user_id="op1")
     assert out["tenant_id"] == "town-wiley"
     assert out["tool"] == "list_alerts"
-    assert "town-wiley" in out["observation"]
+    assert "Town of Wiley" in out["observation"]
+    assert "town-wiley" not in out["observation"]
     assert out["guardrails"]["noCrossTenantData"] is True

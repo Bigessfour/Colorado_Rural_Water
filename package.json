@@ -11,6 +11,7 @@
     "backend:bundle": "node scripts/build-lambda-zip.mjs",
     "ci:local": "./scripts/ci-local.sh",
     "ci:local:fast": "./scripts/ci-local.sh --fast",
+    "spec-kit:smoke": "bash scripts/spec-kit-smoke.sh",
     "test:auth": "npm --prefix backend test",
     "rag:setup": "node scripts/rag-setup.mjs",
     "rag:index": "node scripts/rag-run.mjs index",

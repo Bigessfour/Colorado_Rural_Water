@@ -1,5 +1,7 @@
 # Plan — Feature 003: Terraform IaC Core
 
+**Status:** CLOSED (verified 2026-08-03) — see `evidence/003-terraform-iac.md`.
+
 ## Context
 
 Assessment III full-credit track layered on Water Saver. AWS account `388691194728` / `codeplatoon` / `us-east-1` (Assessment-iii tag required).

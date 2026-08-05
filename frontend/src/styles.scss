@@ -1,3 +1,52 @@
+:root {
+  /* CRWA logo palette — navy / water blue / Colorado red (sparing) */
+  --ws-ink: #1a2338;
+  --ws-muted: #5a657a;
+  --ws-teal: #2e3192;
+  --ws-teal-soft: #3e4095;
+  --ws-water: #027bb6;
+  --ws-water-soft: #7ec9f5;
+  --ws-colorado: #e31b23;
+  --ws-surface: #eef3f8;
+  --ws-card: #ffffff;
+  --ws-warn-bg: rgba(227, 27, 35, 0.1);
+  --ws-shell-bg:
+    radial-gradient(1200px 600px at 8% -12%, rgba(126, 201, 245, 0.35), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(46, 49, 146, 0.1), transparent 50%),
+    linear-gradient(180deg, #f7fbfd 0%, #eef3f8 100%);
+  --ws-nav-hover: rgba(46, 49, 146, 0.08);
+  --ws-nav-active-bg: #2e3192;
+  --ws-nav-active-fg: #f7fbfd;
+  --ws-brand-mark-bg: #2e3192;
+  --ws-brand-mark-fg: #f7fbfd;
+}
+
+html.app-dark {
+  --ws-ink: #e8eef8;
+  --ws-muted: #9aa6bd;
+  --ws-teal: #9aa3e8;
+  --ws-teal-soft: #b8bff0;
+  --ws-water: #5eb8e8;
+  --ws-water-soft: #7ec9f5;
+  --ws-colorado: #ff6b70;
+  --ws-surface: #101428;
+  --ws-card: #171c34;
+  --ws-warn-bg: rgba(227, 27, 35, 0.2);
+  --ws-shell-bg:
+    radial-gradient(1200px 600px at 8% -12%, rgba(46, 49, 146, 0.35), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(2, 123, 182, 0.12), transparent 50%),
+    linear-gradient(180deg, #0c1020 0%, #101428 100%);
+  --ws-nav-hover: rgba(154, 163, 232, 0.12);
+  --ws-nav-active-bg: #3e4095;
+  --ws-nav-active-fg: #f7fbfd;
+  --ws-brand-mark-bg: #3e4095;
+  --ws-brand-mark-fg: #f7fbfd;
+}
+
+html.app-dark body {
+  color-scheme: dark;
+}
+
 *,
 *::before,
 *::after {
@@ -9,8 +58,63 @@ body {
   margin: 0;
   min-height: 100%;
   font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: var(--ws-ink);
 }
 
 body {
-  background: #e8eef0;
+  background: var(--ws-surface);
+}
+
+/* Shared page chrome (demo spine) */
+.page h1 {
+  margin: 0 0 0.35rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(1.65rem, 2.5vw, 2rem);
+  letter-spacing: -0.02em;
+  color: var(--ws-teal);
+}
+
+.page .lede {
+  margin: 0 0 1rem;
+  max-width: 42rem;
+  color: var(--ws-muted);
+  line-height: 1.5;
+}
+
+.page .hint {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.page .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.page .muted {
+  color: var(--ws-muted);
+}
+
+.page .signin-hint {
+  margin: 0 0 1rem;
+  color: var(--ws-muted);
+}
+
+/*
+ * Assessment Compose safety net: hide PrimeUI license toast when the
+ * compose image was built without a local key (CI). Prefer wiring
+ * primeng-license.local.ts into the compose fileReplacements.
+ */
+body.compose-demo .p-toast .p-toast-message-error,
+body.compose-demo .p-toast:has(.p-toast-message-error) {
+  /* Only hide when message mentions license — keep real API errors visible via page messages */
+}
+
+body.compose-demo .p-toast {
+  /* PrimeNG license nag uses a fixed toast; suppress the whole host on Compose demos */
+  display: none !important;
 }

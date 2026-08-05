@@ -19,6 +19,8 @@ describe('UploadPageComponent', () => {
           useValue: {
             getBearerToken: () => 'jwt',
             isLoggedIn: () => true,
+            placeName: () => 'Town of Wiley',
+            firstName: () => 'Demo',
           },
         },
       ],
@@ -35,6 +37,22 @@ describe('UploadPageComponent', () => {
     expect(cmp.mapping['meterId']).toBeTruthy();
     expect(cmp.mapping['timestamp']).toBeTruthy();
     expect(cmp.previewRows.length).toBeGreaterThan(0);
-    expect(fixture.nativeElement.textContent).toMatch(/Upload|mapping|column/i);
+    expect(fixture.nativeElement.textContent).toMatch(/Excel|mapping|column/i);
+  });
+
+  it('lists mapped vs unused headers after preview', () => {
+    const fixture = TestBed.createComponent(UploadPageComponent);
+    const cmp = fixture.componentInstance;
+    cmp.preparePreview(FIXTURE_CSV);
+    fixture.detectChanges();
+
+    expect(cmp.mappedHeaders).toEqual(
+      expect.arrayContaining(['Meter ID', 'Read Date', 'Reading (gal)', 'Service Address']),
+    );
+    expect(cmp.unusedHeaders.length).toBeGreaterThanOrEqual(0);
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toMatch(/Mapped/i);
+    expect(text).toMatch(/Not used this time|Every column is mapped/i);
+    expect(text).toMatch(/Extra columns are OK/i);
   });
 });

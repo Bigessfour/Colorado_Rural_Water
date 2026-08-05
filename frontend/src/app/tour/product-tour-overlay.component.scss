@@ -1,0 +1,87 @@
+.tour-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  pointer-events: none;
+}
+
+.tour-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 30, 40, 0.45);
+  pointer-events: auto;
+}
+
+.tour-hole {
+  position: fixed;
+  border-radius: 0.65rem;
+  /* Ring only — dimming is handled by .tour-dim so pointer events stay blocked. */
+  box-shadow:
+    0 0 0 3px #2e3192,
+    0 0 0 6px rgba(46, 49, 146, 0.25);
+  background: transparent;
+  pointer-events: none;
+  z-index: 1201;
+}
+
+.tour-card {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: min(22rem, calc(100vw - 2rem));
+  z-index: 1202;
+  pointer-events: auto;
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.1rem 1.15rem 1rem;
+  box-shadow: 0 12px 40px rgba(15, 30, 40, 0.22);
+  border: 1px solid rgba(46, 49, 146, 0.12);
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5a657a;
+}
+
+.tour-card h2 {
+  margin: 0 0 0.45rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a2338;
+}
+
+.body {
+  margin: 0 0 1rem;
+  color: #3a4658;
+  line-height: 1.45;
+  font-size: 0.95rem;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .tour-card {
+    right: 0.75rem;
+    left: 0.75rem;
+    bottom: 0.75rem;
+    width: auto;
+  }
+}

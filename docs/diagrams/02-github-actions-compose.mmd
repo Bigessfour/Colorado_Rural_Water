@@ -1,0 +1,26 @@
+%% Assessment III — GitHub Actions + Docker Compose (30%)
+flowchart LR
+  subgraph Dev["Developer"]
+    Push[git push / PR]
+  end
+
+  subgraph GHA["GitHub Actions"]
+    CI[ci.yml<br/>pytest + compose build]
+    TF[terraform.yml<br/>plan on PR / apply on main]
+    DEST[destroy.yml<br/>workflow_dispatch]
+  end
+
+  subgraph Local["Local three-tier Compose"]
+    FE[frontend :8080]
+    BE[backend :3000]
+    RAG[Python RAG]
+    PG[(Postgres)]
+  end
+
+  Push --> CI
+  Push --> TF
+  CI --> Local
+  FE --> BE
+  BE --> RAG
+  BE --> PG
+  RAG --> PG

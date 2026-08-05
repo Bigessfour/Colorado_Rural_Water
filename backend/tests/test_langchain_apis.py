@@ -1,10 +1,10 @@
 """Prove Feature 001 uses documented LangChain APIs (no Bedrock required)."""
+
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.history import RunnableWithMessageHistory
-
 from rag.chain import PROMPT, build_conversational_rag_chain, build_rag_chain
 from rag.memory import clear_sessions_for_tests, get_session_history, history_messages
 
@@ -15,7 +15,9 @@ def test_prompt_is_chat_prompt_template_with_history_placeholder():
     assert "question" in var_names
     assert "context" in var_names
     assert "mem0_context" in var_names
-    assert "tenant_id" in var_names
+    assert "municipality" in var_names
+    assert "operator_name" in var_names
+    assert "tenant_id" not in var_names
     assert any(
         getattr(m, "variable_name", None) == "chat_history"
         or type(m).__name__ == "MessagesPlaceholder"
@@ -45,7 +47,8 @@ def test_runnable_with_message_history_persists_session():
         "question": "Remember meter Cedar Fork",
         "context": "[runbook.md]\nCedar Fork is on Route 3.",
         "mem0_context": "(none yet)",
-        "tenant_id": "town-wiley",
+        "municipality": "Town of Wiley",
+        "operator_name": "Kelly",
     }
     a1 = chain.invoke(payload, config=cfg)
     assert isinstance(a1, str) and a1

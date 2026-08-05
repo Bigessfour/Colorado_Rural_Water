@@ -1,0 +1,44 @@
+.card-lede {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: var(--ws-muted);
+  margin: 0 0 1rem;
+}
+
+.row-desc {
+  font-size: 0.85rem;
+  color: var(--ws-muted);
+  margin-top: 0.25rem;
+  max-width: 28rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.row-actions {
+  white-space: nowrap;
+}
+
+.link {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: var(--ws-teal);
+}
+
+:host ::ng-deep .block {
+  margin-bottom: 1rem;
+  background: color-mix(in srgb, var(--ws-card) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ws-teal) 10%, transparent);
+}
+
+:host ::ng-deep .table-card {
+  background: color-mix(in srgb, var(--ws-card) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ws-teal) 10%, transparent);
+}
+
+:host ::ng-deep .hint {
+  margin-bottom: 1rem;
+  width: 100%;
+}

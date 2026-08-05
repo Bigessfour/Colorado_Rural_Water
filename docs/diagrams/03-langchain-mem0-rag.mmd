@@ -1,0 +1,27 @@
+%% Assessment III — LangChain + Mem0 RAG (25%)
+flowchart TB
+  Op[Operator question<br/>+ X-Tenant-Id] --> API["/api/rag"]
+  API --> Chain[LangChain LCEL chain]
+
+  subgraph Memory["Tenant-scoped Memory"]
+    Mem0[Mem0<br/>keyed tenant_id:userId]
+    Sess[LangChain Session Memory]
+  end
+
+  subgraph Retrieval["RAG"]
+    FAISS[FAISS vector store<br/>per tenant_id]
+    Embed[Bedrock Titan Embed]
+  end
+
+  subgraph LLM["Generation"]
+    Prompt[ChatPromptTemplate]
+    Chat[Bedrock Nova Lite]
+  end
+
+  Chain --> Mem0
+  Chain --> Sess
+  Chain --> FAISS
+  FAISS --> Embed
+  Chain --> Prompt --> Chat
+  Chat --> Answer[Tenant-scoped answer]
+  Answer --> Op

@@ -1,21 +1,24 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import type { S3Event } from 'aws-lambda';
-import { MAX_CSV_CHARS, parseCustomerReadingsCsv } from '../shared/csv-parse.js';
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import type { S3Event } from "aws-lambda";
+import {
+  MAX_CSV_CHARS,
+  parseCustomerReadingsCsv,
+} from "../shared/csv-parse.js";
 import {
   assertExcelBufferWithinLimit,
   isExcelFileName,
   looksLikeExcelBuffer,
   parseCustomerReadingsExcel,
-} from '../shared/excel-parse.js';
+} from "../shared/excel-parse.js";
 import {
   createMeterStoreFromEnv,
   createSourceStoreFromEnv,
-} from '../shared/dynamo-store.js';
-import { commitCustomerIngest } from '../shared/ingest.js';
-import type { MeterStore } from '../shared/ingest.js';
-import { parseSourceReadingsCsv } from '../shared/source-csv-parse.js';
-import { commitSourceIngest } from '../shared/source-ingest.js';
-import type { SourceStore } from '../shared/source-store.js';
+} from "../shared/dynamo-store.js";
+import { commitCustomerIngest } from "../shared/ingest.js";
+import type { MeterStore } from "../shared/ingest.js";
+import { parseSourceReadingsCsv } from "../shared/source-csv-parse.js";
+import { commitSourceIngest } from "../shared/source-ingest.js";
+import type { SourceStore } from "../shared/source-store.js";
 
 const s3 = new S3Client({});
 
@@ -30,14 +33,19 @@ export type S3IngestDeps = {
 
 /**
  * S3 ObjectCreated handler for tenant drop-zone uploads.
+ * Tenant is taken from the object key prefix — not from object metadata or the client body.
  * Key format:
  *   tenants/{tenantId}/uploads/...          → customer readings (CSV or Excel)
  *   tenants/{tenantId}/uploads/sources/...  → source / well readings (G2)
  */
-export const handler = async (event: S3Event): Promise<{ ok: true; results: unknown[] }> => {
+export const handler = async (
+  event: S3Event,
+): Promise<{ ok: true; results: unknown[] }> => {
   return handleS3IngestEvent(event, {
     getObjectBytes: async (bucket, key) => {
-      const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+      const obj = await s3.send(
+        new GetObjectCommand({ Bucket: bucket, Key: key }),
+      );
       const bytes = await obj.Body?.transformToByteArray();
       if (!bytes?.length) return Buffer.alloc(0);
       return Buffer.from(bytes);
@@ -58,23 +66,26 @@ export async function handleS3IngestEvent(
     const bucket = record.s3.bucket.name;
     let key: string;
     try {
-      key = decodeURIComponent(record.s3.object.key.replace(/\+/g, ' '));
+      key = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
     } catch {
       results.push({
         key: record.s3.object.key,
-        error: 'Object key has invalid percent-encoding',
+        error: "Object key has invalid percent-encoding",
       });
       continue;
     }
     const tenantId = tenantFromKey(key);
     if (!tenantId) {
-      results.push({ key, error: 'Object key is not under tenants/{tenantId}/uploads/' });
+      results.push({
+        key,
+        error: "Object key is not under tenants/{tenantId}/uploads/",
+      });
       continue;
     }
 
     const buf = await deps.getObjectBytes(bucket, key);
     if (!buf.length) {
-      results.push({ key, error: 'Empty object' });
+      results.push({ key, error: "Empty object" });
       continue;
     }
 
@@ -106,24 +117,36 @@ export async function processS3UploadObject(input: {
       return {
         key,
         tenantId,
-        kind: 'source',
+        kind: "source",
         error: `Source CSV too large (${buf.length} bytes; max ${MAX_CSV_CHARS})`,
       };
     }
-    const csvText = buf.toString('utf-8');
-    const savedMapping = await sourceStore.getMapping(tenantId, 'source_readings');
+    const csvText = buf.toString("utf-8");
+    const savedMapping = await sourceStore.getMapping(
+      tenantId,
+      "source_readings",
+    );
     const parsed = parseSourceReadingsCsv(
       csvText,
       savedMapping ? (savedMapping as never) : undefined,
     );
     if (parsed.errors.length) {
-      return { key, tenantId, kind: 'source', errors: parsed.errors, warnings: parsed.warnings };
+      return {
+        key,
+        tenantId,
+        kind: "source",
+        errors: parsed.errors,
+        warnings: parsed.warnings,
+      };
     }
     const summary = await commitSourceIngest(sourceStore, tenantId, parsed);
-    return { key, tenantId, kind: 'source', ...summary };
+    return { key, tenantId, kind: "source", ...summary };
   }
 
-  const savedMapping = await meterStore.getMapping(tenantId, 'customer_readings');
+  const savedMapping = await meterStore.getMapping(
+    tenantId,
+    "customer_readings",
+  );
   const mapping = savedMapping ? (savedMapping as never) : undefined;
 
   const namedExcel = isExcelFileName(key);
@@ -132,9 +155,10 @@ export async function processS3UploadObject(input: {
     return {
       key,
       tenantId,
-      kind: 'customer',
-      format: 'excel',
-      error: 'File extension looks like Excel but content is not a recognizable workbook.',
+      kind: "customer",
+      format: "excel",
+      error:
+        "File extension looks like Excel but content is not a recognizable workbook.",
     };
   }
   const useExcel = namedExcel || magicExcel;
@@ -145,17 +169,17 @@ export async function processS3UploadObject(input: {
       return {
         key,
         tenantId,
-        kind: 'customer',
-        format: 'excel',
-        error: err instanceof Error ? err.message : 'Excel too large',
+        kind: "customer",
+        format: "excel",
+        error: err instanceof Error ? err.message : "Excel too large",
       };
     }
   } else if (buf.length > MAX_CSV_CHARS) {
     return {
       key,
       tenantId,
-      kind: 'customer',
-      format: 'csv',
+      kind: "customer",
+      format: "csv",
       error: `CSV too large (${buf.length} bytes; max ${MAX_CSV_CHARS})`,
     };
   }
@@ -164,14 +188,14 @@ export async function processS3UploadObject(input: {
   try {
     parsed = useExcel
       ? parseCustomerReadingsExcel(buf, { mergeArchive: true, mapping })
-      : parseCustomerReadingsCsv(buf.toString('utf-8'), mapping);
+      : parseCustomerReadingsCsv(buf.toString("utf-8"), mapping);
   } catch (err) {
     return {
       key,
       tenantId,
-      kind: 'customer',
-      format: useExcel ? 'excel' : 'csv',
-      error: err instanceof Error ? err.message : 'Parse failed',
+      kind: "customer",
+      format: useExcel ? "excel" : "csv",
+      error: err instanceof Error ? err.message : "Parse failed",
     };
   }
 
@@ -179,8 +203,8 @@ export async function processS3UploadObject(input: {
     return {
       key,
       tenantId,
-      kind: 'customer',
-      format: useExcel ? 'excel' : 'csv',
+      kind: "customer",
+      format: useExcel ? "excel" : "csv",
       errors: parsed.errors,
       warnings: parsed.warnings,
     };
@@ -190,28 +214,32 @@ export async function processS3UploadObject(input: {
   return {
     key,
     tenantId,
-    kind: 'customer',
-    format: useExcel ? 'excel' : 'csv',
-    selectedSheet: 'selectedSheet' in parsed ? parsed.selectedSheet : undefined,
-    mergedSheets: 'mergedSheets' in parsed ? parsed.mergedSheets : undefined,
+    kind: "customer",
+    format: useExcel ? "excel" : "csv",
+    selectedSheet: "selectedSheet" in parsed ? parsed.selectedSheet : undefined,
+    mergedSheets: "mergedSheets" in parsed ? parsed.mergedSheets : undefined,
     ...summary,
   };
 }
 
 export function tenantFromKey(key: string): string | null {
   // Reject absolute / traversal-ish keys before splitting.
-  if (!key || key.startsWith('/') || key.includes('\\') || key.includes('\0')) return null;
-  const parts = key.split('/');
-  if (parts[0] !== 'tenants' || parts[2] !== 'uploads' || !parts[1]) return null;
+  if (!key || key.startsWith("/") || key.includes("\\") || key.includes("\0"))
+    return null;
+  const parts = key.split("/");
+  if (parts[0] !== "tenants" || parts[2] !== "uploads" || !parts[1])
+    return null;
   const tenantId = parts[1].toLowerCase();
-  if (tenantId.includes('..') || !TENANT_ID_RE.test(tenantId)) return null;
+  if (tenantId.includes("..") || !TENANT_ID_RE.test(tenantId)) return null;
   // Ensure no empty path segments in the uploads prefix (path traversal via //).
-  if (parts.some((p, i) => i > 0 && p === '')) return null;
+  if (parts.some((p, i) => i > 0 && p === "")) return null;
   return tenantId;
 }
 
 /** tenants/{tenantId}/uploads/sources/... */
 function isSourceUploadKey(key: string): boolean {
-  const parts = key.split('/');
-  return parts[0] === 'tenants' && parts[2] === 'uploads' && parts[3] === 'sources';
+  const parts = key.split("/");
+  return (
+    parts[0] === "tenants" && parts[2] === "uploads" && parts[3] === "sources"
+  );
 }

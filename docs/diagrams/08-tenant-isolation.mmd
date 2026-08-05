@@ -1,0 +1,7 @@
+%% Assessment III / Kelly — tenant isolation (cross-cutting)
+flowchart TB
+  Browser[Browser] -->|JWT only — no client tenant override| API[API Gateway]
+  API -->|JWT claims only| Auth[parseAuthFromClaims]
+  Auth --> TID[tenant_id from custom:tenant_id]
+  TID --> Every[Every Dynamo query<br/>S3 key prefix<br/>Mem0 key<br/>RAG index<br/>Agent prompt]
+  Every --> Safe[No cross-tenant leakage]

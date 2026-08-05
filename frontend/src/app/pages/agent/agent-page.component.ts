@@ -1,6 +1,12 @@
+/**
+ * AI Assistant — Pilot / Assessment Compose spine (not Kelly Stay primary path).
+ * Cognito: POST /agent with JWT. Compose: tenant headers + local RAG backend :8080.
+ * Guardrails (cost note, confirm, no cross-tenant) come from the API response.
+ */
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
@@ -8,11 +14,26 @@ import { TextareaModule } from 'primeng/textarea';
 import { TagModule } from 'primeng/tag';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
+import { prepareHistoryForDisplay } from '../../shared/agent-history-sanitize';
+import {
+  assistantWelcome,
+  friendlyMunicipalityName,
+  operatorFirstName,
+} from '../../shared/persona';
+import { SafeMarkdownPipe } from '../../shared/safe-markdown.pipe';
+
+interface ChatSource {
+  source: string;
+  excerpt?: string;
+  uri?: string | null;
+}
 
 interface ChatMsg {
   role: 'user' | 'assistant';
   text: string;
   createdAt?: string;
+  /** Feature 014 — Cognito RAG citations */
+  sources?: ChatSource[];
 }
 
 /** Compose RAG session key — must match POST /api/rag and GET /api/history. */
@@ -28,90 +49,214 @@ const COMPOSE_SESSION_ID = 'assistant';
     MessageModule,
     TextareaModule,
     TagModule,
+    SafeMarkdownPipe,
   ],
   templateUrl: './agent-page.component.html',
   styleUrl: './agent-page.component.scss',
 })
 export class AgentPageComponent implements OnInit {
   readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  /** Compose Assessment path uses tenant headers (no Cognito); AWS path needs JWT. */
+  readonly composeDemo = environment.composeDemo;
 
   messages = signal<ChatMsg[]>([]);
-  draft = '';
+  /** Composer text as a signal so Send enablement tracks every keystroke. */
+  draftSig = signal('');
   busy = signal(false);
   error = signal('');
   costNote = signal(
-    'Cheapest option first: short templates, then Nova Lite when needed. AI tokens bill this environment — not your municipal customers.',
+    'Short, practical answers. AI usage is billed to this Water Saver environment — never to your water customers.',
   );
   coaching = signal('');
   needsConfirm = signal(false);
 
+  /** True when the operator can send chat turns (Compose demo or Cognito session). */
+  canChat(): boolean {
+    return this.composeDemo || this.auth.isLoggedIn();
+  }
+
+  get draft(): string {
+    return this.draftSig();
+  }
+  set draft(value: string) {
+    this.draftSig.set(value ?? '');
+  }
+
+  canSend(): boolean {
+    return this.draftSig().trim().length > 0;
+  }
+
+  onDraftChange(value: string): void {
+    this.draftSig.set(value ?? '');
+  }
+
+  onDraftInput(ev: Event): void {
+    const el = ev.target as HTMLTextAreaElement | null;
+    if (el) this.draftSig.set(el.value ?? '');
+  }
+
   ngOnInit(): void {
-    void this.loadHistory();
+    void this.bootstrap();
+  }
+
+  private async bootstrap(): Promise<void> {
+    await this.loadHistory();
+    const deepen = this.route.snapshot.queryParamMap.get('deepen') === '1';
+    const askFromQuery = this.route.snapshot.queryParamMap.get('ask')?.trim() || '';
+    const askFromStore =
+      deepen && typeof sessionStorage !== 'undefined'
+        ? sessionStorage.getItem('ws_assistant_ask')?.trim() || ''
+        : '';
+    const ask = askFromQuery || askFromStore;
+    if (ask && this.canChat()) {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('ws_assistant_ask');
+      }
+      this.draft = ask;
+      // Clear query so refresh does not re-send.
+      await this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {},
+        replaceUrl: true,
+      });
+      await this.send();
+    }
+  }
+
+  private demoEmail(): string {
+    const fromAuth = this.auth.email();
+    if (fromAuth) return fromAuth;
+    const demo = environment.demoUserId || 'compose-demo';
+    return demo.includes('@') ? demo : `${demo}@local`;
   }
 
   private composeHeaders(): Record<string, string> {
+    const tenantId = environment.demoTenantId || 'town-wiley';
+    const place = friendlyMunicipalityName(tenantId);
+    const email = this.demoEmail();
+    const first = operatorFirstName({ email });
     return {
       'content-type': 'application/json',
-      'X-Tenant-Id': environment.demoTenantId || 'town-wiley',
+      'X-Tenant-Id': tenantId,
       'X-User-Id': environment.demoUserId || 'compose-demo',
+      'X-Municipality': place,
+      'X-Operator-Name': first,
+      'X-Operator-Email': email,
     };
+  }
+
+  private personaPayload(): {
+    municipality: string;
+    operator_name: string;
+    operator_email: string;
+  } {
+    const tenantId = this.auth.tenantId() || environment.demoTenantId || 'town-wiley';
+    const displayName = this.auth.mapCenter()?.town ?? null;
+    const email = this.demoEmail();
+    return {
+      municipality: friendlyMunicipalityName(tenantId, displayName),
+      operator_name: this.auth.firstName() || operatorFirstName({ email }),
+      operator_email: email,
+    };
+  }
+
+  private ensureWelcome(): void {
+    if (this.messages().length > 0 || !this.canChat()) return;
+    const email =
+      this.auth.email() ||
+      (environment.demoUserId?.includes('@')
+        ? environment.demoUserId
+        : environment.demoUserId
+          ? `${environment.demoUserId}@local`
+          : null);
+    const tenantId = this.auth.tenantId() || environment.demoTenantId || 'town-wiley';
+    const displayName = this.auth.mapCenter()?.town ?? this.auth.placeName() ?? null;
+    this.messages.set([
+      {
+        role: 'assistant',
+        text: assistantWelcome({ tenantId, displayName, email }),
+      },
+    ]);
+  }
+
+  clearLocalChat(): void {
+    this.messages.set([]);
+    this.error.set('');
+    this.coaching.set('');
+    this.needsConfirm.set(false);
+    this.ensureWelcome();
   }
 
   async loadHistory(): Promise<void> {
     if (environment.composeDemo) {
       try {
         const qs = new URLSearchParams({ session_id: COMPOSE_SESSION_ID });
-        const res = await fetch(
-          `${environment.apiBaseUrl}${environment.historyPath}?${qs}`,
-          { headers: this.composeHeaders() },
-        );
+        const res = await fetch(`${environment.apiBaseUrl}${environment.historyPath}?${qs}`, {
+          headers: this.composeHeaders(),
+        });
         const body = await res.json();
         if (!res.ok) {
           this.error.set(body.error ?? `Could not load history (${res.status})`);
+          this.ensureWelcome();
           return;
         }
         this.messages.set(
-          ((body.messages ?? []) as Array<{ role: string; content?: string; text?: string }>).map(
-            (m) => ({
-              role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
-              text: m.content ?? m.text ?? '',
-            }),
+          prepareHistoryForDisplay(
+            ((body.messages ?? []) as Array<{ role: string; content?: string; text?: string }>).map(
+              (m) => ({
+                role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
+                text: m.content ?? m.text ?? '',
+              }),
+            ),
           ),
         );
+        this.ensureWelcome();
       } catch (err) {
         this.error.set(err instanceof Error ? err.message : 'Network error');
+        this.ensureWelcome();
       }
       return;
     }
 
     const token = this.auth.getBearerToken();
-    if (!token) return;
+    if (!token) {
+      this.ensureWelcome();
+      return;
+    }
     try {
+      await this.auth.refreshProfile();
       const res = await fetch(`${environment.apiBaseUrl}${environment.historyPath}`, {
         headers: { authorization: `Bearer ${token}` },
       });
       const body = await res.json();
       if (!res.ok) {
         this.error.set(body.error ?? `Could not load history (${res.status})`);
+        this.ensureWelcome();
         return;
       }
+      // Drop sterile tenant-slug intros + dry-run spam; empty → welcome reinjects.
       this.messages.set(
-        ((body.messages ?? []) as ChatMsg[]).map((m) => ({
-          role: m.role,
-          text: m.text,
-          createdAt: m.createdAt,
-        })),
+        prepareHistoryForDisplay(
+          ((body.messages ?? []) as ChatMsg[]).map((m) => ({
+            role: m.role,
+            text: m.text ?? '',
+            createdAt: m.createdAt,
+          })),
+        ),
       );
+      this.ensureWelcome();
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Network error');
+      this.ensureWelcome();
     }
   }
 
   async send(): Promise<void> {
-    const text = this.draft.trim();
-    if (!text) return;
+    const text = this.draftSig().trim();
+    if (!text || this.busy()) return;
 
-    // Auth gate before mutating the transcript (Cognito path).
     if (!environment.composeDemo && !this.auth.getBearerToken()) {
       this.error.set('Sign in to chat with the assistant.');
       return;
@@ -120,11 +265,11 @@ export class AgentPageComponent implements OnInit {
     this.busy.set(true);
     this.error.set('');
     this.messages.update((m) => [...m, { role: 'user', text }]);
-    this.draft = '';
+    this.draftSig.set('');
 
     try {
       if (environment.composeDemo) {
-        // Assessment Compose path: LangChain RAG (Feature 001/007)
+        const persona = this.personaPayload();
         const res = await fetch(`${environment.apiBaseUrl}${environment.ragPath}`, {
           method: 'POST',
           headers: this.composeHeaders(),
@@ -133,30 +278,35 @@ export class AgentPageComponent implements OnInit {
             tenant_id: environment.demoTenantId,
             user_id: environment.demoUserId,
             session_id: COMPOSE_SESSION_ID,
+            municipality: persona.municipality,
+            operator_name: persona.operator_name,
+            operator_email: persona.operator_email,
           }),
         });
         const body = await res.json();
         if (!res.ok) {
-          this.error.set(body.error ?? `RAG failed (${res.status})`);
+          this.error.set(body.error ?? `Assistant failed (${res.status})`);
           return;
         }
+        const composeSources = (body.sources ?? []) as ChatSource[];
         this.messages.update((m) => [
           ...m,
-          { role: 'assistant', text: body.answer ?? body.reply ?? '(no answer)' },
+          {
+            role: 'assistant',
+            text: body.answer ?? body.reply ?? '(no answer)',
+            sources: composeSources,
+          },
         ]);
-        this.costNote.set(
-          'Compose RAG uses Bedrock when AWS credentials are present; Mem0 when MEM0_API_KEY is set.',
-        );
         return;
       }
 
       const token = this.auth.getBearerToken();
       if (!token) {
-        // Should be unreachable after the pre-check; keep as safety net.
         this.error.set('Sign in to chat with the assistant.');
         this.messages.update((m) => m.slice(0, -1));
         return;
       }
+      // Cognito product path: Bearer only — never send client tenant overrides.
       const res = await fetch(`${environment.apiBaseUrl}${environment.agentPath}`, {
         method: 'POST',
         headers: {
@@ -167,10 +317,16 @@ export class AgentPageComponent implements OnInit {
       });
       const body = await res.json();
       if (!res.ok) {
-        this.error.set(body.error ?? `Agent failed (${res.status})`);
+        this.error.set(body.error ?? `Assistant failed (${res.status})`);
         return;
       }
-      this.messages.update((m) => [...m, { role: 'assistant', text: body.reply }]);
+      const replyText = (body.reply ?? '').trim();
+      if (!replyText) {
+        this.error.set('The assistant returned an empty answer. Try again in a moment.');
+        return;
+      }
+      const sources = (body.sources ?? []) as ChatSource[];
+      this.messages.update((m) => [...m, { role: 'assistant', text: replyText, sources }]);
       if (body.costNote) this.costNote.set(body.costNote);
       if (body.confidenceCoaching) this.coaching.set(body.confidenceCoaching);
       this.needsConfirm.set(Boolean(body.needsConfirm));
@@ -178,6 +334,13 @@ export class AgentPageComponent implements OnInit {
       this.error.set(err instanceof Error ? err.message : 'Network error');
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  onComposerKeydown(ev: KeyboardEvent): void {
+    if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
+      ev.preventDefault();
+      void this.send();
     }
   }
 

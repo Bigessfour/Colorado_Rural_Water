@@ -20,9 +20,21 @@ docker compose up --build
 ./scripts/smoke.sh
 ```
 
-- UI: <http://localhost:8080>
+For **live Bedrock RAG** (Feature 007), export AWS keys into the Compose environment (do not commit them). Example:
+
+```bash
+eval "$(aws configure export-credentials --profile codeplatoon --format env)"
+unset AWS_PROFILE
+docker compose up -d --force-recreate backend
+SMOKE_REQUIRE_RAG=1 SMOKE_FRONTEND_URL=http://127.0.0.1:8080 ./scripts/smoke.sh
+# UI chat: http://localhost:8080/assistant (Compose demo uses town-wiley headers)
+```
+
+- UI: <http://localhost:8080> · Assistant: <http://localhost:8080/assistant>
+- Cognito SPA (upload / alerts): <http://localhost:4200> — use hostname **localhost** (API CORS does not allow `127.0.0.1`)
 - API: <http://localhost:3000> (`/health`, `/ready`, `/api/rag`)
 - DB: Postgres on 5432
+- Demo script: [`docs/ASSESSMENT_III_DEMO.md`](docs/ASSESSMENT_III_DEMO.md)
 
 ## 3. Terraform (codeplatoon)
 

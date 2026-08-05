@@ -1,0 +1,23 @@
+{
+  "product": "water-saver",
+  "assessment": "III",
+  "awsAccount": "388691194728",
+  "awsProfile": "codeplatoon",
+  "awsRegion": "us-east-1",
+  "requiredTag": "Assessment-iii",
+  "completedFeatures": [
+    "001-langchain-mem0-rag",
+    "002-langgraph-langsmith-agent",
+    "003-terraform-iac",
+    "004-terraform-best-practices",
+    "005-github-actions-compose",
+    "006-github-actions-advanced",
+    "007-integrations-bedrock-ui",
+    "008-system-ui-browser-demo",
+    "009-docs-reproducibility",
+    "010-docs-ops-bonuses",
+    "011-meter-map",
+    "012-member-onboarding-reports"
+  ],
+  "notes": "Assessment III rubric features verified. Active Spec Kit pointer: .specify/feature.json (feature_directory). Project metadata lives here only — /speckit-specify overwrites feature.json with feature_directory alone."
+}

@@ -13,7 +13,7 @@
 
 ## Secrets note
 
-GH secret *names* present: `AWS_*`, `MEM0_*`, `LANGCHAIN_*`, `LANGSMITH_*`. Checklist: `scripts/gh-secrets-example.sh`. Compose CI forwards them optionally; default smoke does **not** require Bedrock.
+GH secret _names_ present: `AWS_*`, `MEM0_*`, `LANGCHAIN_*`, `LANGSMITH_*`. Checklist: `scripts/gh-secrets-example.sh`. Compose CI forwards them optionally; default smoke does **not** require Bedrock.
 
 ## User value
 
@@ -21,7 +21,7 @@ Operators of small Colorado rural water systems get AI assistance that stays ins
 
 ## Acceptance criteria (official rubric language)
 
-- [x] Workflows that build, test, and push/build container images *(build artifacts via Compose — no ECR push)*
+- [x] Workflows that build, test, and push/build container images _(build artifacts via Compose — no ECR push)_
 - [x] Dockerfiles + Docker Compose for three-tier stack (frontend, backend API, database)
 - [x] No hard-coded secrets/keys in application code
 - [x] Secrets via GitHub Actions secrets and/or AWS Secrets Manager
