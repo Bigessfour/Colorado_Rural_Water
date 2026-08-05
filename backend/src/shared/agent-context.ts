@@ -166,6 +166,7 @@ export function templateAgentReply(input: AgentTurnInput): AgentReply {
       coaching,
     ].join("\n\n");
   } else {
+    // Never embed raw tenantId / TENANT# slugs in operator-facing copy.
     reply = [
       `Hi ${first} — I'm the Water Saver assistant for ${place}.`,
       "I can help with onboarding inventory, Confidence coaching, mapping tips, and plain-language alert explanations.",

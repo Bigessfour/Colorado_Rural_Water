@@ -14,6 +14,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { TagModule } from 'primeng/tag';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
+import { prepareHistoryForDisplay } from '../../shared/agent-history-sanitize';
 import {
   assistantWelcome,
   friendlyMunicipalityName,
@@ -161,34 +162,6 @@ export class AgentPageComponent implements OnInit {
     };
   }
 
-  /** Drop sterile “tenant slug” intros and near-duplicate assistant bubbles. */
-  private sanitizeHistory(msgs: ChatMsg[]): ChatMsg[] {
-    const cleaned = msgs.filter((m) => {
-      if (m.role !== 'assistant') return true;
-      if (/\bin tenant\b/i.test(m.text || '')) return false;
-      return true;
-    });
-    const out: ChatMsg[] = [];
-    for (const m of cleaned) {
-      const prev = out[out.length - 1];
-      if (
-        prev &&
-        prev.role === 'assistant' &&
-        m.role === 'assistant' &&
-        this.nearDuplicate(prev.text, m.text)
-      ) {
-        continue;
-      }
-      out.push(m);
-    }
-    return out;
-  }
-
-  private nearDuplicate(a: string, b: string): boolean {
-    const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 120);
-    return norm(a) === norm(b);
-  }
-
   private ensureWelcome(): void {
     if (this.messages().length > 0 || !this.canChat()) return;
     const email =
@@ -230,7 +203,7 @@ export class AgentPageComponent implements OnInit {
           return;
         }
         this.messages.set(
-          this.sanitizeHistory(
+          prepareHistoryForDisplay(
             ((body.messages ?? []) as Array<{ role: string; content?: string; text?: string }>).map(
               (m) => ({
                 role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
@@ -263,36 +236,21 @@ export class AgentPageComponent implements OnInit {
         this.ensureWelcome();
         return;
       }
-      const loaded = this.sanitizeHistory(
-        ((body.messages ?? []) as ChatMsg[]).map((m) => ({
-          role: m.role,
-          text: m.text,
-          createdAt: m.createdAt,
-        })),
+      // Drop sterile tenant-slug intros + dry-run spam; empty → welcome reinjects.
+      this.messages.set(
+        prepareHistoryForDisplay(
+          ((body.messages ?? []) as ChatMsg[]).map((m) => ({
+            role: m.role,
+            text: m.text ?? '',
+            createdAt: m.createdAt,
+          })),
+        ),
       );
-      // Greeting spam from earlier Bedrock dry-runs — keep a short recent thread.
-      this.messages.set(this.trimNoisyHistory(loaded));
       this.ensureWelcome();
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Network error');
       this.ensureWelcome();
     }
-  }
-
-  /** Drop long runs of near-identical hello replies; keep the last 8 turns. */
-  private trimNoisyHistory(msgs: ChatMsg[]): ChatMsg[] {
-    const isHello = (t: string) =>
-      /^(hi|hello)\b/i.test(t.trim()) ||
-      /\bhow can i (assist|help) you\b/i.test(t) ||
-      /\bjust say (a )?(short )?hello\b/i.test(t);
-    const filtered = msgs.filter((m, i, arr) => {
-      if (!isHello(m.text || '')) return true;
-      // Keep at most one greeting-like bubble in a row.
-      const prev = arr[i - 1];
-      if (prev && isHello(prev.text || '') && prev.role === m.role) return false;
-      return true;
-    });
-    return filtered.slice(-8);
   }
 
   async send(): Promise<void> {

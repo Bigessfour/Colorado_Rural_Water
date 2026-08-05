@@ -22,6 +22,10 @@ import {
   ok,
   unauthorized,
 } from "../shared/http.js";
+import {
+  filterConversationForClient,
+  normalizeOutboundAssistantText,
+} from "../shared/agent-reply-normalize.js";
 import { retrieveKnowledge } from "../shared/kb-retrieve.js";
 import {
   friendlyMunicipalityName,
@@ -79,7 +83,9 @@ export const handler: AuthedHandler = async (event) => {
     randomUUID();
 
   if (method === "GET") {
-    const history = await conv.listRecent(tenantId, auth.userId, 40);
+    const history = filterConversationForClient(
+      await conv.listRecent(tenantId, auth.userId, 40),
+    );
     return ok({
       tenantId,
       userId: auth.userId,
@@ -363,6 +369,13 @@ async function finishAgentTurn(args: {
     }),
   );
 
+  const placeFallback = friendlyMunicipalityName(args.tenantId);
+  const safeReply = normalizeOutboundAssistantText(
+    args.reply.reply,
+    `Hi — I'm Water Saver for ${placeFallback}. Ask about alerts, uploads, water balance, or Confidence.`,
+  );
+  args.reply = { ...args.reply, reply: safeReply };
+
   const now = new Date().toISOString();
   await args.conv.putMessage({
     tenantId: args.tenantId,
@@ -377,14 +390,14 @@ async function finishAgentTurn(args: {
     userId: args.userId,
     messageId: randomUUID(),
     role: "assistant",
-    text: args.reply.reply,
+    text: safeReply,
     createdAt: new Date(Date.now() + 1).toISOString(),
     model: args.reply.modelId ?? args.reply.model,
   });
 
   return ok({
     tenantId: args.tenantId,
-    reply: args.reply.reply,
+    reply: safeReply,
     model: args.reply.model,
     modelId:
       args.reply.modelId ??
