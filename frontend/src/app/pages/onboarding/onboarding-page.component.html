@@ -1,13 +1,14 @@
 <section class="page">
   <h1>Member intake</h1>
   <p class="lede">
-    Tell Water Saver about your system so we can tailor uploads, Confidence coaching, and reports.
-    This is separate from CRWA membership billing — we are asking about your meter-read exports.
+    Hi {{ auth.firstName() }} — tell us about {{ auth.placeName() }} so we can tailor uploads,
+    Confidence coaching, and reports. This is separate from CRWA membership billing — we are asking
+    about your meter-read exports.
   </p>
 
   @if (!auth.isLoggedIn()) {
     <p-message severity="warn" styleClass="hint">
-      <a routerLink="/login">Sign in</a> to complete intake for your municipality.
+      <a routerLink="/login">Sign in</a> to complete intake for {{ auth.placeName() }}.
     </p-message>
   }
 
@@ -31,19 +32,24 @@
       @switch (step()) {
         @case (0) {
           <p>
-            Welcome to Water Saver. CRWA signed up your municipality — this short Q&amp;A helps us
-            align with how you export meter readings today (CSV/Excel is fine).
+            Welcome to Water Saver, {{ auth.firstName() }}. CRWA signed up
+            {{ auth.placeName() }} — this short Q&amp;A helps us align with how you export meter
+            readings today (CSV/Excel is fine).
           </p>
           <p>
-            You can also ask the <a routerLink="/assistant">Assistant</a> about onboarding paths
-            (Thin → Strong Confidence) anytime.
+            You can also ask the <a routerLink="/assistant">Assistant</a> about getting started and
+            building Confidence anytime.
           </p>
         }
         @case (1) {
           <div class="form">
             <label>
               System / town name
-              <input pInputText [(ngModel)]="data.systemName" (ngModelChange)="patch({ systemName: $event })" />
+              <input
+                pInputText
+                [(ngModel)]="data.systemName"
+                (ngModelChange)="patch({ systemName: $event })"
+              />
             </label>
             <label>
               Service territory address
@@ -114,11 +120,19 @@
           <div class="form">
             <label>
               Approximate meter count
-              <input pInputText [ngModel]="meterCountStr()" (ngModelChange)="setMeterCount($event)" />
+              <input
+                pInputText
+                [ngModel]="meterCountStr()"
+                (ngModelChange)="setMeterCount($event)"
+              />
             </label>
             <label>
               Wells / sources count
-              <input pInputText [ngModel]="sourceCountStr()" (ngModelChange)="setSourceCount($event)" />
+              <input
+                pInputText
+                [ngModel]="sourceCountStr()"
+                (ngModelChange)="setSourceCount($event)"
+              />
             </label>
             <label>
               Read schedule
@@ -228,7 +242,14 @@
 
       <div class="actions">
         @if (step() > 0) {
-          <button type="button" pButton label="Back" severity="secondary" (click)="back()" [disabled]="busy()"></button>
+          <button
+            type="button"
+            pButton
+            label="Back"
+            severity="secondary"
+            (click)="back()"
+            [disabled]="busy()"
+          ></button>
         }
         @if (step() < steps.length - 1) {
           <button

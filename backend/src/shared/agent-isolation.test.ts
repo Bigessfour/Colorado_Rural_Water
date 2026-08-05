@@ -91,6 +91,21 @@ describe('agent guardrails (E4/E6)', () => {
     assert.equal(reply.guardrails.noCrossTenantData, true);
     assert.equal(reply.guardrails.cheapestFirst, true);
   });
+
+  it('greets with operator first name and municipality', () => {
+    const reply = templateAgentReply({
+      tenantId: 'town-wiley',
+      userId: 'u1',
+      message: 'hi',
+      history: [],
+      confidence: thinConfidence,
+      municipality: 'Town of Wiley',
+      operatorEmail: 'kelly.review@watersaver.local',
+    });
+    assert.match(reply.reply, /Hi Kelly/);
+    assert.match(reply.reply, /Town of Wiley/);
+    assert.ok(!/\btenant\b/i.test(reply.reply));
+  });
 });
 
 describe('alert explanations (C6)', () => {

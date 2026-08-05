@@ -1,15 +1,17 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
-import { assessTenantConfidence, evaluateAlerts } from './alert-engine.js';
-import type { MeterLocation, MeterReading } from './meter-location.js';
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { assessTenantConfidence, evaluateAlerts } from "./alert-engine.js";
+import type { MeterLocation, MeterReading } from "./meter-location.js";
 
-function loc(partial: Partial<MeterLocation> & Pick<MeterLocation, 'meterId'>): MeterLocation {
+function loc(
+  partial: Partial<MeterLocation> & Pick<MeterLocation, "meterId">,
+): MeterLocation {
   return {
-    tenantId: 't1',
+    tenantId: "t1",
     serviceAddress: `${partial.meterId} Addr`,
-    occupantName: 'X',
+    occupantName: "X",
     accountNumber: null,
-    route: 'R3',
+    route: "R3",
     manufacturer: null,
     model: null,
     serialNumber: null,
@@ -22,7 +24,7 @@ function loc(partial: Partial<MeterLocation> & Pick<MeterLocation, 'meterId'>): 
     notes: null,
     latitude: null,
     longitude: null,
-    updatedAt: '2026-07-01T00:00:00.000Z',
+    updatedAt: "2026-07-01T00:00:00.000Z",
     ...partial,
   };
 }
@@ -34,96 +36,104 @@ function rdg(
   flags: string[] = [],
 ): MeterReading {
   return {
-    tenantId: 't1',
+    tenantId: "t1",
     meterId,
     serviceAddress: `${meterId} Addr`,
-    occupantName: 'X',
+    occupantName: "X",
     timestamp,
     cumulativeReading,
-    unit: 'gal',
+    unit: "gal",
     diagnosticFlags: flags,
   };
 }
 
-describe('assessTenantConfidence', () => {
-  it('marks Thin for ~2 months', () => {
+describe("assessTenantConfidence", () => {
+  it("marks Thin for ~2 months", () => {
     const c = assessTenantConfidence(
-      [rdg('1', '2026-06-15T00:00:00.000Z', 1), rdg('1', '2026-07-15T00:00:00.000Z', 2)],
+      [
+        rdg("1", "2026-06-15T00:00:00.000Z", 1),
+        rdg("1", "2026-07-15T00:00:00.000Z", 2),
+      ],
       1,
     );
-    assert.equal(c.level, 'Thin');
-    assert.equal(c.statisticalMode, 'Watch');
+    assert.equal(c.level, "Thin");
+    assert.equal(c.statisticalMode, "Watch");
     assert.ok(c.coveragePct >= 50);
     assert.ok(c.displayScore > 0 && c.displayScore < 100);
     assert.ok(c.improveHint.length > 0);
   });
 
-  it('stays Thin when coverage is under 50% even with 4 months', () => {
+  it("stays Thin when coverage is under 50% even with 4 months", () => {
     const readings = [
-      rdg('1', '2026-04-15T00:00:00.000Z', 1),
-      rdg('1', '2026-05-15T00:00:00.000Z', 2),
-      rdg('1', '2026-06-15T00:00:00.000Z', 3),
-      rdg('1', '2026-07-15T00:00:00.000Z', 4),
+      rdg("1", "2026-04-15T00:00:00.000Z", 1),
+      rdg("1", "2026-05-15T00:00:00.000Z", 2),
+      rdg("1", "2026-06-15T00:00:00.000Z", 3),
+      rdg("1", "2026-07-15T00:00:00.000Z", 4),
     ];
     const c = assessTenantConfidence(readings, 4); // 1 of 4 meters → 25%
-    assert.equal(c.level, 'Thin');
+    assert.equal(c.level, "Thin");
     assert.equal(c.coveragePct, 25);
-    assert.equal(c.statisticalMode, 'Watch');
+    assert.equal(c.statisticalMode, "Watch");
   });
 
-  it('reaches Building at 3+ months with coverage ≥50%', () => {
+  it("reaches Building at 3+ months with coverage ≥50%", () => {
     const readings = [
-      rdg('1', '2026-05-15T00:00:00.000Z', 1),
-      rdg('1', '2026-06-15T00:00:00.000Z', 2),
-      rdg('1', '2026-07-15T00:00:00.000Z', 3),
-      rdg('2', '2026-05-15T00:00:00.000Z', 1),
-      rdg('2', '2026-06-15T00:00:00.000Z', 2),
-      rdg('2', '2026-07-15T00:00:00.000Z', 3),
+      rdg("1", "2026-05-15T00:00:00.000Z", 1),
+      rdg("1", "2026-06-15T00:00:00.000Z", 2),
+      rdg("1", "2026-07-15T00:00:00.000Z", 3),
+      rdg("2", "2026-05-15T00:00:00.000Z", 1),
+      rdg("2", "2026-06-15T00:00:00.000Z", 2),
+      rdg("2", "2026-07-15T00:00:00.000Z", 3),
     ];
     const c = assessTenantConfidence(readings, 2);
-    assert.equal(c.level, 'Building');
-    assert.equal(c.statisticalMode, 'Watch');
+    assert.equal(c.level, "Building");
+    assert.equal(c.statisticalMode, "Watch");
   });
 });
 
-describe('evaluateAlerts', () => {
-  it('flags stuck meter as Actionable and high usage as Watch when Thin', () => {
+describe("evaluateAlerts", () => {
+  it("flags stuck meter as Actionable and high usage as Watch when Thin", () => {
     const locations = [
-      loc({ meterId: '1042' }),
-      loc({ meterId: '1045' }),
-      loc({ meterId: '1043' }),
-      loc({ meterId: '1044' }),
+      loc({ meterId: "1042" }),
+      loc({ meterId: "1045" }),
+      loc({ meterId: "1043" }),
+      loc({ meterId: "1044" }),
     ];
     const readings = [
-      rdg('1042', '2026-06-15T00:00:00.000Z', 1000),
-      rdg('1042', '2026-07-15T00:00:00.000Z', 5000), // +4000
-      rdg('1043', '2026-06-15T00:00:00.000Z', 1000),
-      rdg('1043', '2026-07-15T00:00:00.000Z', 1100), // +100
-      rdg('1044', '2026-06-15T00:00:00.000Z', 1000),
-      rdg('1044', '2026-07-15T00:00:00.000Z', 1120), // +120
-      rdg('1045', '2026-06-15T00:00:00.000Z', 0),
-      rdg('1045', '2026-07-15T00:00:00.000Z', 0, ['NR']),
+      rdg("1042", "2026-06-15T00:00:00.000Z", 1000),
+      rdg("1042", "2026-07-15T00:00:00.000Z", 5000), // +4000
+      rdg("1043", "2026-06-15T00:00:00.000Z", 1000),
+      rdg("1043", "2026-07-15T00:00:00.000Z", 1100), // +100
+      rdg("1044", "2026-06-15T00:00:00.000Z", 1000),
+      rdg("1044", "2026-07-15T00:00:00.000Z", 1120), // +120
+      rdg("1045", "2026-06-15T00:00:00.000Z", 0),
+      rdg("1045", "2026-07-15T00:00:00.000Z", 0, ["NR"]),
     ];
     const { confidence, alerts } = evaluateAlerts(locations, readings);
-    assert.equal(confidence.level, 'Thin');
-    const stuck = alerts.find((a) => a.type === 'stuck_meter');
+    assert.equal(confidence.level, "Thin");
+    const stuck = alerts.find((a) => a.type === "stuck_meter");
     assert.ok(stuck);
-    assert.equal(stuck.mode, 'Actionable');
-    const high = alerts.find((a) => a.type === 'unusual_high_usage' && a.meterId === '1042');
-    assert.ok(high, `alerts=${JSON.stringify(alerts.map((a) => a.type + ':' + a.meterId))}`);
-    assert.equal(high.mode, 'Watch');
+    assert.equal(stuck.mode, "Actionable");
+    const high = alerts.find(
+      (a) => a.type === "unusual_high_usage" && a.meterId === "1042",
+    );
+    assert.ok(
+      high,
+      `alerts=${JSON.stringify(alerts.map((a) => a.type + ":" + a.meterId))}`,
+    );
+    assert.equal(high.mode, "Watch");
   });
 
-  it('keeps diagnostic flags Actionable even when Thin', () => {
-    const locations = [loc({ meterId: 'm1' })];
+  it("keeps diagnostic flags Actionable even when Thin", () => {
+    const locations = [loc({ meterId: "m1" })];
     const readings = [
-      rdg('m1', '2026-06-15T00:00:00.000Z', 100),
-      rdg('m1', '2026-07-15T00:00:00.000Z', 200, ['L']),
+      rdg("m1", "2026-06-15T00:00:00.000Z", 100),
+      rdg("m1", "2026-07-15T00:00:00.000Z", 200, ["L"]),
     ];
     const { confidence, alerts } = evaluateAlerts(locations, readings);
-    assert.equal(confidence.level, 'Thin');
-    const diag = alerts.find((a) => a.type === 'diagnostic_flag');
+    assert.equal(confidence.level, "Thin");
+    const diag = alerts.find((a) => a.type === "diagnostic_flag");
     assert.ok(diag);
-    assert.equal(diag.mode, 'Actionable');
+    assert.equal(diag.mode, "Actionable");
   });
 });

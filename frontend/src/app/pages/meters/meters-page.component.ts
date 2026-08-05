@@ -126,9 +126,7 @@ function formFromRow(row: MeterRow): MeterMetadataForm {
 function coordsPayload(
   latRaw: string,
   lngRaw: string,
-):
-  | { ok: true; latitude: number | null; longitude: number | null }
-  | { ok: false; error: string } {
+): { ok: true; latitude: number | null; longitude: number | null } | { ok: false; error: string } {
   const lat = latRaw.trim();
   const lng = lngRaw.trim();
   if (!lat && !lng) {
@@ -153,9 +151,7 @@ function coordsPayload(
 
 function metaPayload(
   form: MeterMetadataForm,
-):
-  | { ok: true; body: Record<string, string | number | null> }
-  | { ok: false; error: string } {
+): { ok: true; body: Record<string, string | number | null> } | { ok: false; error: string } {
   const coords = coordsPayload(form.latitude, form.longitude);
   if (!coords.ok) return coords;
   return {
@@ -443,17 +439,14 @@ export class MetersPageComponent implements OnInit {
         this.error.set(payload.error);
         return;
       }
-      const res = await fetch(
-        `${environment.apiBaseUrl}/meters/${encodeURIComponent(meterId)}`,
-        {
-          method: 'PUT',
-          headers: {
-            authorization: `Bearer ${token}`,
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify(payload.body),
+      const res = await fetch(`${environment.apiBaseUrl}/meters/${encodeURIComponent(meterId)}`, {
+        method: 'PUT',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
         },
-      );
+        body: JSON.stringify(payload.body),
+      });
       const body = await res.json();
       if (!res.ok) {
         this.error.set(body.error ?? `Update failed (${res.status})`);
@@ -474,14 +467,8 @@ export class MetersPageComponent implements OnInit {
     if (!token) return;
     const count = row.readingCount ?? 0;
     const readingNote =
-      count > 0
-        ? ` This also permanently deletes ${count} reading${count === 1 ? '' : 's'}.`
-        : '';
-    if (
-      !confirm(
-        `Remove meter ${row.meterId} at ${row.serviceAddress}?${readingNote}`,
-      )
-    ) {
+      count > 0 ? ` This also permanently deletes ${count} reading${count === 1 ? '' : 's'}.` : '';
+    if (!confirm(`Remove meter ${row.meterId} at ${row.serviceAddress}?${readingNote}`)) {
       return;
     }
     this.busy.set(true);
@@ -579,7 +566,9 @@ export class MetersPageComponent implements OnInit {
     try {
       const hit = await geocodeServiceAddress(address);
       if (!hit) {
-        this.error.set('No map match for that address. Try a fuller street + town, or place the pin on the map.');
+        this.error.set(
+          'No map match for that address. Try a fuller street + town, or place the pin on the map.',
+        );
         return;
       }
       const lat = String(hit.latitude);
@@ -590,7 +579,9 @@ export class MetersPageComponent implements OnInit {
         this.editForm.update((f) => ({ ...f, latitude: lat, longitude: lng }));
       }
       this.geocodeHint.set(`Matched “${hit.label}”. ${hit.note}`);
-      this.status.set(`Suggested pin near ${hit.label}. Fine-tune on the map if needed, then save.`);
+      this.status.set(
+        `Suggested pin near ${hit.label}. Fine-tune on the map if needed, then save.`,
+      );
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Geocode failed');
     } finally {
@@ -598,11 +589,7 @@ export class MetersPageComponent implements OnInit {
     }
   }
 
-  private async persistCoords(
-    meterId: string,
-    latitude: number,
-    longitude: number,
-  ): Promise<void> {
+  private async persistCoords(meterId: string, latitude: number, longitude: number): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) {
       this.error.set('Sign in to save meter locations.');
@@ -611,17 +598,14 @@ export class MetersPageComponent implements OnInit {
     this.saving.set(true);
     this.error.set('');
     try {
-      const res = await fetch(
-        `${environment.apiBaseUrl}/meters/${encodeURIComponent(meterId)}`,
-        {
-          method: 'PUT',
-          headers: {
-            authorization: `Bearer ${token}`,
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({ latitude, longitude }),
+      const res = await fetch(`${environment.apiBaseUrl}/meters/${encodeURIComponent(meterId)}`, {
+        method: 'PUT',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
         },
-      );
+        body: JSON.stringify({ latitude, longitude }),
+      });
       const body = await res.json();
       if (!res.ok) {
         this.error.set(body.error ?? `Save failed (${res.status})`);

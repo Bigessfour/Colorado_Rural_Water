@@ -17,6 +17,7 @@ import logging
 from typing import Any, Dict, List, TypedDict
 
 from rag.settings import configure_langsmith
+from rag.persona import friendly_municipality_name
 from rag.tenant import normalize_tenant_id, normalize_user_id
 
 logger = logging.getLogger(__name__)
@@ -43,21 +44,23 @@ def _classify(alert: str) -> str:
 
 
 def _gather_context(tenant_id: str, severity: str) -> str:
+    place = friendly_municipality_name(tenant_id)
     return (
-        f"Tenant={tenant_id} only. Severity={severity}. "
+        f"{place} only. Severity={severity}. "
         "Use Watch vs Actionable language; Thin Confidence is never a confirmed leak. "
         "Prefer field check when staff can visit — not dig-now."
     )
 
 
 def _draft(tenant_id: str, alert: str, severity: str, context: str) -> str:
+    place = friendly_municipality_name(tenant_id)
     calm = {
         "high": "Worth a look soon — treat as priority when staff can visit. Do not dig yet on Thin Confidence alone.",
         "medium": "Flagged as Watch. Compare to last few cycles when you have a quiet moment.",
         "low": "Informational for your system only. No rush.",
     }[severity]
     return (
-        f"Tenant {tenant_id} triage ({severity}): {calm}\n"
+        f"{place} triage ({severity}): {calm}\n"
         f"Context: {context}\n"
         f"Alert summary: {alert[:500]}"
     )

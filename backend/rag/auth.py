@@ -1,5 +1,4 @@
 from flask import jsonify, request
-
 from rag.settings import RAG_API_KEY
 
 

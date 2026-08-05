@@ -21,19 +21,19 @@ EXT_CONFIG="$PROJECT_ROOT/.specify/extensions/agent-context/agent-context-config
 DEFAULT_START="<!-- SPECKIT START -->"
 DEFAULT_END="<!-- SPECKIT END -->"
 
-if [[ ! -f "$EXT_CONFIG" ]]; then
-  echo "agent-context: $EXT_CONFIG not found; nothing to do." >&2
-  exit 0
+if [[ ! -f $EXT_CONFIG ]]; then
+	echo "agent-context: $EXT_CONFIG not found; nothing to do." >&2
+	exit 0
 fi
 
 # Locate a Python 3 interpreter with PyYAML available.
 _python=""
 _python_candidates=()
-[[ -n "${SPECKIT_PYTHON:-}" ]] && _python_candidates+=("$SPECKIT_PYTHON")
+[[ -n ${SPECKIT_PYTHON:-} ]] && _python_candidates+=("$SPECKIT_PYTHON")
 _python_candidates+=("python3" "python")
 for _candidate in "${_python_candidates[@]}"; do
-  if command -v "$_candidate" >/dev/null 2>&1 \
-    && "$_candidate" - <<'PY' >/dev/null 2>&1
+	if command -v "$_candidate" >/dev/null 2>&1 &&
+		"$_candidate" - <<'PY' >/dev/null 2>&1; then
 import sys
 try:
     import yaml  # noqa: F401
@@ -41,21 +41,20 @@ except ImportError:
     sys.exit(1)
 sys.exit(0 if sys.version_info[0] == 3 else 1)
 PY
-  then
-    _python="$_candidate"
-    break
-  fi
+		_python="$_candidate"
+		break
+	fi
 done
 unset _candidate _python_candidates
 
-if [[ -z "$_python" ]]; then
-  echo "agent-context: Python 3 with PyYAML not found on PATH; skipping update." >&2
-  echo "  To resolve: pip install pyyaml (or install it into the environment used by python3)." >&2
-  exit 0
+if [[ -z $_python ]]; then
+	echo "agent-context: Python 3 with PyYAML not found on PATH; skipping update." >&2
+	echo "  To resolve: pip install pyyaml (or install it into the environment used by python3)." >&2
+	exit 0
 fi
 _case_insensitive_context_files=0
 case "$(uname -s 2>/dev/null || true)" in
-  MINGW*|MSYS*|CYGWIN*) _case_insensitive_context_files=1 ;;
+MINGW* | MSYS* | CYGWIN*) _case_insensitive_context_files=1 ;;
 esac
 
 # Parse extension config once; emit context files as JSON, followed by marker strings.
@@ -66,7 +65,8 @@ esac
 # failing with "unexpected EOF while looking for matching `''". Keep these
 # $(...)-nested heredoc bodies free of apostrophes (use double quotes in Python
 # string literals and avoid contractions in comments).
-if ! _raw_opts="$("$_python" - "$EXT_CONFIG" "$_case_insensitive_context_files" "$PROJECT_ROOT" <<'PY'
+if ! _raw_opts="$(
+	"$_python" - "$EXT_CONFIG" "$_case_insensitive_context_files" "$PROJECT_ROOT" <<'PY'
 import json
 import sys
 try:
@@ -168,17 +168,17 @@ print(get_str(data, "context_markers", "start"))
 print(get_str(data, "context_markers", "end"))
 PY
 )"; then
-  echo "agent-context: skipping update (see above for details)." >&2
-  exit 0
+	echo "agent-context: skipping update (see above for details)." >&2
+	exit 0
 fi
 
 _opts_lines=()
-while IFS= read -r _line || [[ -n "$_line" ]]; do
-  _opts_lines+=("$_line")
+while IFS= read -r _line || [[ -n $_line ]]; do
+	_opts_lines+=("$_line")
 done < <(printf '%s\n' "$_raw_opts")
-if (( ${#_opts_lines[@]} < 1 )); then
-  echo "agent-context: malformed config parser output; expected at least the context_files line, got ${#_opts_lines[@]}; skipping update." >&2
-  exit 0
+if ((${#_opts_lines[@]} < 1)); then
+	echo "agent-context: malformed config parser output; expected at least the context_files line, got ${#_opts_lines[@]}; skipping update." >&2
+	exit 0
 fi
 # The marker lines may be absent: the $(...) capture above strips trailing
 # newlines, so blank markers (the config omitting context_markers and relying on
@@ -189,7 +189,8 @@ CONTEXT_FILES_JSON="${_opts_lines[0]}"
 MARKER_START="${_opts_lines[1]:-}"
 MARKER_END="${_opts_lines[2]:-}"
 
-if ! _context_files_raw="$("$_python" - "$CONTEXT_FILES_JSON" <<'PY'
+if ! _context_files_raw="$(
+	"$_python" - "$CONTEXT_FILES_JSON" <<'PY'
 import json
 import sys
 try:
@@ -203,38 +204,38 @@ for value in data:
         print(value)
 PY
 )"; then
-  echo "agent-context: malformed context_files parser output; skipping update." >&2
-  exit 0
+	echo "agent-context: malformed context_files parser output; skipping update." >&2
+	exit 0
 fi
 
 CONTEXT_FILES=()
-while IFS= read -r _line || [[ -n "$_line" ]]; do
-  [[ -n "$_line" ]] && CONTEXT_FILES+=("$_line")
+while IFS= read -r _line || [[ -n $_line ]]; do
+	[[ -n $_line ]] && CONTEXT_FILES+=("$_line")
 done < <(printf '%s\n' "$_context_files_raw")
 
-if (( ${#CONTEXT_FILES[@]} == 0 )); then
-  echo "agent-context: context_files/context_file not set in extension config; nothing to do." >&2
-  exit 0
+if ((${#CONTEXT_FILES[@]} == 0)); then
+	echo "agent-context: context_files/context_file not set in extension config; nothing to do." >&2
+	exit 0
 fi
 
 for CONTEXT_FILE in "${CONTEXT_FILES[@]}"; do
-  # Reject absolute paths, backslash separators, and '..' path segments in context files
-  if [[ "$CONTEXT_FILE" == /* ]] || [[ "$CONTEXT_FILE" =~ ^[A-Za-z]: ]]; then
-    echo "agent-context: context files must be project-relative paths; got '$CONTEXT_FILE'." >&2
-    exit 1
-  fi
-  if [[ "$CONTEXT_FILE" == *\\* ]]; then
-    echo "agent-context: context files must not contain backslash separators; got '$CONTEXT_FILE'." >&2
-    exit 1
-  fi
-  IFS='/' read -ra _cf_parts <<< "$CONTEXT_FILE"
-  for _seg in "${_cf_parts[@]}"; do
-    if [[ "$_seg" == ".." ]]; then
-      echo "agent-context: context files must not contain '..' path segments; got '$CONTEXT_FILE'." >&2
-      exit 1
-    fi
-  done
-  if ! "$_python" - "$PROJECT_ROOT" "$CONTEXT_FILE" <<'PY'
+	# Reject absolute paths, backslash separators, and '..' path segments in context files
+	if [[ $CONTEXT_FILE == /* ]] || [[ $CONTEXT_FILE =~ ^[A-Za-z]: ]]; then
+		echo "agent-context: context files must be project-relative paths; got '$CONTEXT_FILE'." >&2
+		exit 1
+	fi
+	if [[ $CONTEXT_FILE == *\\* ]]; then
+		echo "agent-context: context files must not contain backslash separators; got '$CONTEXT_FILE'." >&2
+		exit 1
+	fi
+	IFS='/' read -ra _cf_parts <<<"$CONTEXT_FILE"
+	for _seg in "${_cf_parts[@]}"; do
+		if [[ $_seg == ".." ]]; then
+			echo "agent-context: context files must not contain '..' path segments; got '$CONTEXT_FILE'." >&2
+			exit 1
+		fi
+	done
+	if ! "$_python" - "$PROJECT_ROOT" "$CONTEXT_FILE" <<'PY'; then
 import sys
 from pathlib import Path
 
@@ -245,22 +246,22 @@ try:
 except ValueError:
     sys.exit(1)
 PY
-  then
-    echo "agent-context: context file path resolves outside the project root; got '$CONTEXT_FILE'." >&2
-    exit 1
-  fi
+		echo "agent-context: context file path resolves outside the project root; got '$CONTEXT_FILE'." >&2
+		exit 1
+	fi
 done
 unset _cf_parts _seg
 
-[[ -z "$MARKER_START" ]] && MARKER_START="$DEFAULT_START"
-[[ -z "$MARKER_END"   ]] && MARKER_END="$DEFAULT_END"
+[[ -z $MARKER_START ]] && MARKER_START="$DEFAULT_START"
+[[ -z $MARKER_END ]] && MARKER_END="$DEFAULT_END"
 
 PLAN_PATH="${1:-}"
-if [[ -z "$PLAN_PATH" ]]; then
-  # Prefer .specify/feature.json (written by /speckit-specify) over mtime heuristic.
-  _feature_json="$PROJECT_ROOT/.specify/feature.json"
-  if [[ -f "$_feature_json" ]]; then
-    _feature_dir="$("$_python" - "$_feature_json" <<'PY'
+if [[ -z $PLAN_PATH ]]; then
+	# Prefer .specify/feature.json (written by /speckit-specify) over mtime heuristic.
+	_feature_json="$PROJECT_ROOT/.specify/feature.json"
+	if [[ -f $_feature_json ]]; then
+		_feature_dir="$(
+			"$_python" - "$_feature_json" <<'PY'
 import sys, json
 try:
     with open(sys.argv[1], encoding="utf-8") as fh:
@@ -270,23 +271,24 @@ try:
 except Exception:
     print("")
 PY
-)"
-    # Normalize backslashes (written by PS on Windows) to forward slashes before path ops.
-    _feature_dir="$(printf '%s' "$_feature_dir" | tr '\\' '/')"
-    _feature_dir="${_feature_dir%/}"
-    if [[ -n "$_feature_dir" ]]; then
-      # feature_directory may be relative or absolute (absolute paths outside PROJECT_ROOT
-      # are preserved as-is by _persist_feature_json in common.sh).
-      # Also match drive-qualified paths (C:/...) written by PowerShell on Windows.
-      if [[ "$_feature_dir" == /* ]] || [[ "$_feature_dir" =~ ^[A-Za-z]:/ ]]; then
-        _candidate="$_feature_dir/plan.md"
-      else
-        _candidate="$PROJECT_ROOT/$_feature_dir/plan.md"
-      fi
-      if [[ -f "$_candidate" ]]; then
-        # Resolve symlinks before comparing so paths like /var/… vs /private/var/…
-        # (macOS) are treated as equivalent. Mirrors the mtime-fallback approach.
-        PLAN_PATH="$("$_python" - "$PROJECT_ROOT" "$_candidate" <<'PY'
+		)"
+		# Normalize backslashes (written by PS on Windows) to forward slashes before path ops.
+		_feature_dir="$(printf '%s' "$_feature_dir" | tr '\\' '/')"
+		_feature_dir="${_feature_dir%/}"
+		if [[ -n $_feature_dir ]]; then
+			# feature_directory may be relative or absolute (absolute paths outside PROJECT_ROOT
+			# are preserved as-is by _persist_feature_json in common.sh).
+			# Also match drive-qualified paths (C:/...) written by PowerShell on Windows.
+			if [[ $_feature_dir == /* ]] || [[ $_feature_dir =~ ^[A-Za-z]:/ ]]; then
+				_candidate="$_feature_dir/plan.md"
+			else
+				_candidate="$PROJECT_ROOT/$_feature_dir/plan.md"
+			fi
+			if [[ -f $_candidate ]]; then
+				# Resolve symlinks before comparing so paths like /var/… vs /private/var/…
+				# (macOS) are treated as equivalent. Mirrors the mtime-fallback approach.
+				PLAN_PATH="$(
+					"$_python" - "$PROJECT_ROOT" "$_candidate" <<'PY'
 import sys
 from pathlib import Path
 root = Path(sys.argv[1]).resolve()
@@ -298,16 +300,17 @@ except ValueError:
     # as_posix() converts backslashes correctly on native Windows Python.
     print(cand.as_posix())
 PY
-)"
-      fi
-    fi
-  fi
+				)"
+			fi
+		fi
+	fi
 
-  # Fall back to mtime only when feature.json is absent or its plan does not exist yet.
-  # Python emits a project-relative POSIX path directly to avoid bash prefix-strip
-  # issues with backslash paths on Windows (Git bash / MSYS2).
-  if [[ -z "$PLAN_PATH" ]]; then
-    _plan_rel="$("$_python" - "$PROJECT_ROOT" <<'PY'
+	# Fall back to mtime only when feature.json is absent or its plan does not exist yet.
+	# Python emits a project-relative POSIX path directly to avoid bash prefix-strip
+	# issues with backslash paths on Windows (Git bash / MSYS2).
+	if [[ -z $PLAN_PATH ]]; then
+		_plan_rel="$(
+			"$_python" - "$PROJECT_ROOT" <<'PY'
 import sys
 from pathlib import Path
 root = Path(sys.argv[1]).resolve()
@@ -337,31 +340,31 @@ if candidates:
 else:
     print("")
 PY
-)"
-    if [[ -n "$_plan_rel" ]]; then
-      PLAN_PATH="$_plan_rel"
-    fi
-  fi
+		)"
+		if [[ -n $_plan_rel ]]; then
+			PLAN_PATH="$_plan_rel"
+		fi
+	fi
 fi
 
 # Build the managed section
 TMP_SECTION="$(mktemp)"
 trap 'rm -f "$TMP_SECTION"' EXIT
 {
-  echo "$MARKER_START"
-  echo "For additional context about technologies to be used, project structure,"
-  echo "shell commands, and other important information, read the current plan"
-  if [[ -n "$PLAN_PATH" ]]; then
-    echo "at $PLAN_PATH"
-  fi
-  echo "$MARKER_END"
-} > "$TMP_SECTION"
+	echo "$MARKER_START"
+	echo "For additional context about technologies to be used, project structure,"
+	echo "shell commands, and other important information, read the current plan"
+	if [[ -n $PLAN_PATH ]]; then
+		echo "at $PLAN_PATH"
+	fi
+	echo "$MARKER_END"
+} >"$TMP_SECTION"
 
 for CONTEXT_FILE in "${CONTEXT_FILES[@]}"; do
-  CTX_PATH="$PROJECT_ROOT/$CONTEXT_FILE"
-  mkdir -p "$(dirname "$CTX_PATH")"
+	CTX_PATH="$PROJECT_ROOT/$CONTEXT_FILE"
+	mkdir -p "$(dirname "$CTX_PATH")"
 
-  "$_python" - "$CTX_PATH" "$MARKER_START" "$MARKER_END" "$TMP_SECTION" <<'PY'
+	"$_python" - "$CTX_PATH" "$MARKER_START" "$MARKER_END" "$TMP_SECTION" <<'PY'
 import os
 import re
 import sys
@@ -449,5 +452,5 @@ with open(ctx_path, "wb") as fh:
     fh.write(new_content.encode("utf-8"))
 PY
 
-  echo "agent-context: updated $CONTEXT_FILE"
+	echo "agent-context: updated $CONTEXT_FILE"
 done

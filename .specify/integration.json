@@ -1,10 +1,7 @@
 {
   "version": "0.15.2",
   "integration_state_schema": 1,
-  "installed_integrations": [
-    "cursor-agent",
-    "grok"
-  ],
+  "installed_integrations": ["cursor-agent", "grok"],
   "integration_settings": {
     "cursor-agent": {
       "script": "sh",

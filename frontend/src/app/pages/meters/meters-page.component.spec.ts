@@ -8,9 +8,7 @@ describe('MetersPageComponent', () => {
   beforeEach(async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ meters: [] }), { status: 200 }),
-      ),
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ meters: [] }), { status: 200 })),
     );
 
     await TestBed.configureTestingModule({

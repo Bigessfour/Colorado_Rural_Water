@@ -16,18 +16,25 @@
 | Frontend tests                                                                                                 | ~38 pass         |
 
 **Live API:** `https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com`
-**SPA (current):** `cd frontend && npm start` → `http://localhost:4200` (no CloudFront host yet)
+**SPA (CloudFront):** `https://duqk1pqvmrsuh.cloudfront.net` · review: `/review` · redeploy: `./scripts/deploy-spa.sh`
+**Local SPA (dev):** `cd frontend && npm start` → `http://localhost:4200`
 **AWS:** account `388691194728` · profile `codeplatoon` · `us-east-1` · tag `Assessment-iii`
 **Account doc:** [AWS_ACCOUNT.md](AWS_ACCOUNT.md)
 
 ## Not code (ops / external)
 
-1. **Send Kelly invite** — `/review` + creds in `~/.cursor/secrets/watersaver-kelly-review-cognito.txt` + [KELLY_REVIEW.md](KELLY_REVIEW.md)
-2. **Kelly F2 smoke** — fill [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) during her run (or Steve dry-run)
-3. **H8** — blocked until Kelly submits real review feedback
+1. **Send Kelly invite** — CloudFront URL ready in [KELLY_INVITE.md](KELLY_INVITE.md); **Steve sends** when scheduling (creds in `~/.cursor/secrets/watersaver-kelly-review-cognito.txt`)
+2. ~~**Kelly F2 smoke**~~ — **done** Steve dry-run 2026-08-04 ([SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) all boxes; [DEMO_KNOWN_GAPS.md](DEMO_KNOWN_GAPS.md))
+3. **H8** — blocked until Kelly submits **her** real review feedback (Steve dry-run submit already exercised SES)
 4. **I3–I8 payment** — blocked on CRWA processor discovery
 5. **E2/E3 agent polish** — Pilot todo (thin inventory stub exists)
-6. **Public HTTPS SPA** — optional CloudFront; Kelly can use localhost or a tunnel until then
+6. ~~**Public HTTPS SPA**~~ — **done** CloudFront `duqk1pqvmrsuh.cloudfront.net` (2026-08-04)
+
+## Demo-prep fixes (2026-08-04)
+
+- Recreated `kelly.review@watersaver.local` in us-east-1 Cognito SPA pool (old us-east-2 pool gone)
+- Fixed API Gateway space-separated `cognito:groups` parsing → multi-role `/me` + Admin/CRWA nav; redeployed Lambdas
+- F1 friction log + screenshots under `evidence/013-kelly-ship-prove/`
 
 ## GitHub issues
 

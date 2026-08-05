@@ -72,10 +72,10 @@ Once resolved, set `BUG_SLUG` and `BUG_DIR = .specify/bugs/<BUG_SLUG>`, and brie
 
    ## Changes
 
-   | File | Change | Notes |
-   |------|--------|-------|
-   | `path/to/file.py` | <added / modified / removed> | <short note> |
-   | `path/to/test_file.py` | added test | <short note> |
+   | File                   | Change                       | Notes        |
+   | ---------------------- | ---------------------------- | ------------ |
+   | `path/to/file.py`      | <added / modified / removed> | <short note> |
+   | `path/to/test_file.py` | added test                   | <short note> |
 
    ## Diff Highlights (optional)
 

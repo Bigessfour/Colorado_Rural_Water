@@ -128,7 +128,7 @@ export class UploadPageComponent {
   readonly fieldLabels = FIELD_LABELS;
   readonly fields = Object.keys(FIELD_LABELS) as CanonicalField[];
   readonly sampleHint =
-    'Try sample-data/Town_of_Steve_Meter_Export_MESSY.xlsx — or messy-readings-july.csv. Address stays with the meter; names may change.';
+    'Try a practice file from sample-data/ (for example Town_of_Steve_Meter_Export_MESSY.xlsx or messy-readings-july.csv). “Messy” just means the columns are imperfect — like a real export — so you can try the mapper safely.';
 
   headers: string[] = [];
   mapping: Partial<Record<CanonicalField, string>> = {};
@@ -192,7 +192,7 @@ export class UploadPageComponent {
     this.setProgress(5, `Reading ${file.name}…`);
 
     if (file.size > MAX_UPLOAD_BYTES) {
-      this.statusMessage = `File is too large (${Math.round(file.size / 1024 / 1024)} MB). Max is 5 MB for Upload — use a smaller export or the S3 drop-zone.`;
+      this.statusMessage = `File is too large (${Math.round(file.size / 1024 / 1024)} MB). Max is 5 MB for Upload — use a smaller export.`;
       this.statusSeverity = 'warn';
       this.ingestPhase = 'failed';
       this.lastStatusFriendly = this.statusMessage;
@@ -257,10 +257,10 @@ export class UploadPageComponent {
           if (this.selectedSheet) {
             this.loadSelectedSheet();
             this.ingestPhase = 'mapped';
-            this.statusMessage = `Loaded ${file.name}. Choose a sheet, review mapping, then dry run.`;
+            this.statusMessage = `Loaded ${file.name}. Choose a sheet, review mapping, then check first.`;
             this.statusSeverity = 'info';
             this.lastStatusFriendly = this.statusMessage;
-            this.setProgress(100, 'Ready to map / dry run');
+            this.setProgress(100, 'Ready to map / check');
           } else {
             this.statusMessage = 'No meter-data sheets found (Clerk Notes alone is ignored).';
             this.statusSeverity = 'warn';
@@ -298,10 +298,10 @@ export class UploadPageComponent {
         this.csvText = String(reader.result ?? '');
         this.preparePreview(this.csvText);
         this.ingestPhase = this.headers.length ? 'mapped' : 'loaded';
-        this.statusMessage = 'File loaded. Review column mapping, then dry run.';
+        this.statusMessage = 'File loaded. Review column mapping, then check first.';
         this.statusSeverity = 'info';
         this.lastStatusFriendly = this.statusMessage;
-        this.setProgress(100, 'Ready to map / dry run');
+        this.setProgress(100, 'Ready to map / check');
         this.finishCustomUploadUi();
         resolve(true);
       };
@@ -428,13 +428,17 @@ export class UploadPageComponent {
     }
     const token = this.auth.getBearerToken();
     if (!token) {
-      this.statusMessage = 'Sign in to ingest readings.';
+      this.statusMessage = 'Sign in to import readings.';
       this.statusSeverity = 'warn';
       return;
     }
 
     this.busy = true;
-    this.setProgress(dryRun ? 55 : 65, dryRun ? 'Running dry run…' : 'Importing readings…', 'indeterminate');
+    this.setProgress(
+      dryRun ? 55 : 65,
+      dryRun ? 'Checking file…' : 'Importing readings…',
+      'indeterminate',
+    );
     try {
       const body: Record<string, unknown> = {
         mapping: this.mapping,
@@ -461,7 +465,7 @@ export class UploadPageComponent {
         this.ingestPhase = 'failed';
         this.ingestWarnings = Array.isArray(payload.warnings) ? payload.warnings : [];
         this.statusMessage =
-          payload.status?.friendly ?? payload.error ?? `Ingest failed (${res.status})`;
+          payload.status?.friendly ?? payload.error ?? `Import failed (${res.status})`;
         this.lastStatusFriendly = this.statusMessage;
         this.statusSeverity = 'error';
         this.setProgress(0, 'Import failed');
@@ -476,8 +480,8 @@ export class UploadPageComponent {
         this.ingestPhase = 'dry_run_ok';
         this.statusMessage =
           payload.status?.friendly ??
-          `Dry run OK — ${payload.rowCount} rows would import${sheetNote}.`;
-        this.setProgress(85, 'Dry run OK — ready to import');
+          `Check OK — ${payload.rowCount} rows ready to import${sheetNote}.`;
+        this.setProgress(85, 'Check OK — ready to import');
       } else {
         this.ingestPhase = 'committed';
         this.statusMessage =

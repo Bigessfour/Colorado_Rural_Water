@@ -150,7 +150,9 @@ def _load_core_common(project_root: Path | None):
     for relative in (".specify/scripts/python/common.py", "scripts/python/common.py"):
         candidate = project_root / relative
         if candidate.is_file():
-            spec = importlib.util.spec_from_file_location("speckit_core_common", candidate)
+            spec = importlib.util.spec_from_file_location(
+                "speckit_core_common", candidate
+            )
             if spec is None or spec.loader is None:
                 continue
             module = importlib.util.module_from_spec(spec)
@@ -389,7 +391,11 @@ def validate_branch_template(template: str) -> None:
 
 
 def render_branch_template(
-    template: str, feature_num: str, branch_suffix: str, author_token: str, app_token: str
+    template: str,
+    feature_num: str,
+    branch_suffix: str,
+    author_token: str,
+    app_token: str,
 ) -> str:
     rendered = template
     rendered = rendered.replace("{author}", author_token)
@@ -540,7 +546,9 @@ def main(argv: list[str]) -> int:
             truncated_suffix = truncated_suffix.rstrip("-")
             branch_name = build_branch_name(feature_num, truncated_suffix)
         if _byte_length(branch_name) > MAX_BRANCH_LENGTH:
-            _err("Error: Branch template prefix exceeds GitHub's 244-byte branch name limit.")
+            _err(
+                "Error: Branch template prefix exceeds GitHub's 244-byte branch name limit."
+            )
             return 1
 
         _err("[specify] Warning: Branch name exceeded GitHub's 244-byte limit")
@@ -548,7 +556,9 @@ def main(argv: list[str]) -> int:
             f"[specify] Original: {original_branch_name} "
             f"({_byte_length(original_branch_name)} bytes)"
         )
-        _err(f"[specify] Truncated to: {branch_name} ({_byte_length(branch_name)} bytes)")
+        _err(
+            f"[specify] Truncated to: {branch_name} ({_byte_length(branch_name)} bytes)"
+        )
 
     if not args.dry_run:
         if has_git_repo:

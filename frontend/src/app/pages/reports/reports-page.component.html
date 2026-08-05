@@ -1,13 +1,13 @@
 <section class="page">
   <h1>Reports</h1>
   <p class="lede">
-    All report processes for your system — catalog, run actions, and recent activity from this
-    browser session.
+    Reports for {{ auth.placeName() }} — browse the catalog, run downloads, and see recent activity
+    from this browser session.
   </p>
 
   @if (!auth.isLoggedIn()) {
     <p-message severity="warn" styleClass="hint">
-      <a routerLink="/login">Sign in</a> to generate tenant-scoped reports.
+      <a routerLink="/login">Sign in</a> to generate reports for {{ auth.placeName() }}.
     </p-message>
   }
 

@@ -25,7 +25,8 @@ export const REVIEW_STEPS: ReviewStepDef[] = [
   {
     id: 'upload_mapper',
     title: 'Upload + column mapper',
-    lookAt: 'Try a messy file (sample CSV or Town of Steve Excel). How clear is the mapper?',
+    lookAt:
+      'Try a practice export (sample CSV or Town of Steve Excel). How clear is the column mapper?',
     route: '/upload',
   },
   {

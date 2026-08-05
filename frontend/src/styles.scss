@@ -1,39 +1,46 @@
 :root {
-  --ws-ink: #1a2b2e;
-  --ws-muted: #5a7277;
-  --ws-teal: #0f3d42;
-  --ws-teal-soft: #2a454a;
-  --ws-surface: #e8eef0;
+  /* CRWA logo palette — navy / water blue / Colorado red (sparing) */
+  --ws-ink: #1a2338;
+  --ws-muted: #5a657a;
+  --ws-teal: #2e3192;
+  --ws-teal-soft: #3e4095;
+  --ws-water: #027bb6;
+  --ws-water-soft: #7ec9f5;
+  --ws-colorado: #e31b23;
+  --ws-surface: #eef3f8;
   --ws-card: #ffffff;
-  --ws-warn-bg: rgba(194, 120, 58, 0.12);
+  --ws-warn-bg: rgba(227, 27, 35, 0.1);
   --ws-shell-bg:
-    radial-gradient(1200px 600px at 10% -10%, rgba(46, 125, 138, 0.18), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgba(194, 120, 58, 0.12), transparent 50%),
-    linear-gradient(180deg, #f3f7f8 0%, #e8eef0 100%);
-  --ws-nav-hover: rgba(15, 61, 66, 0.08);
-  --ws-nav-active-bg: #0f3d42;
-  --ws-nav-active-fg: #f5fafb;
-  --ws-brand-mark-bg: #0f3d42;
-  --ws-brand-mark-fg: #eef7f8;
+    radial-gradient(1200px 600px at 8% -12%, rgba(126, 201, 245, 0.35), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(46, 49, 146, 0.1), transparent 50%),
+    linear-gradient(180deg, #f7fbfd 0%, #eef3f8 100%);
+  --ws-nav-hover: rgba(46, 49, 146, 0.08);
+  --ws-nav-active-bg: #2e3192;
+  --ws-nav-active-fg: #f7fbfd;
+  --ws-brand-mark-bg: #2e3192;
+  --ws-brand-mark-fg: #f7fbfd;
 }
 
 html.app-dark {
-  --ws-ink: #e4eef0;
-  --ws-muted: #9bb0b5;
-  --ws-teal: #8fd4de;
-  --ws-teal-soft: #b8d4da;
-  --ws-surface: #0f181a;
-  --ws-card: #162428;
-  --ws-warn-bg: rgba(194, 120, 58, 0.22);
+  --ws-ink: #e8eef8;
+  --ws-muted: #9aa6bd;
+  --ws-teal: #9aa3e8;
+  --ws-teal-soft: #b8bff0;
+  --ws-water: #5eb8e8;
+  --ws-water-soft: #7ec9f5;
+  --ws-colorado: #ff6b70;
+  --ws-surface: #101428;
+  --ws-card: #171c34;
+  --ws-warn-bg: rgba(227, 27, 35, 0.2);
   --ws-shell-bg:
-    radial-gradient(1200px 600px at 10% -10%, rgba(46, 125, 138, 0.12), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgba(194, 120, 58, 0.08), transparent 50%),
-    linear-gradient(180deg, #0c1214 0%, #0f181a 100%);
-  --ws-nav-hover: rgba(143, 212, 222, 0.12);
-  --ws-nav-active-bg: #2e7d8a;
-  --ws-nav-active-fg: #0f181a;
-  --ws-brand-mark-bg: #2e7d8a;
-  --ws-brand-mark-fg: #0f181a;
+    radial-gradient(1200px 600px at 8% -12%, rgba(46, 49, 146, 0.35), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(2, 123, 182, 0.12), transparent 50%),
+    linear-gradient(180deg, #0c1020 0%, #101428 100%);
+  --ws-nav-hover: rgba(154, 163, 232, 0.12);
+  --ws-nav-active-bg: #3e4095;
+  --ws-nav-active-fg: #f7fbfd;
+  --ws-brand-mark-bg: #3e4095;
+  --ws-brand-mark-fg: #f7fbfd;
 }
 
 html.app-dark body {

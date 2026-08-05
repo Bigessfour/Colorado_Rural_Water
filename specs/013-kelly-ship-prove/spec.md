@@ -1,7 +1,7 @@
 # Feature 013: Kelly Ship — Remaining Browser Prove & Ops
 
 **Rubric:** Kelly demo ship gate (Spec §0)
-**Status:** Draft
+**Status:** In progress (prove session 2026-08-04)
 **Product:** Water Saver (Colorado Rural Water)
 **Depends on:** Feature 008 (browser demo), Feature 012 (reports/onboarding chrome)
 

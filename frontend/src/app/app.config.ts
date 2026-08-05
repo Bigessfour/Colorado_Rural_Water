@@ -9,11 +9,11 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { providePrimeNG } from 'primeng/config';
-import Aura from '@primeuix/themes/aura';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { ClientErrorReporter, installBrowserErrorBridge } from './core/client-error-reporter';
+import { CrwaAura } from './theme/crwa-preset';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -32,7 +32,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     providePrimeNG({
       theme: {
-        preset: Aura,
+        preset: CrwaAura,
         options: {
           darkModeSelector: '.app-dark',
         },

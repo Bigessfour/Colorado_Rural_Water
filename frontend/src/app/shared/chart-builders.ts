@@ -234,8 +234,9 @@ export function buildHealthDonut(counts: {
   watch: number;
   actionable: number;
 }): ChartData {
+  // Operator-friendly labels (Watch / Actionable explained beside the chart).
   return {
-    labels: ['Normal', 'Watch', 'Actionable'],
+    labels: ['Looking fine', 'Worth a look', 'Needs a check'],
     datasets: [
       {
         label: 'Meters',
@@ -392,7 +393,27 @@ export const balanceBarOptions = {
 export const doughnutOptions = {
   maintainAspectRatio: false,
   plugins: {
-    legend: { position: 'bottom' as const },
+    legend: {
+      position: 'bottom' as const,
+      labels: {
+        // Hide zero-count slices so empty categories do not clutter the legend.
+        // Chart.js may pass chart data or a chart instance as the second arg.
+        filter: (item: { datasetIndex?: number; index?: number }, chartOrData: unknown) => {
+          try {
+            const raw = chartOrData as {
+              datasets?: ChartDataset[];
+              data?: { datasets?: ChartDataset[] };
+            };
+            const datasets = raw?.datasets ?? raw?.data?.datasets;
+            const ds = datasets?.[item.datasetIndex ?? 0];
+            const value = Array.isArray(ds?.data) ? Number(ds.data[item.index ?? 0] ?? 0) : 0;
+            return value > 0;
+          } catch {
+            return true;
+          }
+        },
+      },
+    },
   },
 };
 

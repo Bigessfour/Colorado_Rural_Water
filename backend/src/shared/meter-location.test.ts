@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import {
   applyMeterLocationUpsert,
   applyMeterMetadataPatch,
@@ -10,198 +10,205 @@ import {
   parseMeterMetadataPatch,
   parseOptionalCoordinates,
   type MeterLocation,
-} from './meter-location.js';
+} from "./meter-location.js";
 
-describe('normalizeAddressKey', () => {
-  it('ignores case, punctuation, and extra spaces', () => {
+describe("normalizeAddressKey", () => {
+  it("ignores case, punctuation, and extra spaces", () => {
     assert.equal(
-      normalizeAddressKey('112 N Main St., Wiley CO'),
-      normalizeAddressKey('112 n main st  wiley co'),
+      normalizeAddressKey("112 N Main St., Wiley CO"),
+      normalizeAddressKey("112 n main st  wiley co"),
     );
   });
 });
 
-describe('mergeAssetField', () => {
-  it('keeps existing when incoming is empty or undefined', () => {
-    assert.equal(mergeAssetField('Badger', undefined), 'Badger');
-    assert.equal(mergeAssetField('Badger', null), 'Badger');
-    assert.equal(mergeAssetField('Badger', ''), 'Badger');
-    assert.equal(mergeAssetField('Badger', '   '), 'Badger');
+describe("mergeAssetField", () => {
+  it("keeps existing when incoming is empty or undefined", () => {
+    assert.equal(mergeAssetField("Badger", undefined), "Badger");
+    assert.equal(mergeAssetField("Badger", null), "Badger");
+    assert.equal(mergeAssetField("Badger", ""), "Badger");
+    assert.equal(mergeAssetField("Badger", "   "), "Badger");
   });
 
-  it('overwrites when incoming is non-empty', () => {
-    assert.equal(mergeAssetField('Badger', 'Sensus'), 'Sensus');
-    assert.equal(mergeAssetField(null, 'Sensus'), 'Sensus');
+  it("overwrites when incoming is non-empty", () => {
+    assert.equal(mergeAssetField("Badger", "Sensus"), "Sensus");
+    assert.equal(mergeAssetField(null, "Sensus"), "Sensus");
   });
 });
 
-describe('applyMeterLocationUpsert', () => {
+describe("applyMeterLocationUpsert", () => {
   const base: MeterLocation = {
-    tenantId: 'town-wiley',
-    meterId: '1042',
-    serviceAddress: '112 N Main St, Wiley CO',
-    occupantName: 'J Smith',
-    accountNumber: 'A-2201',
-    route: 'R3',
-    manufacturer: 'Badger',
-    model: 'M25',
-    serialNumber: 'SN-9',
-    meterSize: '5/8',
-    installDate: '2019-06-01',
-    meterType: 'positive displacement',
-    locationDetail: 'pit',
-    radioId: 'RADIO-1',
-    lastTestedAt: '2024-01-15',
-    notes: 'OK',
+    tenantId: "town-wiley",
+    meterId: "1042",
+    serviceAddress: "112 N Main St, Wiley CO",
+    occupantName: "J Smith",
+    accountNumber: "A-2201",
+    route: "R3",
+    manufacturer: "Badger",
+    model: "M25",
+    serialNumber: "SN-9",
+    meterSize: "5/8",
+    installDate: "2019-06-01",
+    meterType: "positive displacement",
+    locationDetail: "pit",
+    radioId: "RADIO-1",
+    lastTestedAt: "2024-01-15",
+    notes: "OK",
     latitude: null,
     longitude: null,
-    updatedAt: '2026-06-15T00:00:00.000Z',
+    updatedAt: "2026-06-15T00:00:00.000Z",
   };
 
-  it('creates a new location when none exists', () => {
+  it("creates a new location when none exists", () => {
     const { location, addressConflict } = applyMeterLocationUpsert(null, {
-      tenantId: 'town-wiley',
-      meterId: '1042',
-      serviceAddress: '112 N Main St, Wiley CO',
-      occupantName: 'J Smith',
-      manufacturer: 'Badger',
-      updatedAt: '2026-06-15T00:00:00.000Z',
+      tenantId: "town-wiley",
+      meterId: "1042",
+      serviceAddress: "112 N Main St, Wiley CO",
+      occupantName: "J Smith",
+      manufacturer: "Badger",
+      updatedAt: "2026-06-15T00:00:00.000Z",
     });
     assert.equal(addressConflict, false);
-    assert.equal(location.serviceAddress, '112 N Main St, Wiley CO');
-    assert.equal(location.occupantName, 'J Smith');
-    assert.equal(location.manufacturer, 'Badger');
+    assert.equal(location.serviceAddress, "112 N Main St, Wiley CO");
+    assert.equal(location.occupantName, "J Smith");
+    assert.equal(location.manufacturer, "Badger");
     assert.equal(location.model, null);
   });
 
-  it('updates occupant name without changing address', () => {
+  it("updates occupant name without changing address", () => {
     const { location, addressConflict } = applyMeterLocationUpsert(base, {
-      tenantId: 'town-wiley',
-      meterId: '1042',
-      serviceAddress: '112 N Main St, Wiley CO',
-      occupantName: 'A Rivera',
-      updatedAt: '2026-07-15T00:00:00.000Z',
+      tenantId: "town-wiley",
+      meterId: "1042",
+      serviceAddress: "112 N Main St, Wiley CO",
+      occupantName: "A Rivera",
+      updatedAt: "2026-07-15T00:00:00.000Z",
     });
     assert.equal(addressConflict, false);
     assert.equal(location.serviceAddress, base.serviceAddress);
-    assert.equal(location.occupantName, 'A Rivera');
-    assert.equal(location.accountNumber, 'A-2201');
-    assert.equal(location.manufacturer, 'Badger');
+    assert.equal(location.occupantName, "A Rivera");
+    assert.equal(location.accountNumber, "A-2201");
+    assert.equal(location.manufacturer, "Badger");
   });
 
-  it('flags address conflict, keeps address, still updates occupant', () => {
+  it("flags address conflict, keeps address, still updates occupant", () => {
     const { location, addressConflict } = applyMeterLocationUpsert(base, {
-      tenantId: 'town-wiley',
-      meterId: '1042',
-      serviceAddress: '999 Other Rd, Wiley CO',
-      occupantName: 'Someone Else',
+      tenantId: "town-wiley",
+      meterId: "1042",
+      serviceAddress: "999 Other Rd, Wiley CO",
+      occupantName: "Someone Else",
     });
     assert.equal(addressConflict, true);
     assert.equal(location.serviceAddress, base.serviceAddress);
-    assert.equal(location.occupantName, 'Someone Else');
+    assert.equal(location.occupantName, "Someone Else");
   });
 
-  it('does not wipe asset fields when re-ingest omits them', () => {
+  it("does not wipe asset fields when re-ingest omits them", () => {
     const { location } = applyMeterLocationUpsert(base, {
-      tenantId: 'town-wiley',
-      meterId: '1042',
-      serviceAddress: '112 N Main St, Wiley CO',
-      occupantName: 'A Rivera',
+      tenantId: "town-wiley",
+      meterId: "1042",
+      serviceAddress: "112 N Main St, Wiley CO",
+      occupantName: "A Rivera",
       manufacturer: null,
-      model: '',
+      model: "",
       serialNumber: undefined,
-      meterSize: '   ',
+      meterSize: "   ",
       installDate: null,
     });
-    assert.equal(location.manufacturer, 'Badger');
-    assert.equal(location.model, 'M25');
-    assert.equal(location.serialNumber, 'SN-9');
-    assert.equal(location.meterSize, '5/8');
-    assert.equal(location.installDate, '2019-06-01');
-    assert.equal(location.meterType, 'positive displacement');
-    assert.equal(location.radioId, 'RADIO-1');
-    assert.equal(location.notes, 'OK');
+    assert.equal(location.manufacturer, "Badger");
+    assert.equal(location.model, "M25");
+    assert.equal(location.serialNumber, "SN-9");
+    assert.equal(location.meterSize, "5/8");
+    assert.equal(location.installDate, "2019-06-01");
+    assert.equal(location.meterType, "positive displacement");
+    assert.equal(location.radioId, "RADIO-1");
+    assert.equal(location.notes, "OK");
   });
 
-  it('does not wipe occupant/account/route when archive cells are blank', () => {
+  it("does not wipe occupant/account/route when archive cells are blank", () => {
     const { location } = applyMeterLocationUpsert(base, {
-      tenantId: 'town-wiley',
-      meterId: '1042',
-      serviceAddress: '112 N Main St, Wiley CO',
+      tenantId: "town-wiley",
+      meterId: "1042",
+      serviceAddress: "112 N Main St, Wiley CO",
       occupantName: null,
-      accountNumber: '',
-      route: '   ',
+      accountNumber: "",
+      route: "   ",
     });
-    assert.equal(location.occupantName, 'J Smith');
-    assert.equal(location.accountNumber, 'A-2201');
-    assert.equal(location.route, 'R3');
+    assert.equal(location.occupantName, "J Smith");
+    assert.equal(location.accountNumber, "A-2201");
+    assert.equal(location.route, "R3");
   });
 
-  it('updates asset fields when incoming values are non-empty', () => {
+  it("updates asset fields when incoming values are non-empty", () => {
     const { location } = applyMeterLocationUpsert(base, {
-      tenantId: 'town-wiley',
-      meterId: '1042',
-      serviceAddress: '112 N Main St, Wiley CO',
-      manufacturer: 'Sensus',
+      tenantId: "town-wiley",
+      meterId: "1042",
+      serviceAddress: "112 N Main St, Wiley CO",
+      manufacturer: "Sensus",
       meterSize: '1"',
-      installDate: '2020-03-01',
+      installDate: "2020-03-01",
     });
-    assert.equal(location.manufacturer, 'Sensus');
+    assert.equal(location.manufacturer, "Sensus");
     assert.equal(location.meterSize, '1"');
-    assert.equal(location.installDate, '2020-03-01');
-    assert.equal(location.model, 'M25');
+    assert.equal(location.installDate, "2020-03-01");
+    assert.equal(location.model, "M25");
   });
 });
 
-describe('parseMeterMetadataPatch + applyMeterMetadataPatch', () => {
+describe("parseMeterMetadataPatch + applyMeterMetadataPatch", () => {
   const base: MeterLocation = {
-    tenantId: 'town-wiley',
-    meterId: '1042',
-    serviceAddress: '112 N Main St, Wiley CO',
-    occupantName: 'J Smith',
-    accountNumber: 'A-2201',
-    route: 'R3',
-    manufacturer: 'Badger',
-    model: 'M25',
+    tenantId: "town-wiley",
+    meterId: "1042",
+    serviceAddress: "112 N Main St, Wiley CO",
+    occupantName: "J Smith",
+    accountNumber: "A-2201",
+    route: "R3",
+    manufacturer: "Badger",
+    model: "M25",
     serialNumber: null,
-    meterSize: '5/8',
-    installDate: '2019-06-01',
+    meterSize: "5/8",
+    installDate: "2019-06-01",
     meterType: null,
     locationDetail: null,
     radioId: null,
     lastTestedAt: null,
-    notes: 'old',
+    notes: "old",
     latitude: 38.154,
     longitude: -102.72,
-    updatedAt: '2026-06-15T00:00:00.000Z',
+    updatedAt: "2026-06-15T00:00:00.000Z",
   };
 
-  it('rejects address relocate attempts', () => {
-    const parsed = parseMeterMetadataPatch({ serviceAddress: 'Elsewhere' });
+  it("rejects address relocate attempts", () => {
+    const parsed = parseMeterMetadataPatch({ serviceAddress: "Elsewhere" });
     assert.equal(parsed.ok, false);
   });
 
-  it('applies partial PUT shape and allows clearing', () => {
+  it("applies partial PUT shape and allows clearing", () => {
     const parsed = parseMeterMetadataPatch({
-      manufacturer: 'Sensus',
-      notes: '',
+      manufacturer: "Sensus",
+      notes: "",
       model: null,
       meterSize: '1"',
     });
     assert.equal(parsed.ok, true);
     if (!parsed.ok) return;
-    const next = applyMeterMetadataPatch(base, parsed.patch, '2026-08-03T12:00:00.000Z');
-    assert.equal(next.manufacturer, 'Sensus');
+    const next = applyMeterMetadataPatch(
+      base,
+      parsed.patch,
+      "2026-08-03T12:00:00.000Z",
+    );
+    assert.equal(next.manufacturer, "Sensus");
     assert.equal(next.notes, null);
     assert.equal(next.model, null);
     assert.equal(next.meterSize, '1"');
-    assert.equal(next.installDate, '2019-06-01');
+    assert.equal(next.installDate, "2019-06-01");
     assert.equal(next.serviceAddress, base.serviceAddress);
-    assert.equal(next.updatedAt, '2026-08-03T12:00:00.000Z');
+    assert.equal(next.updatedAt, "2026-08-03T12:00:00.000Z");
   });
 
-  it('accepts lat/lng pair and clearing', () => {
-    const set = parseMeterMetadataPatch({ latitude: 38.15, longitude: -102.72 });
+  it("accepts lat/lng pair and clearing", () => {
+    const set = parseMeterMetadataPatch({
+      latitude: 38.15,
+      longitude: -102.72,
+    });
     assert.equal(set.ok, true);
     if (!set.ok) return;
     const next = applyMeterMetadataPatch(base, set.patch);
@@ -216,22 +223,22 @@ describe('parseMeterMetadataPatch + applyMeterMetadataPatch', () => {
     assert.equal(cleared.longitude, null);
   });
 
-  it('rejects one-sided coordinates', () => {
+  it("rejects one-sided coordinates", () => {
     assert.equal(parseMeterMetadataPatch({ latitude: 38 }).ok, false);
     assert.equal(parseMeterMetadataPatch({ longitude: -102 }).ok, false);
   });
 });
 
-describe('parseOptionalCoordinates / create with map pins', () => {
-  it('creates with coords and defaults null', () => {
+describe("parseOptionalCoordinates / create with map pins", () => {
+  it("creates with coords and defaults null", () => {
     const bad = parseOptionalCoordinates({ latitude: 91, longitude: -105 });
     assert.equal(bad.ok, false);
 
-    const created = parseMeterCreateBody('t1', {
-      meterId: 'MAP-1',
-      serviceAddress: '1 Main St Wiley CO',
-      latitude: '38.1542',
-      longitude: '-102.7201',
+    const created = parseMeterCreateBody("t1", {
+      meterId: "MAP-1",
+      serviceAddress: "1 Main St Wiley CO",
+      latitude: "38.1542",
+      longitude: "-102.7201",
     });
     assert.equal(created.ok, true);
     if (!created.ok) return;
@@ -239,9 +246,9 @@ describe('parseOptionalCoordinates / create with map pins', () => {
     assert.equal(created.location.longitude, -102.7201);
     assert.equal(hasMapCoordinates(created.location), true);
 
-    const plain = parseMeterCreateBody('t1', {
-      meterId: 'MAP-2',
-      serviceAddress: '2 Main St Wiley CO',
+    const plain = parseMeterCreateBody("t1", {
+      meterId: "MAP-2",
+      serviceAddress: "2 Main St Wiley CO",
     });
     assert.equal(plain.ok, true);
     if (!plain.ok) return;

@@ -2,7 +2,6 @@
 
 from rag.agent_tools import _make_tools, run_tool_agent
 from rag.graph import run_alert_triage_graph
-from rag.settings import configure_langsmith
 
 
 def test_langgraph_triage_returns_steps():

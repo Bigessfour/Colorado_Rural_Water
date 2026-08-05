@@ -1,0 +1,35 @@
+%% Assessment III — Terraform (10%)
+%% Remote state: S3 + native lockfile (use_lockfile), account 388691194728
+flowchart TB
+  subgraph Local["Local / CI"]
+    Code[infra/terraform]
+    Vars[environments/dev.tfvars]
+  end
+
+  subgraph State["Remote State"]
+    S3State[S3 bucket<br/>water-saver-tf-state-388691194728]
+    Lock[S3 native lockfile<br/>use_lockfile]
+  end
+
+  subgraph AWS["Account 388691194728"]
+    CognitoMod[module: cognito]
+    StorageMod[module: storage]
+    ApiMod[module: api]
+    SecMod[module: security]
+  end
+
+  Code --> Vars
+  Vars -->|terraform apply| CognitoMod
+  Vars -->|terraform apply| StorageMod
+  Vars -->|terraform apply| ApiMod
+  Vars -->|terraform apply| SecMod
+  CognitoMod --> S3State
+  StorageMod --> S3State
+  ApiMod --> S3State
+  SecMod --> S3State
+  S3State --> Lock
+  TagNote[Every resource tagged Assessment-iii=true]
+  CognitoMod --> TagNote
+  StorageMod --> TagNote
+  ApiMod --> TagNote
+  SecMod --> TagNote

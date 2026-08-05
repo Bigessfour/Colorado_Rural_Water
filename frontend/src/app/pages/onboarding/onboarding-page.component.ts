@@ -153,7 +153,11 @@ export class OnboardingPageComponent implements OnInit {
     this.busy.set(true);
     this.error.set('');
     this.status.set('');
-    const nextStep = finish ? cur.currentStep : advance ? Math.min(cur.currentStep + 1, STEPS.length - 1) : cur.currentStep;
+    const nextStep = finish
+      ? cur.currentStep
+      : advance
+        ? Math.min(cur.currentStep + 1, STEPS.length - 1)
+        : cur.currentStep;
     const payload = { ...cur, currentStep: nextStep };
     try {
       const qs = finish ? '?complete=1' : '';

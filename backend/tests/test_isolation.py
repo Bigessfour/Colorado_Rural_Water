@@ -1,14 +1,14 @@
 """Tenant isolation unit tests (Assessment III — Feature 001/002)."""
-import pytest
 
+import pytest
+from rag.agent_tools import run_tool_agent
+from rag.graph import run_alert_triage_graph
 from rag.memory import append_turn, clear_sessions_for_tests, history_messages
 from rag.tenant import (
     assert_no_cross_tenant_context,
     find_cross_tenant_leaks,
     memory_user_id,
 )
-from rag.graph import run_alert_triage_graph
-from rag.agent_tools import run_tool_agent
 
 
 def test_memory_user_id_format():

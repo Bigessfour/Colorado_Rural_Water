@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { environment } from '../../environments/environment';
+import { friendlyMunicipalityName, operatorFirstName } from '../shared/persona';
 
 const TOKEN_KEY = 'ws_id_token';
 const ACCESS_KEY = 'ws_access_token';
@@ -8,10 +9,7 @@ const EMAIL_KEY = 'ws_email';
 export type TenantRole = 'operator' | 'system_admin' | 'crwa_admin';
 
 export type AuthChallengeName =
-  | 'SOFTWARE_TOKEN_MFA'
-  | 'SMS_MFA'
-  | 'NEW_PASSWORD_REQUIRED'
-  | 'MFA_SETUP';
+  'SOFTWARE_TOKEN_MFA' | 'SMS_MFA' | 'NEW_PASSWORD_REQUIRED' | 'MFA_SETUP';
 
 export interface AuthSession {
   idToken: string;
@@ -41,8 +39,7 @@ export interface PendingAuthChallenge {
 }
 
 export type LoginResult =
-  | { status: 'signed_in' }
-  | { status: 'challenge'; challenge: PendingAuthChallenge };
+  { status: 'signed_in' } | { status: 'challenge'; challenge: PendingAuthChallenge };
 
 export interface MfaStatus {
   preferredMfa: string | null;
@@ -109,6 +106,30 @@ export class AuthService {
       };
     }
     return null;
+  });
+
+  /** Friendly municipality label for operator UI (never a raw tenant slug). */
+  readonly placeName = computed(() => {
+    const p = this.profile();
+    const tenant =
+      this.tenantId() || (environment.composeDemo ? environment.demoTenantId : null);
+    return friendlyMunicipalityName(
+      tenant,
+      p?.displayName ?? p?.mapTown ?? this.mapCenter()?.town ?? null,
+    );
+  });
+
+  /** First name from email / profile for greetings. */
+  readonly firstName = computed(() => {
+    const email = this.email();
+    if (email) return operatorFirstName({ email });
+    if (environment.composeDemo && environment.demoUserId) {
+      const demo = environment.demoUserId;
+      return operatorFirstName({
+        email: demo.includes('@') ? demo : `${demo}@local`,
+      });
+    }
+    return 'there';
   });
 
   async login(email: string, password: string): Promise<LoginResult> {
@@ -189,7 +210,7 @@ export class AuthService {
       Session: challenge.session,
     });
     const secretCode = body.SecretCode;
-    if (!secretCode) throw new Error('Cognito did not return an authenticator secret.');
+    if (!secretCode) throw new Error('Could not start authenticator setup. Try again.');
     const session = body.Session ?? challenge.session;
     return {
       secretCode,
@@ -214,7 +235,9 @@ export class AuthService {
       FriendlyDeviceName: 'Water Saver authenticator',
     });
     if (verified.Status && verified.Status !== 'SUCCESS') {
-      throw new Error('Authenticator code was rejected. Check the time on your phone and try again.');
+      throw new Error(
+        'Authenticator code was rejected. Check the time on your phone and try again.',
+      );
     }
 
     const body = await this.cognito('RespondToAuthChallenge', {
@@ -254,7 +277,7 @@ export class AuthService {
     const access = this.requireAccessToken();
     const body = await this.cognito('AssociateSoftwareToken', { AccessToken: access });
     const secretCode = body.SecretCode;
-    if (!secretCode) throw new Error('Cognito did not return an authenticator secret.');
+    if (!secretCode) throw new Error('Could not start authenticator setup. Try again.');
     const email = this.email() ?? 'operator';
     return {
       secretCode,
@@ -275,7 +298,9 @@ export class AuthService {
       FriendlyDeviceName: 'Water Saver authenticator',
     });
     if (verified.Status && verified.Status !== 'SUCCESS') {
-      throw new Error('Authenticator code was rejected. Check the time on your phone and try again.');
+      throw new Error(
+        'Authenticator code was rejected. Check the time on your phone and try again.',
+      );
     }
 
     await this.cognito('SetUserMFAPreference', {
@@ -316,7 +341,9 @@ export class AuthService {
       probe.ChallengeName !== 'NEW_PASSWORD_REQUIRED' &&
       probe.ChallengeName !== 'MFA_SETUP'
     ) {
-      throw new Error(`Unexpected sign-in challenge while verifying password (${probe.ChallengeName}).`);
+      throw new Error(
+        `Unexpected sign-in challenge while verifying password (${probe.ChallengeName}).`,
+      );
     }
 
     const access = this.requireAccessToken();
@@ -394,9 +421,7 @@ export class AuthService {
         name !== 'NEW_PASSWORD_REQUIRED' &&
         name !== 'MFA_SETUP'
       ) {
-        throw new Error(
-          `Sign-in needs extra step (${body.ChallengeName}). Ask an admin for help.`,
-        );
+        throw new Error(`Sign-in needs extra step (${body.ChallengeName}). Ask an admin for help.`);
       }
       return {
         status: 'challenge',
@@ -490,10 +515,13 @@ function assertPasswordPolicy(password: string): void {
   if (password.length < 12) {
     throw new Error('Password must be at least 12 characters.');
   }
-  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
-    throw new Error(
-      'Password needs upper, lower, number, and symbol (Cognito pool policy).',
-    );
+  if (
+    !/[a-z]/.test(password) ||
+    !/[A-Z]/.test(password) ||
+    !/[0-9]/.test(password) ||
+    !/[^A-Za-z0-9]/.test(password)
+  ) {
+    throw new Error('Password needs upper, lower, number, and symbol.');
   }
 }
 

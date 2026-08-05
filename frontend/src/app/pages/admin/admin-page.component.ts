@@ -16,12 +16,7 @@ import { environment } from '../../../environments/environment';
 
 type AssignableRole = 'operator' | 'system_admin';
 type PilotOrPaid = 'pilot' | 'paid';
-type PlanCode =
-  | 'meters_0_100'
-  | 'meters_101_300'
-  | 'meters_301_750'
-  | 'meters_750_plus'
-  | 'custom';
+type PlanCode = 'meters_0_100' | 'meters_101_300' | 'meters_301_750' | 'meters_750_plus' | 'custom';
 type BillingStatus = 'pilot' | 'active' | 'past_due' | 'suspended';
 type PaymentMethod = 'check' | 'ach' | 'card' | 'other';
 type BillingAction = 'record-payment' | 'extend-pilot' | 'mark-past-due' | 'suspend' | 'reactivate';
@@ -314,7 +309,9 @@ export class AdminPageComponent implements OnInit {
         return;
       }
       this.tempPassword.set(body.user?.temporaryPassword ?? '');
-      this.status.set(`Invited ${body.user?.email ?? this.inviteEmail}. Share the temporary password securely.`);
+      this.status.set(
+        `Invited ${body.user?.email ?? this.inviteEmail}. Share the temporary password securely.`,
+      );
       this.inviteEmail = '';
       this.inviteRole = 'operator';
       await this.refreshUsers();

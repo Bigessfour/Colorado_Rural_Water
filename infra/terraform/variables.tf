@@ -57,6 +57,12 @@ variable "enable_storage" {
   default     = true
 }
 
+variable "enable_spa" {
+  type        = bool
+  description = "Provision private S3 + CloudFront for the Angular SPA"
+  default     = true
+}
+
 variable "review_notify_to" {
   type        = string
   description = "F5 Kelly Review: email that receives the submitted summary"

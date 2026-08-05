@@ -1,18 +1,16 @@
 import logging
-import os
-import tempfile
 from pathlib import Path
 from typing import Iterable, List
 
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-# Documented ingest path (LangChain RAG tutorial): load → split → embed → FAISS.
-
 from rag.llm import get_embeddings
 from rag.settings import KNOWLEDGE_DIR
 from rag.store import get_or_create_store, load_store, save_store
+
+# Documented ingest path (LangChain RAG tutorial): load → split → embed → FAISS.
+
 
 logger = logging.getLogger(__name__)
 

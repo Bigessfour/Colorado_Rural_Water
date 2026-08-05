@@ -25,4 +25,3 @@ Feature 001 closed. LangSmith screenshot blocked until `LANGCHAIN_API_KEY` is in
 
 **CLOSED / verified** — graph, tool agent, docs, and LangSmith Water_Saver traces proven.
 Local AC re-check 2026-08-03: triage + agent APIs still return expected shapes with `langsmith.enabled=true`.
-

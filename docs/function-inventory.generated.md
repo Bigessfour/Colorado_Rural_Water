@@ -2,20 +2,14 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — Colorado Rural Water
-Generated: 2026-08-04T22:07:56.687442+00:00
+Generated: 2026-08-04T22:17:27.166640+00:00
 **Stack:** TypeScript/Angular
 **Scan roots:** `frontend/src`, `backend/src`
 
-**Summary:** 236 tracked functions | 235 with proof | 1 without proof
+**Summary:** 236 tracked functions | 236 with proof | 0 without proof
 Focus on the ones without proof for your key paths.
 
 Ship gate for Kelly/pilot remains Spec §0 + `docs/ACCEPTANCE_CHECKLIST.md` / smoke checklists — inventory count alone is not “done.”
-
-## Functions without proof (review these)
-- Core Service: report-catalog.categoryLabel @ frontend/src/app/shared/report-catalog.ts:61
-
-Note: Many items here are thin handlers or UI pages covered by higher-level smoke / acceptance.
-Empty proof ≠ missing feature. Use this list to decide where to add focused proof.
 
 ## Detected Packages & Major Components
 - ★ @angular/animations (^22.1.0) — frontend/package.json
@@ -356,7 +350,7 @@ Theme oracle (MCP): **`primeng`** — `search` / `get_component` / `get_setup` /
 | Core Service | meter-usage-stats.computeMeterAgeMonths | frontend/src/app/shared/meter-usage-stats.ts:83 | frontend/src/app/shared/meter-usage-stats.spec.ts | has logic |
 | Core Service | meter-usage-stats.computeMeterUsageStats | frontend/src/app/shared/meter-usage-stats.ts:95 | frontend/src/app/shared/meter-usage-stats.spec.ts | has logic |
 | Core Service | meter-usage-stats.formatAgeLabel | frontend/src/app/shared/meter-usage-stats.ts:69 | frontend/src/app/shared/meter-usage-stats.spec.ts | has logic |
-| Core Service | report-catalog.categoryLabel | frontend/src/app/shared/report-catalog.ts:61 | NO PROOF FOUND | has logic |
+| Core Service | report-catalog.categoryLabel | frontend/src/app/shared/report-catalog.ts:61 | frontend/src/app/shared/report-catalog.spec.ts | has logic |
 | Core Service | SafeMarkdownPipe.SafeMarkdownPipe | frontend/src/app/shared/safe-markdown.pipe.ts:9 | frontend/src/app/shared/safe-markdown.pipe.spec.ts | has logic |
 | Other Public | App.App | frontend/src/app/app.ts:6 | frontend/src/app/app.spec.ts, frontend/src/app/app.routes.sp... | has logic |
 

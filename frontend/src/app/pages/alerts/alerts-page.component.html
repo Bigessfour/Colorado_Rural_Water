@@ -2,9 +2,11 @@
   <header class="page-head">
     <h1>Alerts</h1>
     <p class="lede">
-      Prioritized issues from your meter readings. Watch means thin history — look when you can;
-      Actionable means worth a field check now. Accept, dispatch a follow-up, or mark resolved with
-      what you did — each action is saved on the meter’s alert history.
+      Prioritized issues for {{ auth.placeName() }}.
+      <strong>Worth a look (“Watch”)</strong> — soft signal, often thin history; check when you can.
+      <strong>Needs a check (“Actionable”)</strong> — stronger signal (stuck meter, diagnostic);
+      worth a field look. Accept, dispatch a follow-up, or mark resolved — each action is saved on
+      the meter’s history.
     </p>
   </header>
 
@@ -19,7 +21,8 @@
   <div class="toolbar">
     @if (!auth.isLoggedIn()) {
       <p class="signin-hint">
-        <a routerLink="/login">Sign in</a> to load alerts, Explain, and Act for your tenant.
+        <a routerLink="/login">Sign in</a> to load alerts, Explain, and Act for
+        {{ auth.placeName() }}.
       </p>
     }
     <p-button
@@ -39,7 +42,7 @@
     <a routerLink="/reports" class="reports-link">Work orders &amp; PDF reports</a>
   </div>
 
-  <p-card styleClass="table-card">
+  <p-card styleClass="table-card" data-tour="alerts-list">
     <p-table [value]="alerts()" [tableStyle]="{ 'min-width': '44rem' }">
       <ng-template #header>
         <tr>
@@ -114,7 +117,7 @@
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="6">No open alerts — ingest readings, then refresh.</td>
+          <td colspan="6">No open alerts — upload readings, then refresh.</td>
         </tr>
       </ng-template>
     </p-table>
@@ -152,7 +155,7 @@
       <h2 class="history-section">Meter metadata</h2>
       <p class="muted meta-lede">
         Optional record-keeping fields (manufacturer, size, install date, etc.). Blank clears a
-        field. Re-ingest will not wipe values omitted from a CSV.
+        field. A later upload will not wipe values omitted from a CSV.
       </p>
       @if (metaForm(); as form) {
         <form class="meta-form" (ngSubmit)="saveMetadata()">

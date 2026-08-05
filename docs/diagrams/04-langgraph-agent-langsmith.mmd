@@ -1,0 +1,17 @@
+%% Assessment III — LangGraph / Agent / LangSmith bonus
+flowchart TB
+  Q[Operator or system request] --> Graph[LangGraph workflow<br/>backend/rag/graph.py]
+
+  Graph --> Triage{Triage node}
+  Triage -->|list alerts| Tool1[list_alerts]
+  Triage -->|usage summary| Tool2[usage_summary]
+  Triage -->|column map help| Tool3[suggest_column_map]
+  Triage -->|explain| Tool4[explain_alert]
+
+  Tool1 --> Guard[Isolation + confirm guards<br/>tenant_id only]
+  Tool2 --> Guard
+  Tool3 --> Guard
+  Tool4 --> Guard
+  Guard --> Resp[Safe response]
+
+  Graph -.->|traces| LS[LangSmith<br/>Water_Saver project]

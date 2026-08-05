@@ -1,6 +1,6 @@
 # Plan — Feature 013: Kelly Ship Prove & Ops
 
-**Status:** Draft
+**Status:** In progress (prove session 2026-08-04)
 
 ## Approach
 
@@ -12,12 +12,12 @@
 
 ## Phases
 
-| Phase | Deliverable |
-| ----- | ----------- |
-| A | Alerts export + Meters CRUD prove |
-| B | Account MFA + Review walkthrough prove |
-| C | Admin/CRWA prove + Reports signed-in prove |
-| D | Ops checklist + Kelly invite readiness |
+| Phase | Deliverable                                |
+| ----- | ------------------------------------------ |
+| A     | Alerts export + Meters CRUD prove          |
+| B     | Account MFA + Review walkthrough prove     |
+| C     | Admin/CRWA prove + Reports signed-in prove |
+| D     | Ops checklist + Kelly invite readiness     |
 
 ## Dependencies
 

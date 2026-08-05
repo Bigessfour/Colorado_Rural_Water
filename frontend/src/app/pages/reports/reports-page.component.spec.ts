@@ -36,5 +36,6 @@ describe('ReportsPageComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toMatch(/Reports|All report processes|Run reports|Recent activity/i);
     expect(text).toMatch(/work order|summary/i);
+    expect(text).toMatch(/Field \/ work orders|Operations|Legacy export/);
   });
 });

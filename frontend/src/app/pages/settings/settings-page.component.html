@@ -1,8 +1,8 @@
 <section class="page">
   <h1>Settings</h1>
   <p class="lede">
-    Display preferences stay on this device. Account password and MFA live under Account; system
-    provisioning stays with CRWA Admin.
+    Hi {{ auth.firstName() }} — display preferences stay on this device. Password and authenticator
+    setup live under Account; CRWA Admin handles system provisioning.
   </p>
 
   @if (error()) {
@@ -10,7 +10,7 @@
   }
 
   <p-card header="Display" styleClass="block">
-    <p class="card-lede">Choose light or dark chrome. Saved in this browser only.</p>
+    <p class="card-lede">Choose light or dark appearance. Saved in this browser only.</p>
     <p-selectbutton
       [options]="themeOptions"
       [ngModel]="theme.mode()"
@@ -22,6 +22,16 @@
   </p-card>
 
   @if (auth.isLoggedIn()) {
+    <p-card header="Product tour" styleClass="block" data-tour="settings-tour">
+      <p class="card-lede">
+        A short walk through the main screens — what each area does, with highlights. New operators
+        see it once after sign-in. Replay anytime.
+      </p>
+      <p-button label="Replay product tour" icon="pi pi-compass" (onClick)="tour.replay()" />
+    </p-card>
+  }
+
+  @if (auth.isLoggedIn()) {
     <p-card header="Your session" styleClass="block">
       @if (profile(); as p) {
         <dl class="meta">
@@ -30,20 +40,14 @@
             <dd>{{ p.email ?? '—' }}</dd>
           </div>
           <div>
-            <dt>System</dt>
-            <dd>{{ p.displayName ?? p.tenantId ?? '—' }}</dd>
+            <dt>Water system</dt>
+            <dd>{{ auth.placeName() }}</dd>
           </div>
           <div>
-            <dt>Tenant id</dt>
-            <dd>
-              <code>{{ p.tenantId ?? '—' }}</code>
-            </dd>
-          </div>
-          <div>
-            <dt>Roles</dt>
+            <dt>Your access</dt>
             <dd class="roles">
               @for (role of p.roles; track role) {
-                <p-tag [value]="role" severity="secondary" />
+                <p-tag [value]="roleLabel(role)" severity="secondary" />
               } @empty {
                 —
               }

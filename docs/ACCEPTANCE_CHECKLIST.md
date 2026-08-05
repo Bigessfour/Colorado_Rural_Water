@@ -22,13 +22,13 @@
 
 ## A. Environment & access (Kelly gate)
 
-| ID  | Check                                              | How                                                   | Result                                                                                                              |
-| --- | -------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| A1  | SPA loads over HTTPS (CloudFront or equivalent)    | Open production/staging URL                           | **blocked** — no CloudFront yet; SPA via `localhost:4200` against live API (acceptable for Kelly until public host) |
-| A2  | Cognito sign-in works (email/password)             | Login as demo operator → dashboard                    | **pass** — Cognito + Kelly review user live                                                                         |
-| A3  | `/me` (or equivalent) returns tenant from JWT only | Bearer token; confirm `tenant_id`; no client override | **pass** — JWT claims only; unit + live `/me`                                                                       |
-| A4  | API health endpoint returns 200                    | `GET /health`                                         | **pass** — live `tz6rqlus7b` (codeplatoon)                                                                          |
-| A5  | No secrets in frontend bundle or repo              | Grep / config review: no Stripe secret, no AWS keys   | **pass** — secrets local only                                                                                       |
+| ID  | Check                                              | How                                                   | Result                                                                                                |
+| --- | -------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| A1  | SPA loads over HTTPS (CloudFront or equivalent)    | Open production/staging URL                           | **pass** — `https://duqk1pqvmrsuh.cloudfront.net` (S3+OAC); Kelly login → `/review` proved 2026-08-04 |
+| A2  | Cognito sign-in works (email/password)             | Login as demo operator → dashboard                    | **pass** — Cognito + Kelly review user live                                                           |
+| A3  | `/me` (or equivalent) returns tenant from JWT only | Bearer token; confirm `tenant_id`; no client override | **pass** — JWT claims only; unit + live `/me`                                                         |
+| A4  | API health endpoint returns 200                    | `GET /health`                                         | **pass** — live `tz6rqlus7b` (codeplatoon)                                                            |
+| A5  | No secrets in frontend bundle or repo              | Grep / config review: no Stripe secret, no AWS keys   | **pass** — secrets local only                                                                         |
 
 ---
 
@@ -118,13 +118,13 @@ _If E1–E3 are not shipped, mark `blocked` for Pilot—not a Kelly §11a blocke
 
 ## I. Scripted walkthrough & smoke (Kelly gate)
 
-| ID  | Check                                                                               | How                         | Result                                                              |
-| --- | ----------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------- |
-| I1  | [DEMO_WALKTHROUGH.md](DEMO_WALKTHROUGH.md) F1 path completes without runtime errors | Follow script with fixtures | **partial** — script + fixtures ready; full live F2 boxes still ops |
-| I2  | [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) §11a items verified                        | Fill Pass? column           | **blocked** — awaiting Kelly/Steve live walkthrough                 |
-| I3  | Console clean on happy path                                                         | Browser devtools            | **pass** — DataViz / Stats prove runs clean                         |
-| I4  | Known Pilot gaps listed; not presented as finished                                  | Honesty check for Kelly     | **pass** — CLOSEOUT + Spec §0 layers                                |
-| I5  | Big features have browser prove rows in [PROVE_FEATURES.md](PROVE_FEATURES.md)      | Chrome DevTools poke path   | **pass** — protocol + DataViz/Stats rows done                       |
+| ID  | Check                                                                               | How                         | Result                                                                    |
+| --- | ----------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------- |
+| I1  | [DEMO_WALKTHROUGH.md](DEMO_WALKTHROUGH.md) F1 path completes without runtime errors | Follow script with fixtures | **pass** — Steve timed F1 2026-08-04 (~12 min); evidence/013 friction log |
+| I2  | [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) §11a items verified                        | Fill Pass? column           | **pass** — all F2 boxes checked 2026-08-04 Steve dry-run                  |
+| I3  | Console clean on happy path                                                         | Browser devtools            | **pass** — DataViz / Stats prove runs clean                               |
+| I4  | Known Pilot gaps listed; not presented as finished                                  | Honesty check for Kelly     | **pass** — CLOSEOUT + Spec §0 layers                                      |
+| I5  | Big features have browser prove rows in [PROVE_FEATURES.md](PROVE_FEATURES.md)      | Chrome DevTools poke path   | **pass** — protocol + DataViz/Stats rows done                             |
 
 ---
 
@@ -153,36 +153,38 @@ _If E1–E3 are not shipped, mark `blocked` for Pilot—not a Kelly §11a blocke
 ```text
 ACCEPTANCE RUN — Water Saver
 Date: 2026-08-03
-Environment URL: API https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com ; SPA localhost:4200
+Environment URL: API https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com ; SPA https://duqk1pqvmrsuh.cloudfront.net
 Demo tenant: town-wiley
-Review mode URL: http://localhost:4200/review
+Review mode URL: https://duqk1pqvmrsuh.cloudfront.net/review
 AWS: codeplatoon / 388691194728 / us-east-1 / Assessment-iii
 
-Kelly gates (A–D, F, I): PASS (A1 blocked no CloudFront; I2 blocked pending live F2 smoke)
+Kelly gates (A–D, F, I): PASS (A1 CloudFront live 2026-08-04)
 Pilot surfaces (E, G): PASS
-Kelly Review mode (H, J): PASS
-May send Kelly Review URL: YES (ops: send invite; prefer localhost or tunnel until HTTPS SPA)
-See docs/CLOSEOUT.md
+Kelly Review mode (H, J): PASS — Steve dry-run submit 2026-08-04; await Kelly’s real feedback for H8
+May send Kelly Review URL: YES (ops: Steve send invite with CloudFront URL — see KELLY_INVITE.md)
+See docs/CLOSEOUT.md + docs/DEMO_KNOWN_GAPS.md
 
 Failed items:
-- ...
+- none on Kelly path
 
 Blocked items:
-- ...
+- A1 CloudFront (acceptable)
+- Reports API 404 (Pilot deploy — not Kelly F1)
 
-May send URL to Kelly for structured review? YES / NO
+May send URL to Kelly for structured review? YES
 Notes for Steve:
-- ...
+- Kelly Cognito user recreated in us-east-1 SPA pool; multi-group role parse fixed+deployed
+- Pre-send checklist green except your send action
 ```
 
 ---
 
 ## Sign-off
 
-| Role            | Name   | Date       | Kelly-ready?                                                               |
-| --------------- | ------ | ---------- | -------------------------------------------------------------------------- |
-| Builder / agent | Cursor | 2026-08-03 | **YES** (code) — ops: send invite; A1 no CloudFront; I2 live smoke pending |
-| Steve           |        |            |                                                                            |
+| Role            | Name   | Date       | Kelly-ready?                                                      |
+| --------------- | ------ | ---------- | ----------------------------------------------------------------- |
+| Builder / agent | Cursor | 2026-08-04 | **YES** — F2 smoke filled; invite pre-send ready; A1 localhost OK |
+| Steve           |        |            |                                                                   |
 
 When **Kelly gates** and **Kelly Review mode (H, J)** are PASS, ship the review URL to Kelly. Use his submitted feedback to drive the next change set; do not treat Pilot-complete as required for that first review.
 

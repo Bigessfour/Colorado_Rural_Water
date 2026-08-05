@@ -19,7 +19,8 @@ export interface AuthContext {
 /**
  * Cognito puts groups on the token as a string[].
  * API Gateway HTTP JWT authorizer stringifies arrays — often as `[crwa_admins]`
- * (bracketed, unquoted) or a JSON array string / comma list.
+ * (bracketed, unquoted), a JSON array string, a comma list, or (for multi-group
+ * tokens) a space-separated list like `crwa_admins operators`.
  */
 export function parseCognitoGroups(raw: unknown): string[] {
   if (Array.isArray(raw)) return raw.map(String).map((g) => g.trim()).filter(Boolean);
@@ -32,16 +33,18 @@ export function parseCognitoGroups(raw: unknown): string[] {
         return parsed.map(String).map((g) => g.trim()).filter(Boolean);
       }
     } catch {
-      // API GW often emits [group_a,group_b] without JSON quotes.
+      // API GW often emits [group_a,group_b] or [group_a group_b] without JSON quotes.
       const inner = s.slice(1, s.endsWith(']') ? -1 : undefined);
-      return inner
-        .split(',')
-        .map((p) => p.trim().replace(/^["']|["']$/g, ''))
-        .filter(Boolean);
+      return splitGroupList(inner);
     }
   }
-  return s
-    .split(',')
+  return splitGroupList(s);
+}
+
+/** Split comma- and/or whitespace-separated Cognito group names (names have no spaces). */
+function splitGroupList(raw: string): string[] {
+  return raw
+    .split(/[,\s]+/)
     .map((p) => p.trim().replace(/^["']|["']$/g, ''))
     .filter(Boolean);
 }

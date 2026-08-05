@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../core/auth.service';
 import { ThemeService } from '../core/theme.service';
 import { ReviewService } from '../review/review.service';
+import { ProductTourService } from '../tour/product-tour.service';
 import { ShellComponent } from './shell.component';
 
 describe('ShellComponent', () => {
@@ -32,6 +33,8 @@ describe('ShellComponent', () => {
             isSystemAdmin: () => false,
             isCrwaAdmin: () => false,
             email: () => 'operator@example.com',
+            firstName: () => 'Operator',
+            placeName: () => 'Town of Wiley',
           },
         },
         {
@@ -43,6 +46,18 @@ describe('ShellComponent', () => {
             ensureSession: vi.fn(async () => true),
           },
         },
+        {
+          provide: ProductTourService,
+          useValue: {
+            maybeAutoStart: vi.fn(),
+            refreshHighlight: vi.fn(),
+            active: () => false,
+            highlightRect: () => null,
+            currentStep: () => null,
+            stepIndex: () => 0,
+            steps: () => [],
+          },
+        },
       ],
     }).compileComponents();
   });
@@ -51,7 +66,10 @@ describe('ShellComponent', () => {
     const fixture = TestBed.createComponent(ShellComponent);
     fixture.detectChanges();
     expect(refreshProfile).toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toMatch(/Water Saver|Dashboard/i);
+    expect(fixture.nativeElement.textContent).toMatch(/Water Saver|Dashboard|CRWA/i);
+    expect(fixture.nativeElement.querySelector('.brand-logo')?.getAttribute('src')).toContain(
+      'crwa-logo',
+    );
     expect(fixture.nativeElement.textContent).toMatch(/Light|Dark/i);
   });
 

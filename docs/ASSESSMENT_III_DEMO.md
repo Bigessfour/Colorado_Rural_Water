@@ -5,6 +5,8 @@ System UI bonus: prove the stack end-to-end with a calm operator walk (~12–15 
 **AWS:** `388691194728` / `codeplatoon` / `us-east-1` · tag `Assessment-iii`
 **Do not claim leaks** from Thin Watch flags.
 
+**Rubric talk-track diagrams:** [`diagrams/assessment-iii-demo-diagrams.md`](./diagrams/assessment-iii-demo-diagrams.md) (`01`–`08` `.mmd` sources in the same folder).
+
 ---
 
 ## A) Cognito product spine (upload → alert → acknowledge)
@@ -18,7 +20,7 @@ System UI bonus: prove the stack end-to-end with a calm operator walk (~12–15 
 5. **Alerts → Act** — Open **Alerts** → **Act on alert** → note → **Accept**. Confirm status **accepted** and success notice.
 6. **Explain (optional)** — **Explain** on a meter row for plain-language copy (template ± Bedrock).
 
-Talk track: *Watch = look when you can; Actionable stuck/diagnostic may need a field check. Confidence is history depth, not leak accuracy.*
+Talk track: _Watch = look when you can; Actionable stuck/diagnostic may need a field check. Confidence is history depth, not leak accuracy._
 
 ---
 

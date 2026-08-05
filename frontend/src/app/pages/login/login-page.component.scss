@@ -1,16 +1,38 @@
+.login-brand {
+  margin-bottom: 0.5rem;
+}
+
+.login-logo {
+  display: block;
+  height: 3.25rem;
+  width: auto;
+  margin: 0 0 1rem;
+  object-fit: contain;
+}
+
 .page h1 {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 1.75rem;
   font-weight: 600;
-  color: #0f3d42;
+  color: var(--ws-teal);
   margin: 0 0 0.35rem;
 }
 
 .lede {
   font-family: 'Source Sans 3', system-ui, sans-serif;
-  color: #4a6368;
+  color: var(--ws-muted);
   max-width: 36rem;
   margin: 0 0 1rem;
+}
+
+.lede a {
+  color: var(--ws-water);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lede a:hover {
+  text-decoration: underline;
 }
 
 :host ::ng-deep .hint {
@@ -20,8 +42,8 @@
 
 :host ::ng-deep .login-card {
   max-width: 26rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(15, 61, 66, 0.08);
+  background: color-mix(in srgb, var(--ws-card) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ws-teal) 12%, transparent);
   box-shadow: none;
 }
 
@@ -34,7 +56,7 @@
 .form label {
   display: grid;
   gap: 0.35rem;
-  color: #0f3d42;
+  color: var(--ws-teal);
 }
 
 .form input {

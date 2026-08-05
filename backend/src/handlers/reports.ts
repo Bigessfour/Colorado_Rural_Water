@@ -1,23 +1,31 @@
-import type { AuthedHandler } from '../shared/apigw.js';
-import { evaluateAlerts } from '../shared/alert-engine.js';
-import { applyAlertStatuses } from '../shared/alert-status.js';
-import { parseAuthFromClaims, requireTenantId } from '../shared/auth.js';
+import type { AuthedHandler } from "../shared/apigw.js";
+import { evaluateAlerts } from "../shared/alert-engine.js";
+import { applyAlertStatuses } from "../shared/alert-status.js";
+import { parseAuthFromClaims, requireTenantId } from "../shared/auth.js";
 import {
   createAlertStatusStoreFromEnv,
   createMeterStoreFromEnv,
   createSourceStoreFromEnv,
   createTenantStoreFromEnv,
-} from '../shared/dynamo-store.js';
-import { badRequest, csv, forbidden, htmlReport, ok, unauthorized, xlsx } from '../shared/http.js';
-import { buildOperationsSummaryHtml } from '../shared/report-summary.js';
-import { calculateWaterBalance } from '../shared/water-balance.js';
+} from "../shared/dynamo-store.js";
+import {
+  badRequest,
+  csv,
+  forbidden,
+  htmlReport,
+  ok,
+  unauthorized,
+  xlsx,
+} from "../shared/http.js";
+import { buildOperationsSummaryHtml } from "../shared/report-summary.js";
+import { calculateWaterBalance } from "../shared/water-balance.js";
 import {
   buildWorkOrderMapLink,
   buildWorkOrdersCsv,
   buildWorkOrdersXlsxBuffer,
   recommendedActionForRow,
   type WorkOrderRow,
-} from '../shared/work-order-export.js';
+} from "../shared/work-order-export.js";
 
 /**
  * GET /reports/work-orders?format=csv|xlsx — flagged meter work orders with map links.
@@ -25,7 +33,7 @@ import {
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
-  if (!claims || typeof claims !== 'object') {
+  if (!claims || typeof claims !== "object") {
     return unauthorized();
   }
 
@@ -34,24 +42,24 @@ export const handler: AuthedHandler = async (event) => {
   try {
     tenantId = requireTenantId(auth);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
-  if (event.requestContext.http.method !== 'GET') {
-    return badRequest('Only GET is supported');
+  if (event.requestContext.http.method !== "GET") {
+    return badRequest("Only GET is supported");
   }
 
-  const path = event.rawPath ?? event.requestContext.http.path ?? '';
-  const appBaseUrl = process.env.APP_BASE_URL ?? '';
+  const path = event.rawPath ?? event.requestContext.http.path ?? "";
+  const appBaseUrl = process.env.APP_BASE_URL ?? "";
 
-  if (path.endsWith('/reports/work-orders')) {
+  if (path.endsWith("/reports/work-orders")) {
     return workOrdersReport(event, tenantId, appBaseUrl);
   }
-  if (path.endsWith('/reports/summary')) {
+  if (path.endsWith("/reports/summary")) {
     return summaryReport(tenantId, appBaseUrl);
   }
 
-  return badRequest('Unknown reports path');
+  return badRequest("Unknown reports path");
 };
 
 async function workOrdersReport(
@@ -59,9 +67,9 @@ async function workOrdersReport(
   tenantId: string,
   appBaseUrl: string,
 ) {
-  const format = (event.queryStringParameters?.format ?? 'csv').toLowerCase();
-  if (format !== 'csv' && format !== 'xlsx') {
-    return badRequest('format must be csv or xlsx');
+  const format = (event.queryStringParameters?.format ?? "csv").toLowerCase();
+  if (format !== "csv" && format !== "xlsx") {
+    return badRequest("format must be csv or xlsx");
   }
 
   const meterStore = createMeterStoreFromEnv();
@@ -72,7 +80,9 @@ async function workOrdersReport(
     statusStore.listAlertStatuses(tenantId),
   ]);
   const { alerts } = evaluateAlerts(locations, readings);
-  const meterAlerts = applyAlertStatuses(alerts, statuses, { includeResolved: false });
+  const meterAlerts = applyAlertStatuses(alerts, statuses, {
+    includeResolved: false,
+  });
 
   const locByMeter = new Map(locations.map((l) => [l.meterId, l]));
   const rows: WorkOrderRow[] = meterAlerts.map((a) => {
@@ -97,7 +107,7 @@ async function workOrdersReport(
   });
 
   const stamp = new Date().toISOString().slice(0, 10);
-  if (format === 'xlsx') {
+  if (format === "xlsx") {
     const buf = buildWorkOrdersXlsxBuffer(rows);
     return xlsx(buf, `work-orders-${tenantId}-${stamp}.xlsx`);
   }
@@ -110,20 +120,25 @@ async function summaryReport(tenantId: string, _appBaseUrl: string) {
   const statusStore = createAlertStatusStoreFromEnv();
   const tenantStore = createTenantStoreFromEnv();
 
-  const [locations, readings, sourceReadings, statuses, profile] = await Promise.all([
-    meterStore.listLocations(tenantId),
-    meterStore.listReadings(tenantId),
-    sourceStore.listSourceReadings(tenantId),
-    statusStore.listAlertStatuses(tenantId),
-    tenantStore.getTenantProfile(tenantId),
-  ]);
+  const [locations, readings, sourceReadings, statuses, profile] =
+    await Promise.all([
+      meterStore.listLocations(tenantId),
+      meterStore.listReadings(tenantId),
+      sourceStore.listSourceReadings(tenantId),
+      statusStore.listAlertStatuses(tenantId),
+      tenantStore.getTenantProfile(tenantId),
+    ]);
 
   const { confidence, alerts } = evaluateAlerts(locations, readings);
-  const meterAlerts = applyAlertStatuses(alerts, statuses, { includeResolved: false });
+  const meterAlerts = applyAlertStatuses(alerts, statuses, {
+    includeResolved: false,
+  });
   const balance = calculateWaterBalance(tenantId, sourceReadings, readings);
 
-  const actionableCount = meterAlerts.filter((a) => a.mode === 'Actionable').length;
-  const watchCount = meterAlerts.filter((a) => a.mode === 'Watch').length;
+  const actionableCount = meterAlerts.filter(
+    (a) => a.mode === "Actionable",
+  ).length;
+  const watchCount = meterAlerts.filter((a) => a.mode === "Watch").length;
   const topAlerts = meterAlerts.slice(0, 10).map((a) => ({
     meterId: a.meterId,
     serviceAddress: a.serviceAddress,

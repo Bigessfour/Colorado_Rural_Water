@@ -115,9 +115,7 @@ export const COLORADO_MAP_CENTER = { lat: 39.0, lng: -105.5, zoom: 7 } as const;
  * - Both numbers (or numeric strings) in range → set
  * - One without the other → error
  */
-export function parseOptionalCoordinates(
-  body: Record<string, unknown>,
-):
+export function parseOptionalCoordinates(body: Record<string, unknown>):
   | {
       ok: true;
       latitude: number | null | undefined;
@@ -132,7 +130,8 @@ export function parseOptionalCoordinates(
   if (hasLat !== hasLng) {
     return {
       ok: false,
-      error: "latitude and longitude must be set together (or both omitted / null)",
+      error:
+        "latitude and longitude must be set together (or both omitted / null)",
     };
   }
 

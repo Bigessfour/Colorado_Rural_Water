@@ -1,14 +1,14 @@
 <section class="page">
   <h1>Meters</h1>
   <p class="lede">
-    Inventory of customer meters for your system. Service address stays stable — update occupant,
+    Customer meters for {{ auth.placeName() }}. Service address stays stable — update occupant,
     account, route, and asset details as needed. Readings come from Upload or stay empty until the
     first read.
   </p>
 
   @if (!auth.isLoggedIn()) {
     <p-message severity="warn" styleClass="hint">
-      <a routerLink="/login">Sign in</a> to manage meters for your tenant.
+      <a routerLink="/login">Sign in</a> to manage meters for {{ auth.placeName() }}.
     </p-message>
   }
   @if (error()) {
@@ -120,7 +120,12 @@
                   severity="secondary"
                   (onClick)="openHistory(row)"
                 />
-                <p-button label="Edit" size="small" severity="secondary" (onClick)="openEdit(row)" />
+                <p-button
+                  label="Edit"
+                  size="small"
+                  severity="secondary"
+                  (onClick)="openEdit(row)"
+                />
                 <p-button label="Remove" size="small" severity="danger" (onClick)="remove(row)" />
               </td>
             </tr>
@@ -128,8 +133,7 @@
           <ng-template #emptymessage>
             <tr>
               <td colspan="8">
-                No meters yet — add one here, or upload a customer readings file to create them from
-                ingest.
+                No meters yet — add one here, or upload a customer readings file to create them.
               </td>
             </tr>
           </ng-template>

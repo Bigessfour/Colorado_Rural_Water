@@ -1,6 +1,7 @@
 ---
 name: speckit-bug-test
-description: Validate that a previously fixed bug is resolved and record the verification
+description:
+  Validate that a previously fixed bug is resolved and record the verification
   report
 compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
@@ -88,12 +89,12 @@ Once resolved, set `BUG_SLUG` and `BUG_DIR = .specify/bugs/<BUG_SLUG>`, and brie
 
    ## Checks Performed
 
-   | Check | Command / Action | Result | Notes |
-   |-------|------------------|--------|-------|
+   | Check                   | Command / Action          | Result                          | Notes        |
+   | ----------------------- | ------------------------- | ------------------------------- | ------------ |
    | Reproduction (post-fix) | <command or manual steps> | pass / fail / skipped / not-run | <short note> |
-   | New / updated tests | `<command>` | pass / fail | <short note> |
-   | Regression suite | `<command>` | pass / fail / skipped | <short note> |
-   | Lint / type-check | `<command>` | pass / fail / skipped | <short note> |
+   | New / updated tests     | `<command>`               | pass / fail                     | <short note> |
+   | Regression suite        | `<command>`               | pass / fail / skipped           | <short note> |
+   | Lint / type-check       | `<command>`               | pass / fail / skipped           | <short note> |
 
    ## Output Excerpts
 

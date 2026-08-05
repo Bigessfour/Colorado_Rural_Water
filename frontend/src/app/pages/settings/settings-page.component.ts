@@ -1,12 +1,14 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { SelectButton } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
 import { AuthService } from '../../core/auth.service';
 import { ThemeService, type UiTheme } from '../../core/theme.service';
+import { ProductTourService } from '../../tour/product-tour.service';
 import { environment } from '../../../environments/environment';
 
 interface MeProfile {
@@ -18,13 +20,22 @@ interface MeProfile {
 
 @Component({
   selector: 'app-settings-page',
-  imports: [FormsModule, RouterLink, CardModule, MessageModule, SelectButton, TagModule],
+  imports: [
+    FormsModule,
+    RouterLink,
+    ButtonModule,
+    CardModule,
+    MessageModule,
+    SelectButton,
+    TagModule,
+  ],
   templateUrl: './settings-page.component.html',
   styleUrl: './settings-page.component.scss',
 })
 export class SettingsPageComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly theme = inject(ThemeService);
+  readonly tour = inject(ProductTourService);
 
   readonly themeOptions = [
     { label: 'Light', value: 'light' as UiTheme, icon: 'pi pi-sun' },
@@ -41,6 +52,19 @@ export class SettingsPageComponent implements OnInit {
 
   onThemeChange(mode: UiTheme): void {
     this.theme.setMode(mode);
+  }
+
+  roleLabel(role: string): string {
+    switch (role) {
+      case 'operator':
+        return 'Operator';
+      case 'system_admin':
+        return 'System admin';
+      case 'crwa_admin':
+        return 'CRWA admin';
+      default:
+        return role;
+    }
   }
 
   private async loadProfile(): Promise<void> {

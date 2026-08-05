@@ -20,6 +20,12 @@ describe('AgentPageComponent', () => {
           useValue: {
             isLoggedIn: () => true,
             getBearerToken: () => 'jwt',
+            refreshProfile: async () => null,
+            firstName: () => 'Kelly',
+            placeName: () => 'Town of Wiley',
+            email: () => 'kelly.review@watersaver.local',
+            tenantId: () => 'town-wiley',
+            mapCenter: () => null,
           },
         },
       ],

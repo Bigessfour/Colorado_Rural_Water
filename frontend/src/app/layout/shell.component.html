@@ -1,11 +1,17 @@
 <header class="top">
-  <div class="brand">
-    <span class="brand-mark" aria-hidden="true">WS</span>
+  <a class="brand" routerLink="/dashboard" aria-label="Water Saver home — Colorado Rural Water Association">
+    <img
+      class="brand-logo"
+      src="/brand/crwa-logo.jpg"
+      width="205"
+      height="71"
+      alt="Colorado Rural Water Association"
+    />
     <div class="brand-text">
       <span class="brand-name">Water Saver</span>
-      <span class="brand-sub">Colorado Rural Water Association · working name</span>
+      <span class="brand-sub">A CRWA member service</span>
     </div>
-  </div>
+  </a>
   <nav class="nav" aria-label="Primary">
     <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
     <a routerLink="/upload" routerLinkActive="active">Upload</a>
@@ -43,10 +49,12 @@
       styleClass="theme-toggle"
     />
     @if (auth.isLoggedIn()) {
-      <span class="auth-email">{{ auth.email() }}</span>
+      <span class="auth-email" [title]="auth.email() ?? ''"
+        >{{ auth.firstName() }} · {{ auth.placeName() }}</span
+      >
       <button type="button" class="auth-btn" (click)="logout()">Sign out</button>
     } @else if (composeDemo) {
-      <span class="auth-email">Compose demo</span>
+      <span class="auth-email">{{ auth.placeName() }} · demo</span>
     } @else {
       <a routerLink="/login" class="auth-link">Sign in</a>
     }
@@ -54,17 +62,28 @@
 </header>
 @if (composeDemo) {
   <div class="compose-banner" role="status">
-    Assessment Compose — Assistant uses tenant <code>town-wiley</code> headers (no Cognito). Sign in
-    on the AWS SPA (<code>npm start</code>) for upload, dashboard, and alert acknowledge.
+    Demo for {{ auth.placeName() }} — explore the Assistant and walk through your system. Sign in
+    for uploads, dashboard numbers, and alert actions.
   </div>
 }
 <main class="main">
   <router-outlet />
 </main>
+<app-product-tour-overlay />
 <footer class="foot">
-  <p>
-    Water Saver is a CRWA member service. AI help uses the cheapest option first (templates, then
-    Nova Lite). Token use bills this environment — not your municipal water customers. Membership
-    dues status is on Billing.
-  </p>
+  <div class="foot-brand">
+    <img
+      class="foot-logo"
+      src="/brand/crwa-logo.jpg"
+      width="140"
+      height="48"
+      alt="Colorado Rural Water Association"
+    />
+    <p>
+      Water Saver is a
+      <a href="https://www.crwa.net/" target="_blank" rel="noopener noreferrer">CRWA</a>
+      member service. AI help stays short and practical, and any usage is billed to this environment —
+      not your municipal water customers.
+    </p>
+  </div>
 </footer>

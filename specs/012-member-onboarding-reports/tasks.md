@@ -32,5 +32,5 @@
 
 ## Phase E: Convergence
 
-- [ ] T012-19: Signed-in browser prove — Reports CSV/XLS download + summary HTML open per spec acceptance (partial)
-- [ ] T012-20: Close inventory proof for `report-catalog.categoryLabel` — extend reports spec or action-items (partial)
+- [ ] T012-19: Signed-in browser prove — Reports CSV/XLS download + summary HTML open per spec acceptance (partial) — **blocked** live API 404 until terraform apply
+- [x] T012-20: Close inventory proof for `report-catalog.categoryLabel` — extend reports spec or action-items (partial)

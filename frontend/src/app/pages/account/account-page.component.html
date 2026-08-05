@@ -1,8 +1,8 @@
 <section class="page">
   <h1>Account</h1>
   <p class="lede">
-    Change your password or turn on authenticator MFA (TOTP). Tenant access still comes from your
-    sign-in — nothing here switches municipalities.
+    Hi {{ auth.firstName() }} — change your password or turn on authenticator MFA. Your access to
+    {{ auth.placeName() }} comes from sign-in; nothing here switches municipalities.
   </p>
 
   @if (!auth.isLoggedIn()) {
@@ -20,10 +20,7 @@
 
   @if (auth.isLoggedIn()) {
     <p class="who">
-      Signed in as {{ auth.email() }}
-      @if (auth.tenantId()) {
-        · system <strong>{{ auth.tenantId() }}</strong>
-      }
+      Signed in as {{ auth.email() }} · <strong>{{ auth.placeName() }}</strong>
     </p>
 
     <p-card header="Change password" styleClass="block">

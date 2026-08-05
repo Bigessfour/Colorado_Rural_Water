@@ -1,4 +1,4 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DeleteCommand,
   DynamoDBDocumentClient,
@@ -6,45 +6,44 @@ import {
   PutCommand,
   QueryCommand,
   TransactWriteCommand,
-} from '@aws-sdk/lib-dynamodb';
+} from "@aws-sdk/lib-dynamodb";
 import type {
   AlertActivityEvent,
   AlertStatusRecord,
   AlertStatusStore,
-} from './alert-status.js';
-import { alertActivitySk, meterKeyForActivity } from './alert-status.js';
+} from "./alert-status.js";
+import { alertActivitySk, meterKeyForActivity } from "./alert-status.js";
 import type {
   BalanceThresholdConfig,
   BalanceThresholdStore,
-} from './balance-thresholds.js';
-import type { MeterLocation, MeterReading } from './meter-location.js';
-import type { MeterStore } from './ingest.js';
-import type { SourceReading, SourceVolumeMode } from './source-reading.js';
-import type { SourceStore } from './source-store.js';
+} from "./balance-thresholds.js";
+import type { MeterLocation, MeterReading } from "./meter-location.js";
+import type { MeterStore } from "./ingest.js";
+import type { SourceReading, SourceVolumeMode } from "./source-reading.js";
+import type { SourceStore } from "./source-store.js";
 import type {
   BillingEvent,
   BillingMode,
   BillingStatus,
   PlanCode,
-} from './billing.js';
-import { billEventSk, isBillingMode, isBillingStatus, isPlanCode } from './billing.js';
-import type {
-  ConversationMessage,
-  ConversationStore,
-} from './conversation.js';
-import { conversationSk } from './conversation.js';
-import type {
-  OnboardingIntake,
-  OnboardingStore,
-} from './onboarding-intake.js';
+} from "./billing.js";
+import {
+  billEventSk,
+  isBillingMode,
+  isBillingStatus,
+  isPlanCode,
+} from "./billing.js";
+import type { ConversationMessage, ConversationStore } from "./conversation.js";
+import { conversationSk } from "./conversation.js";
+import type { OnboardingIntake, OnboardingStore } from "./onboarding-intake.js";
 import type {
   TenantProfile,
   TenantStore,
   TenantUserRecord,
-} from './tenant-admin.js';
-import type { SourceType, WaterSource } from './water-source.js';
-import { isSourceType } from './water-source.js';
-import type { AssignableTenantRole } from './auth.js';
+} from "./tenant-admin.js";
+import type { SourceType, WaterSource } from "./water-source.js";
+import { isSourceType } from "./water-source.js";
+import type { AssignableTenantRole } from "./auth.js";
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}), {
   marshallOptions: { removeUndefinedValues: true },
@@ -78,11 +77,11 @@ function alertStatusSk(alertId: string): string {
   return `ALERT#STATUS#${alertId}`;
 }
 
-const BALANCE_THRESHOLDS_SK = 'CFG#balance_thresholds';
-const META_PROFILE_SK = 'META#profile';
-const META_ONBOARDING_SK = 'META#onboarding';
+const BALANCE_THRESHOLDS_SK = "CFG#balance_thresholds";
+const META_PROFILE_SK = "META#profile";
+const META_ONBOARDING_SK = "META#onboarding";
 /** Synthetic tenant partition for CRWA tenant registry (stays under TENANT#* IAM). */
-const REGISTRY_TENANT_ID = '_registry';
+const REGISTRY_TENANT_ID = "_registry";
 
 function userSk(email: string): string {
   return `USER#${email.toLowerCase()}`;
@@ -92,7 +91,7 @@ function registrySk(tenantId: string): string {
   return `TENANT#${tenantId}`;
 }
 
-const BILL_EVENT_SK_PREFIX = 'BILL#EVENT#';
+const BILL_EVENT_SK_PREFIX = "BILL#EVENT#";
 
 function profileItemFields(profile: TenantProfile): Record<string, unknown> {
   return {
@@ -131,7 +130,10 @@ export class DynamoMeterStore
 {
   constructor(private readonly tableName: string) {}
 
-  async getLocation(tenantId: string, meterId: string): Promise<MeterLocation | null> {
+  async getLocation(
+    tenantId: string,
+    meterId: string,
+  ): Promise<MeterLocation | null> {
     const res = await client.send(
       new GetCommand({
         TableName: this.tableName,
@@ -149,7 +151,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(location.tenantId),
           sk: locSk(location.meterId),
-          entityType: 'meter_location',
+          entityType: "meter_location",
           tenantId: location.tenantId,
           meterId: location.meterId,
           serviceAddress: location.serviceAddress,
@@ -181,7 +183,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(reading.tenantId),
           sk: rdgSk(reading.meterId, reading.timestamp),
-          entityType: 'meter_reading',
+          entityType: "meter_reading",
           tenantId: reading.tenantId,
           meterId: reading.meterId,
           serviceAddress: reading.serviceAddress,
@@ -206,7 +208,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(tenantId),
           sk: mapSk(kind),
-          entityType: 'column_mapping',
+          entityType: "column_mapping",
           tenantId,
           kind,
           mapping,
@@ -216,7 +218,10 @@ export class DynamoMeterStore
     );
   }
 
-  async getMapping(tenantId: string, kind: string): Promise<Record<string, string> | null> {
+  async getMapping(
+    tenantId: string,
+    kind: string,
+  ): Promise<Record<string, string> | null> {
     const res = await client.send(
       new GetCommand({
         TableName: this.tableName,
@@ -224,7 +229,7 @@ export class DynamoMeterStore
       }),
     );
     const mapping = res.Item?.mapping;
-    return mapping && typeof mapping === 'object'
+    return mapping && typeof mapping === "object"
       ? (mapping as Record<string, string>)
       : null;
   }
@@ -233,10 +238,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':sk': 'LOC#',
+          ":pk": pk(tenantId),
+          ":sk": "LOC#",
         },
       }),
     );
@@ -248,10 +253,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':sk': 'RDG#',
+          ":pk": pk(tenantId),
+          ":sk": "RDG#",
         },
       }),
     );
@@ -282,14 +287,17 @@ export class DynamoMeterStore
     return true;
   }
 
-  async listReadingsForMeter(tenantId: string, meterId: string): Promise<MeterReading[]> {
+  async listReadingsForMeter(
+    tenantId: string,
+    meterId: string,
+  ): Promise<MeterReading[]> {
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':sk': `RDG#${meterId}#`,
+          ":pk": pk(tenantId),
+          ":sk": `RDG#${meterId}#`,
         },
       }),
     );
@@ -302,10 +310,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':sk': 'SRC#',
+          ":pk": pk(tenantId),
+          ":sk": "SRC#",
         },
       }),
     );
@@ -315,7 +323,10 @@ export class DynamoMeterStore
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async getSource(tenantId: string, sourceId: string): Promise<WaterSource | null> {
+  async getSource(
+    tenantId: string,
+    sourceId: string,
+  ): Promise<WaterSource | null> {
     const res = await client.send(
       new GetCommand({
         TableName: this.tableName,
@@ -333,7 +344,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(source.tenantId),
           sk: srcSk(source.sourceId),
-          entityType: 'water_source',
+          entityType: "water_source",
           tenantId: source.tenantId,
           sourceId: source.sourceId,
           name: source.name,
@@ -381,7 +392,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(reading.tenantId),
           sk: srdSk(reading.sourceId, reading.timestamp),
-          entityType: 'source_reading',
+          entityType: "source_reading",
           tenantId: reading.tenantId,
           sourceId: reading.sourceId,
           sourceName: reading.sourceName,
@@ -403,10 +414,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':sk': 'SRD#',
+          ":pk": pk(tenantId),
+          ":sk": "SRD#",
         },
       }),
     );
@@ -423,10 +434,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':sk': `SRD#${sourceId}#`,
+          ":pk": pk(tenantId),
+          ":sk": `SRD#${sourceId}#`,
         },
       }),
     );
@@ -443,7 +454,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(record.tenantId),
           sk: alertStatusSk(record.alertId),
-          entityType: 'alert_status',
+          entityType: "alert_status",
           tenantId: record.tenantId,
           alertId: record.alertId,
           status: record.status,
@@ -458,7 +469,10 @@ export class DynamoMeterStore
     );
   }
 
-  async getAlertStatus(tenantId: string, alertId: string): Promise<AlertStatusRecord | null> {
+  async getAlertStatus(
+    tenantId: string,
+    alertId: string,
+  ): Promise<AlertStatusRecord | null> {
     const res = await client.send(
       new GetCommand({
         TableName: this.tableName,
@@ -473,10 +487,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':sk': 'ALERT#STATUS#',
+          ":pk": pk(tenantId),
+          ":sk": "ALERT#STATUS#",
         },
       }),
     );
@@ -496,7 +510,7 @@ export class DynamoMeterStore
             createdAt: event.createdAt,
             alertId: event.alertId,
           }),
-          entityType: 'alert_activity',
+          entityType: "alert_activity",
           tenantId: event.tenantId,
           eventId: event.eventId,
           alertId: event.alertId,
@@ -520,7 +534,7 @@ export class DynamoMeterStore
     const statusItem = {
       pk: pk(record.tenantId),
       sk: alertStatusSk(record.alertId),
-      entityType: 'alert_status',
+      entityType: "alert_status",
       tenantId: record.tenantId,
       alertId: record.alertId,
       status: record.status,
@@ -551,7 +565,7 @@ export class DynamoMeterStore
                   createdAt: activity.createdAt,
                   alertId: activity.alertId,
                 }),
-                entityType: 'alert_activity',
+                entityType: "alert_activity",
                 tenantId: activity.tenantId,
                 eventId: activity.eventId,
                 alertId: activity.alertId,
@@ -578,10 +592,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sk)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':sk': `ALERT#EVT#${meterKeyForActivity(meterId)}#`,
+          ":pk": pk(tenantId),
+          ":sk": `ALERT#EVT#${meterKeyForActivity(meterId)}#`,
         },
       }),
     );
@@ -591,7 +605,9 @@ export class DynamoMeterStore
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  async getBalanceThresholds(tenantId: string): Promise<BalanceThresholdConfig | null> {
+  async getBalanceThresholds(
+    tenantId: string,
+  ): Promise<BalanceThresholdConfig | null> {
     const res = await client.send(
       new GetCommand({
         TableName: this.tableName,
@@ -609,7 +625,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(config.tenantId),
           sk: BALANCE_THRESHOLDS_SK,
-          entityType: 'balance_thresholds',
+          entityType: "balance_thresholds",
           tenantId: config.tenantId,
           lossPct: config.lossPct,
           lossGalMin: config.lossGalMin,
@@ -641,10 +657,10 @@ export class DynamoMeterStore
         Item: {
           pk: pk(profile.tenantId),
           sk: META_PROFILE_SK,
-          entityType: 'tenant_profile',
+          entityType: "tenant_profile",
           ...profileItemFields(profile),
         },
-        ConditionExpression: 'attribute_not_exists(pk)',
+        ConditionExpression: "attribute_not_exists(pk)",
       }),
     );
     await client.send(
@@ -653,7 +669,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(REGISTRY_TENANT_ID),
           sk: registrySk(profile.tenantId),
-          entityType: 'tenant_registry',
+          entityType: "tenant_registry",
           ...profileItemFields(profile),
         },
       }),
@@ -667,7 +683,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(profile.tenantId),
           sk: META_PROFILE_SK,
-          entityType: 'tenant_profile',
+          entityType: "tenant_profile",
           ...profileItemFields(profile),
         },
       }),
@@ -678,14 +694,16 @@ export class DynamoMeterStore
         Item: {
           pk: pk(REGISTRY_TENANT_ID),
           sk: registrySk(profile.tenantId),
-          entityType: 'tenant_registry',
+          entityType: "tenant_registry",
           ...profileItemFields(profile),
         },
       }),
     );
   }
 
-  async getOnboardingIntake(tenantId: string): Promise<OnboardingIntake | null> {
+  async getOnboardingIntake(
+    tenantId: string,
+  ): Promise<OnboardingIntake | null> {
     const res = await client.send(
       new GetCommand({
         TableName: this.tableName,
@@ -703,7 +721,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(intake.tenantId),
           sk: META_ONBOARDING_SK,
-          entityType: 'onboarding_intake',
+          entityType: "onboarding_intake",
           ...intake,
         },
       }),
@@ -714,10 +732,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
         ExpressionAttributeValues: {
-          ':pk': pk(REGISTRY_TENANT_ID),
-          ':prefix': 'TENANT#',
+          ":pk": pk(REGISTRY_TENANT_ID),
+          ":prefix": "TENANT#",
         },
       }),
     );
@@ -731,10 +749,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':prefix': 'USER#',
+          ":pk": pk(tenantId),
+          ":prefix": "USER#",
         },
       }),
     );
@@ -751,7 +769,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(user.tenantId),
           sk: userSk(user.email),
-          entityType: 'tenant_user',
+          entityType: "tenant_user",
           tenantId: user.tenantId,
           email: user.email,
           role: user.role,
@@ -759,7 +777,7 @@ export class DynamoMeterStore
           createdByUserId: user.createdByUserId,
           createdByEmail: user.createdByEmail,
         },
-        ConditionExpression: 'attribute_not_exists(pk)',
+        ConditionExpression: "attribute_not_exists(pk)",
       }),
     );
   }
@@ -771,7 +789,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(event.tenantId),
           sk: billEventSk(event.createdAt, event.eventId),
-          entityType: 'billing_event',
+          entityType: "billing_event",
           tenantId: event.tenantId,
           eventId: event.eventId,
           createdAt: event.createdAt,
@@ -787,19 +805,22 @@ export class DynamoMeterStore
           pilotExpiresAt: event.pilotExpiresAt,
           externalEventId: event.externalEventId,
         },
-        ConditionExpression: 'attribute_not_exists(pk)',
+        ConditionExpression: "attribute_not_exists(pk)",
       }),
     );
   }
 
-  async listBillingEvents(tenantId: string, limit = 50): Promise<BillingEvent[]> {
+  async listBillingEvents(
+    tenantId: string,
+    limit = 50,
+  ): Promise<BillingEvent[]> {
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':prefix': BILL_EVENT_SK_PREFIX,
+          ":pk": pk(tenantId),
+          ":prefix": BILL_EVENT_SK_PREFIX,
         },
         ScanIndexForward: false,
         Limit: Math.min(Math.max(limit, 1), 200),
@@ -817,7 +838,7 @@ export class DynamoMeterStore
         Item: {
           pk: pk(msg.tenantId),
           sk: conversationSk(msg.userId, msg.createdAt, msg.messageId),
-          entityType: 'conversation_message',
+          entityType: "conversation_message",
           tenantId: msg.tenantId,
           userId: msg.userId,
           messageId: msg.messageId,
@@ -838,10 +859,10 @@ export class DynamoMeterStore
     const res = await client.send(
       new QueryCommand({
         TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
         ExpressionAttributeValues: {
-          ':pk': pk(tenantId),
-          ':prefix': `CONV#${userId}#`,
+          ":pk": pk(tenantId),
+          ":prefix": `CONV#${userId}#`,
         },
         ScanIndexForward: true,
       }),
@@ -852,7 +873,10 @@ export class DynamoMeterStore
     return rows.slice(-Math.min(Math.max(limit, 1), 50));
   }
 
-  async getTenantUser(tenantId: string, email: string): Promise<TenantUserRecord | null> {
+  async getTenantUser(
+    tenantId: string,
+    email: string,
+  ): Promise<TenantUserRecord | null> {
     const res = await client.send(
       new GetCommand({
         TableName: this.tableName,
@@ -903,7 +927,7 @@ function itemToReading(item: Record<string, unknown>): MeterReading {
     occupantName: (item.occupantName as string | null) ?? null,
     timestamp: String(item.timestamp),
     cumulativeReading: Number(item.cumulativeReading),
-    unit: String(item.unit ?? 'gal'),
+    unit: String(item.unit ?? "gal"),
     diagnosticFlags: Array.isArray(flags) ? flags.map(String) : [],
   };
 }
@@ -916,16 +940,18 @@ function itemToSource(item: Record<string, unknown>): WaterSource | null {
     sourceId: String(item.sourceId),
     name: String(item.name),
     type: type as SourceType,
-    unit: String(item.unit ?? 'gal'),
+    unit: String(item.unit ?? "gal"),
     notes: (item.notes as string | null) ?? null,
     createdAt: String(item.createdAt ?? new Date().toISOString()),
     updatedAt: String(item.updatedAt ?? new Date().toISOString()),
   };
 }
 
-function itemToSourceReading(item: Record<string, unknown>): SourceReading | null {
+function itemToSourceReading(
+  item: Record<string, unknown>,
+): SourceReading | null {
   const mode = item.volumeMode;
-  if (mode !== 'period' && mode !== 'cumulative') return null;
+  if (mode !== "period" && mode !== "cumulative") return null;
   return {
     tenantId: String(item.tenantId),
     sourceId: String(item.sourceId),
@@ -933,60 +959,78 @@ function itemToSourceReading(item: Record<string, unknown>): SourceReading | nul
     timestamp: String(item.timestamp),
     value: Number(item.value),
     volumeMode: mode as SourceVolumeMode,
-    unit: String(item.unit ?? 'gal'),
+    unit: String(item.unit ?? "gal"),
     notes: (item.notes as string | null) ?? null,
   };
 }
 
-function itemToAlertStatus(item: Record<string, unknown>): AlertStatusRecord | null {
+function itemToAlertStatus(
+  item: Record<string, unknown>,
+): AlertStatusRecord | null {
   const status = item.status;
-  if (status !== 'acknowledged' && status !== 'dispatched' && status !== 'resolved') return null;
+  if (
+    status !== "acknowledged" &&
+    status !== "dispatched" &&
+    status !== "resolved"
+  )
+    return null;
   return {
     tenantId: String(item.tenantId),
     alertId: String(item.alertId),
     status,
-    actorUserId: String(item.actorUserId ?? ''),
-    actorEmail: String(item.actorEmail ?? ''),
+    actorUserId: String(item.actorUserId ?? ""),
+    actorEmail: String(item.actorEmail ?? ""),
     updatedAt: String(item.updatedAt ?? new Date().toISOString()),
-    note: typeof item.note === 'string' ? item.note : null,
-    meterId: typeof item.meterId === 'string' ? item.meterId : null,
-    summary: typeof item.summary === 'string' ? item.summary : null,
+    note: typeof item.note === "string" ? item.note : null,
+    meterId: typeof item.meterId === "string" ? item.meterId : null,
+    summary: typeof item.summary === "string" ? item.summary : null,
   };
 }
 
-function itemToAlertActivity(item: Record<string, unknown>): AlertActivityEvent | null {
+function itemToAlertActivity(
+  item: Record<string, unknown>,
+): AlertActivityEvent | null {
   const action = item.action;
   const status = item.status;
   if (
-    action !== 'acknowledge' &&
-    action !== 'accept' &&
-    action !== 'dispatch' &&
-    action !== 'resolve'
+    action !== "acknowledge" &&
+    action !== "accept" &&
+    action !== "dispatch" &&
+    action !== "resolve"
   ) {
     return null;
   }
-  if (status !== 'acknowledged' && status !== 'dispatched' && status !== 'resolved') return null;
+  if (
+    status !== "acknowledged" &&
+    status !== "dispatched" &&
+    status !== "resolved"
+  )
+    return null;
   return {
     tenantId: String(item.tenantId),
-    eventId: String(item.eventId ?? item.sk ?? ''),
+    eventId: String(item.eventId ?? item.sk ?? ""),
     alertId: String(item.alertId),
-    meterId: typeof item.meterId === 'string' ? item.meterId : null,
+    meterId: typeof item.meterId === "string" ? item.meterId : null,
     action,
     status,
-    actorUserId: String(item.actorUserId ?? ''),
-    actorEmail: String(item.actorEmail ?? ''),
-    note: typeof item.note === 'string' ? item.note : null,
-    summary: typeof item.summary === 'string' ? item.summary : null,
+    actorUserId: String(item.actorUserId ?? ""),
+    actorEmail: String(item.actorEmail ?? ""),
+    note: typeof item.note === "string" ? item.note : null,
+    summary: typeof item.summary === "string" ? item.summary : null,
     createdAt: String(item.createdAt ?? new Date().toISOString()),
   };
 }
 
-function itemToBalanceThresholds(item: Record<string, unknown>): BalanceThresholdConfig | null {
+function itemToBalanceThresholds(
+  item: Record<string, unknown>,
+): BalanceThresholdConfig | null {
   const lossPct = Number(item.lossPct);
   const lossGalMin = Number(item.lossGalMin);
   const gainTolerancePct = Number(item.gainTolerancePct);
   const gainGalMin = Number(item.gainGalMin);
-  if (![lossPct, lossGalMin, gainTolerancePct, gainGalMin].every(Number.isFinite)) {
+  if (
+    ![lossPct, lossGalMin, gainTolerancePct, gainGalMin].every(Number.isFinite)
+  ) {
     return null;
   }
   return {
@@ -996,70 +1040,80 @@ function itemToBalanceThresholds(item: Record<string, unknown>): BalanceThreshol
     gainTolerancePct,
     gainGalMin,
     updatedAt: String(item.updatedAt ?? new Date().toISOString()),
-    updatedByUserId: String(item.updatedByUserId ?? ''),
-    updatedByEmail: String(item.updatedByEmail ?? ''),
+    updatedByUserId: String(item.updatedByUserId ?? ""),
+    updatedByEmail: String(item.updatedByEmail ?? ""),
   };
 }
 
-function itemToTenantProfile(item: Record<string, unknown>): TenantProfile | null {
+function itemToTenantProfile(
+  item: Record<string, unknown>,
+): TenantProfile | null {
   const tenantId = item.tenantId;
   const displayName = item.displayName;
-  if (typeof tenantId !== 'string' || typeof displayName !== 'string') return null;
+  if (typeof tenantId !== "string" || typeof displayName !== "string")
+    return null;
 
   const billingStatus: BillingStatus = isBillingStatus(item.billingStatus)
     ? item.billingStatus
-    : 'pilot';
+    : "pilot";
   const billingMode: BillingMode = isBillingMode(item.billingMode)
     ? item.billingMode
-    : billingStatus === 'pilot'
-      ? 'pilot'
-      : 'manual';
-  const planCode: PlanCode = isPlanCode(item.planCode) ? item.planCode : 'meters_0_100';
+    : billingStatus === "pilot"
+      ? "pilot"
+      : "manual";
+  const planCode: PlanCode = isPlanCode(item.planCode)
+    ? item.planCode
+    : "meters_0_100";
 
   const meterRaw = item.meterCountEstimate;
   const meterCountEstimate =
-    typeof meterRaw === 'number' && Number.isFinite(meterRaw)
+    typeof meterRaw === "number" && Number.isFinite(meterRaw)
       ? Math.floor(meterRaw)
       : undefined;
   const retentionRaw = item.retentionMonths;
   const retentionMonths =
-    typeof retentionRaw === 'number' && Number.isFinite(retentionRaw)
+    typeof retentionRaw === "number" && Number.isFinite(retentionRaw)
       ? Math.floor(retentionRaw)
       : undefined;
 
   const paymentProvider =
-    item.paymentProvider === 'stripe' ||
-    item.paymentProvider === 'square' ||
-    item.paymentProvider === 'manual' ||
-    item.paymentProvider === 'other'
+    item.paymentProvider === "stripe" ||
+    item.paymentProvider === "square" ||
+    item.paymentProvider === "manual" ||
+    item.paymentProvider === "other"
       ? item.paymentProvider
-      : 'none';
+      : "none";
 
   return {
     tenantId,
     displayName,
     createdAt: String(item.createdAt ?? new Date().toISOString()),
-    createdByUserId: String(item.createdByUserId ?? ''),
-    createdByEmail: String(item.createdByEmail ?? ''),
-    initialUserEmail: String(item.initialUserEmail ?? ''),
+    createdByUserId: String(item.createdByUserId ?? ""),
+    createdByEmail: String(item.createdByEmail ?? ""),
+    initialUserEmail: String(item.initialUserEmail ?? ""),
     billingStatus,
     billingMode,
     planCode,
     meterCountEstimate,
     retentionMonths,
     billingContactEmail:
-      typeof item.billingContactEmail === 'string' ? item.billingContactEmail : undefined,
-    pilotExpiresAt: typeof item.pilotExpiresAt === 'string' ? item.pilotExpiresAt : undefined,
-    lastPaymentAt: typeof item.lastPaymentAt === 'string' ? item.lastPaymentAt : undefined,
-    billingNotes: typeof item.billingNotes === 'string' ? item.billingNotes : undefined,
+      typeof item.billingContactEmail === "string"
+        ? item.billingContactEmail
+        : undefined,
+    pilotExpiresAt:
+      typeof item.pilotExpiresAt === "string" ? item.pilotExpiresAt : undefined,
+    lastPaymentAt:
+      typeof item.lastPaymentAt === "string" ? item.lastPaymentAt : undefined,
+    billingNotes:
+      typeof item.billingNotes === "string" ? item.billingNotes : undefined,
     paymentProvider,
-    mapTown: typeof item.mapTown === 'string' ? item.mapTown : null,
+    mapTown: typeof item.mapTown === "string" ? item.mapTown : null,
     mapCenterLat: coerceStoredCoordinate(item.mapCenterLat),
     mapCenterLng: coerceStoredCoordinate(item.mapCenterLng),
     mapZoom:
-      typeof item.mapZoom === 'number' && Number.isFinite(item.mapZoom)
+      typeof item.mapZoom === "number" && Number.isFinite(item.mapZoom)
         ? Math.round(item.mapZoom)
-        : item.mapZoom != null && item.mapZoom !== ''
+        : item.mapZoom != null && item.mapZoom !== ""
           ? (() => {
               const z = Number(item.mapZoom);
               return Number.isFinite(z) ? Math.round(z) : null;
@@ -1068,62 +1122,88 @@ function itemToTenantProfile(item: Record<string, unknown>): TenantProfile | nul
   };
 }
 
-function itemToOnboardingIntake(item: Record<string, unknown>): OnboardingIntake | null {
+function itemToOnboardingIntake(
+  item: Record<string, unknown>,
+): OnboardingIntake | null {
   const tenantId = item.tenantId;
-  if (typeof tenantId !== 'string') return null;
+  if (typeof tenantId !== "string") return null;
   const path = item.onboardingPath;
   const onboardingPath =
-    path === 'A' || path === 'B' || path === 'C' || path === 'D' ? path : 'A';
+    path === "A" || path === "B" || path === "C" || path === "D" ? path : "A";
   const unit = item.preferredUnit;
-  const preferredUnit = unit === 'cf' ? 'cf' : 'gal';
+  const preferredUnit = unit === "cf" ? "cf" : "gal";
   const sched = item.readSchedule;
-  const readSchedule =
-    sched === 'ami' || sched === 'mixed' ? sched : 'manual';
+  const readSchedule = sched === "ami" || sched === "mixed" ? sched : "manual";
   const fmt = item.exportFormat;
   const exportFormat =
-    fmt === 'csv' || fmt === 'xlsx' || fmt === 'both' ? fmt : 'unknown';
+    fmt === "csv" || fmt === "xlsx" || fmt === "both" ? fmt : "unknown";
   const stepRaw = item.currentStep;
   const currentStep =
-    typeof stepRaw === 'number' && Number.isFinite(stepRaw) ? Math.max(0, Math.floor(stepRaw)) : 0;
+    typeof stepRaw === "number" && Number.isFinite(stepRaw)
+      ? Math.max(0, Math.floor(stepRaw))
+      : 0;
 
   return {
     tenantId,
     currentStep,
-    completedAt: typeof item.completedAt === 'string' ? item.completedAt : null,
-    systemName: typeof item.systemName === 'string' ? item.systemName : '',
+    completedAt: typeof item.completedAt === "string" ? item.completedAt : null,
+    systemName: typeof item.systemName === "string" ? item.systemName : "",
     serviceTerritoryAddress:
-      typeof item.serviceTerritoryAddress === 'string' ? item.serviceTerritoryAddress : '',
-    mapTown: typeof item.mapTown === 'string' ? item.mapTown : '',
-    primaryContactName: typeof item.primaryContactName === 'string' ? item.primaryContactName : '',
+      typeof item.serviceTerritoryAddress === "string"
+        ? item.serviceTerritoryAddress
+        : "",
+    mapTown: typeof item.mapTown === "string" ? item.mapTown : "",
+    primaryContactName:
+      typeof item.primaryContactName === "string"
+        ? item.primaryContactName
+        : "",
     primaryContactEmail:
-      typeof item.primaryContactEmail === 'string' ? item.primaryContactEmail : '',
+      typeof item.primaryContactEmail === "string"
+        ? item.primaryContactEmail
+        : "",
     primaryContactPhone:
-      typeof item.primaryContactPhone === 'string' ? item.primaryContactPhone : '',
-    billingClerkName: typeof item.billingClerkName === 'string' ? item.billingClerkName : '',
-    billingClerkPhone: typeof item.billingClerkPhone === 'string' ? item.billingClerkPhone : '',
+      typeof item.primaryContactPhone === "string"
+        ? item.primaryContactPhone
+        : "",
+    billingClerkName:
+      typeof item.billingClerkName === "string" ? item.billingClerkName : "",
+    billingClerkPhone:
+      typeof item.billingClerkPhone === "string" ? item.billingClerkPhone : "",
     meterCountEstimate:
-      typeof item.meterCountEstimate === 'number' && Number.isFinite(item.meterCountEstimate)
+      typeof item.meterCountEstimate === "number" &&
+      Number.isFinite(item.meterCountEstimate)
         ? Math.floor(item.meterCountEstimate)
         : null,
     sourceCountEstimate:
-      typeof item.sourceCountEstimate === 'number' && Number.isFinite(item.sourceCountEstimate)
+      typeof item.sourceCountEstimate === "number" &&
+      Number.isFinite(item.sourceCountEstimate)
         ? Math.floor(item.sourceCountEstimate)
         : null,
     readSchedule,
     preferredUnit,
-    billingCycleNote: typeof item.billingCycleNote === 'string' ? item.billingCycleNote : '',
+    billingCycleNote:
+      typeof item.billingCycleNote === "string" ? item.billingCycleNote : "",
     municipalBillingSystem:
-      typeof item.municipalBillingSystem === 'string' ? item.municipalBillingSystem : '',
+      typeof item.municipalBillingSystem === "string"
+        ? item.municipalBillingSystem
+        : "",
     exportFormat,
-    exportColumnHints: typeof item.exportColumnHints === 'string' ? item.exportColumnHints : '',
+    exportColumnHints:
+      typeof item.exportColumnHints === "string" ? item.exportColumnHints : "",
     onboardingPath,
     hasHistoricalExport: Boolean(item.hasHistoricalExport),
-    historyNotes: typeof item.historyNotes === 'string' ? item.historyNotes : '',
-    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+    historyNotes:
+      typeof item.historyNotes === "string" ? item.historyNotes : "",
+    updatedAt:
+      typeof item.updatedAt === "string"
+        ? item.updatedAt
+        : new Date().toISOString(),
   };
 }
 
-function itemToBillingEvent(item: Record<string, unknown>): BillingEvent | null {
+function itemToBillingEvent(
+  item: Record<string, unknown>,
+): BillingEvent | null {
   const tenantId = item.tenantId;
   const eventId = item.eventId;
   const createdAt = item.createdAt;
@@ -1131,11 +1211,11 @@ function itemToBillingEvent(item: Record<string, unknown>): BillingEvent | null 
   const source = item.source;
   const billingStatusAfter = item.billingStatusAfter;
   if (
-    typeof tenantId !== 'string' ||
-    typeof eventId !== 'string' ||
-    typeof createdAt !== 'string' ||
-    typeof eventType !== 'string' ||
-    typeof source !== 'string' ||
+    typeof tenantId !== "string" ||
+    typeof eventId !== "string" ||
+    typeof createdAt !== "string" ||
+    typeof eventType !== "string" ||
+    typeof source !== "string" ||
     !isBillingStatus(billingStatusAfter)
   ) {
     return null;
@@ -1145,49 +1225,62 @@ function itemToBillingEvent(item: Record<string, unknown>): BillingEvent | null 
     tenantId,
     eventId,
     createdAt,
-    eventType: eventType as BillingEvent['eventType'],
-    source: source as BillingEvent['source'],
+    eventType: eventType as BillingEvent["eventType"],
+    source: source as BillingEvent["source"],
     billingStatusAfter,
     amountCents:
-      typeof amountRaw === 'number' && Number.isFinite(amountRaw) ? Math.round(amountRaw) : undefined,
-    currency: typeof item.currency === 'string' ? item.currency : undefined,
-    method: typeof item.method === 'string' ? (item.method as BillingEvent['method']) : undefined,
-    actorUserId: String(item.actorUserId ?? ''),
-    actorEmail: String(item.actorEmail ?? ''),
-    note: typeof item.note === 'string' ? item.note : undefined,
-    pilotExpiresAt: typeof item.pilotExpiresAt === 'string' ? item.pilotExpiresAt : undefined,
-    externalEventId: typeof item.externalEventId === 'string' ? item.externalEventId : undefined,
+      typeof amountRaw === "number" && Number.isFinite(amountRaw)
+        ? Math.round(amountRaw)
+        : undefined,
+    currency: typeof item.currency === "string" ? item.currency : undefined,
+    method:
+      typeof item.method === "string"
+        ? (item.method as BillingEvent["method"])
+        : undefined,
+    actorUserId: String(item.actorUserId ?? ""),
+    actorEmail: String(item.actorEmail ?? ""),
+    note: typeof item.note === "string" ? item.note : undefined,
+    pilotExpiresAt:
+      typeof item.pilotExpiresAt === "string" ? item.pilotExpiresAt : undefined,
+    externalEventId:
+      typeof item.externalEventId === "string"
+        ? item.externalEventId
+        : undefined,
   };
 }
 
-function itemToTenantUser(item: Record<string, unknown>): TenantUserRecord | null {
+function itemToTenantUser(
+  item: Record<string, unknown>,
+): TenantUserRecord | null {
   const role = item.role;
-  if (role !== 'operator' && role !== 'system_admin') return null;
+  if (role !== "operator" && role !== "system_admin") return null;
   const email = item.email;
   const tenantId = item.tenantId;
-  if (typeof email !== 'string' || typeof tenantId !== 'string') return null;
+  if (typeof email !== "string" || typeof tenantId !== "string") return null;
   return {
     tenantId,
     email,
     role: role as AssignableTenantRole,
     createdAt: String(item.createdAt ?? new Date().toISOString()),
-    createdByUserId: String(item.createdByUserId ?? ''),
-    createdByEmail: String(item.createdByEmail ?? ''),
+    createdByUserId: String(item.createdByUserId ?? ""),
+    createdByEmail: String(item.createdByEmail ?? ""),
   };
 }
 
-function itemToConversation(item: Record<string, unknown>): ConversationMessage | null {
+function itemToConversation(
+  item: Record<string, unknown>,
+): ConversationMessage | null {
   const tenantId = item.tenantId;
   const userId = item.userId;
   const messageId = item.messageId;
   const role = item.role;
   const text = item.text;
   if (
-    typeof tenantId !== 'string' ||
-    typeof userId !== 'string' ||
-    typeof messageId !== 'string' ||
-    typeof text !== 'string' ||
-    (role !== 'user' && role !== 'assistant')
+    typeof tenantId !== "string" ||
+    typeof userId !== "string" ||
+    typeof messageId !== "string" ||
+    typeof text !== "string" ||
+    (role !== "user" && role !== "assistant")
   ) {
     return null;
   }
@@ -1198,14 +1291,14 @@ function itemToConversation(item: Record<string, unknown>): ConversationMessage 
     role,
     text,
     createdAt: String(item.createdAt ?? new Date().toISOString()),
-    model: typeof item.model === 'string' ? item.model : null,
+    model: typeof item.model === "string" ? item.model : null,
   };
 }
 
 export function createMeterStoreFromEnv(): MeterStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
-    throw new Error('DATA_TABLE env is not configured');
+    throw new Error("DATA_TABLE env is not configured");
   }
   return new DynamoMeterStore(table);
 }
@@ -1213,7 +1306,7 @@ export function createMeterStoreFromEnv(): MeterStore {
 export function createSourceStoreFromEnv(): SourceStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
-    throw new Error('DATA_TABLE env is not configured');
+    throw new Error("DATA_TABLE env is not configured");
   }
   return new DynamoMeterStore(table);
 }
@@ -1221,7 +1314,7 @@ export function createSourceStoreFromEnv(): SourceStore {
 export function createAlertStatusStoreFromEnv(): AlertStatusStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
-    throw new Error('DATA_TABLE env is not configured');
+    throw new Error("DATA_TABLE env is not configured");
   }
   return new DynamoMeterStore(table);
 }
@@ -1229,7 +1322,7 @@ export function createAlertStatusStoreFromEnv(): AlertStatusStore {
 export function createBalanceThresholdStoreFromEnv(): BalanceThresholdStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
-    throw new Error('DATA_TABLE env is not configured');
+    throw new Error("DATA_TABLE env is not configured");
   }
   return new DynamoMeterStore(table);
 }
@@ -1237,7 +1330,7 @@ export function createBalanceThresholdStoreFromEnv(): BalanceThresholdStore {
 export function createTenantStoreFromEnv(): TenantStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
-    throw new Error('DATA_TABLE env is not configured');
+    throw new Error("DATA_TABLE env is not configured");
   }
   return new DynamoMeterStore(table);
 }
@@ -1245,7 +1338,7 @@ export function createTenantStoreFromEnv(): TenantStore {
 export function createOnboardingStoreFromEnv(): OnboardingStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
-    throw new Error('DATA_TABLE env is not configured');
+    throw new Error("DATA_TABLE env is not configured");
   }
   return new DynamoMeterStore(table);
 }
@@ -1253,7 +1346,7 @@ export function createOnboardingStoreFromEnv(): OnboardingStore {
 export function createConversationStoreFromEnv(): ConversationStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
-    throw new Error('DATA_TABLE env is not configured');
+    throw new Error("DATA_TABLE env is not configured");
   }
   return new DynamoMeterStore(table);
 }

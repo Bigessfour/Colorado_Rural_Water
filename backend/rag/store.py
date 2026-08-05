@@ -5,7 +5,6 @@ from typing import Optional
 
 from langchain_community.vectorstores import FAISS
 from langchain_core.embeddings import Embeddings
-
 from rag.settings import FAISS_INDEX_PATH
 
 logger = logging.getLogger(__name__)

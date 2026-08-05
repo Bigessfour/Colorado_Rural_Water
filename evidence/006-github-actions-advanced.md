@@ -6,13 +6,13 @@
 
 ## What 006 proves (honest)
 
-| Gate | Mechanism | Proof |
-| --- | --- | --- |
-| Plan on PR (hard fail) | `.github/workflows/terraform.yml` job `plan` | [run 30865855551](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865855551) ✓ |
-| Apply on main only | job `apply` when `push` + `refs/heads/main` | Wired; not run until merge (intentional) |
-| Destroy (safe) | `destroy.yml` workflow_dispatch; default `dry_run=true` | File on PR; same command proved locally (see below) |
-| Python in pipeline | Feature 005 `ci.yml` pytest | Already green under 005 |
-| Ansible | Skipped — Compose path | N/A |
+| Gate                   | Mechanism                                               | Proof                                                                                            |
+| ---------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Plan on PR (hard fail) | `.github/workflows/terraform.yml` job `plan`            | [run 30865855551](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/30865855551) ✓ |
+| Apply on main only     | job `apply` when `push` + `refs/heads/main`             | Wired; not run until merge (intentional)                                                         |
+| Destroy (safe)         | `destroy.yml` workflow_dispatch; default `dry_run=true` | File on PR; same command proved locally (see below)                                              |
+| Python in pipeline     | Feature 005 `ci.yml` pytest                             | Already green under 005                                                                          |
+| Ansible                | Skipped — Compose path                                  | N/A                                                                                              |
 
 ## Fixes vs soft-green theater
 

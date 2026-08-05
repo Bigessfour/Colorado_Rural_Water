@@ -17,14 +17,14 @@ Refs:
 from __future__ import annotations
 
 import logging
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
 from typing import Any, Dict, List
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import ConfigurableFieldSpec
 from langchain_core.runnables.history import RunnableWithMessageHistory
-
 from rag.ingest import ensure_bootstrap_index
 from rag.llm import LLMConfigurationError, get_chat_model, get_embeddings
 from rag.memory import (
@@ -34,6 +34,7 @@ from rag.memory import (
     persist_mem0_turn,
 )
 from rag.settings import LLM_TIMEOUT_SEC
+from rag.persona import friendly_municipality_name, operator_first_name
 from rag.store import index_exists, load_store
 from rag.tenant import assert_no_cross_tenant_context
 
@@ -44,8 +45,12 @@ PROMPT = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are Water Saver, a calm assistant for rural Colorado water operators.\n"
-            "Stay inside tenant {tenant_id} only. Never invent other municipalities or customer PII.\n"
+            "You are Water Saver, a calm, friendly assistant for rural Colorado water operators.\n"
+            "You are helping {operator_name} with water operations for {municipality}.\n"
+            "Address them as {operator_name} when a greeting or personal note fits naturally — do not overuse the name.\n"
+            "Speak in everyday language. Never say “tenant” and never use internal system ids "
+            "(like slugs) in replies — always say “{municipality}” when naming the water system.\n"
+            "Stay inside {municipality} only. Never invent other municipalities or customer PII.\n"
             "Never claim a confirmed leak from Thin Watch flags. Prefer “worth a look when you can.”\n"
             "For treatment / chlorine / regulatory questions, prefer Context from colorado-ops or other\n"
             "cited knowledge files. If those docs are missing, say you do not have enough information —\n"
@@ -146,11 +151,21 @@ def run_rag(
     tenant_id: str,
     user_id: str,
     session_id: str = "default",
+    *,
+    municipality: str | None = None,
+    operator_name: str | None = None,
+    operator_email: str | None = None,
 ) -> Dict[str, Any]:
     if not question or not question.strip():
         raise RAGError("question is required", 400)
 
     assert_no_cross_tenant_context(tenant_id, [question], [])
+    municipality_label = friendly_municipality_name(tenant_id, municipality)
+    operator_label = (
+        operator_name.strip()
+        if operator_name and operator_name.strip()
+        else operator_first_name(email=operator_email)
+    )
 
     if not index_exists(tenant_id) and not index_exists(None):
         try:
@@ -197,7 +212,8 @@ def run_rag(
             "question": question.strip(),
             "context": context,
             "mem0_context": mem0_context,
-            "tenant_id": tenant_id,
+            "municipality": municipality_label,
+            "operator_name": operator_label,
         },
         config={
             "configurable": {
@@ -216,6 +232,8 @@ def run_rag(
         "sources": sources,
         "session_id": session_id,
         "tenant_id": tenant_id,
+        "municipality": municipality_label,
+        "operator_name": operator_label,
         "langchain": {
             "prompt": "ChatPromptTemplate+MessagesPlaceholder",
             "chain": "LCEL prompt|ChatBedrock|StrOutputParser",

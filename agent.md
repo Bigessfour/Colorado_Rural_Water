@@ -95,6 +95,7 @@ High-level / big features are **not Done** until proven live in the SPA:
 - Overlays: `docs/function-tree.md` (visual), `docs/action-items.md` (proof status).
 
 <!-- SPECKIT START -->
+
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
 at specs/012-member-onboarding-reports/plan.md

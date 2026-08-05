@@ -172,7 +172,7 @@ export class LoginPageComponent {
         this.step.set('mfa');
         this.hint.set(
           result.challenge.challengeName === 'SMS_MFA'
-            ? 'Enter the SMS code Cognito sent you.'
+            ? 'Enter the SMS code we sent you.'
             : 'Enter the 6-digit code from your authenticator app.',
         );
         break;

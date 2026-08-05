@@ -455,7 +455,7 @@ export class AlertsPageComponent implements OnInit {
       );
       this.notice.set(
         body.explanation?.source === 'bedrock'
-          ? 'Explanation refreshed with Bedrock (Nova Lite).'
+          ? 'Explanation refreshed with a clearer plain-language summary.'
           : 'Plain-language explanation ready (template).',
       );
     } catch (err) {

@@ -52,7 +52,6 @@ Role enforcement (Pilot D1–D3):
 
 Aurora was considered for A4; DynamoDB is the MVP default for serverless cost and tenant keying. Revisit if reporting needs heavy SQL.
 
-
 ## API enforcement
 
 1. JWT authorizer validates Cognito token.

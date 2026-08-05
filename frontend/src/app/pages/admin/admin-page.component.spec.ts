@@ -11,9 +11,11 @@ describe('AdminPageComponent', () => {
     refreshProfile.mockClear();
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ tenants: [], users: [] }), { status: 200 }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ tenants: [], users: [] }), { status: 200 }),
+        ),
     );
 
     await TestBed.configureTestingModule({

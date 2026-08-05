@@ -13,9 +13,9 @@ import logging
 from typing import Any, Dict, List
 
 from langchain_core.tools import StructuredTool
-
 from rag.llm import LLMConfigurationError, get_chat_model
 from rag.settings import configure_langsmith
+from rag.persona import friendly_municipality_name
 from rag.tenant import (
     assert_no_cross_tenant_context,
     normalize_tenant_id,
@@ -27,23 +27,24 @@ logger = logging.getLogger(__name__)
 
 def _make_tools(tenant_id: str) -> List[StructuredTool]:
     """Factory so every tool observation is locked to the caller's tenant."""
+    place = friendly_municipality_name(tenant_id)
 
     def list_alerts() -> str:
         return (
-            f"[{tenant_id}] Sample alerts: Watch unusual usage on Main St; "
+            f"[{place}] Sample alerts: Watch unusual usage on Main St; "
             "Watch stuck meter #104; Balance Watch for current period "
             "(insufficient if one-sided)."
         )
 
     def usage_summary() -> str:
         return (
-            f"[{tenant_id}] Usage summary: upload recent cycles for Confidence. "
+            f"[{place}] Usage summary: upload recent cycles for Confidence. "
             "Typical band appears after 3+ months of billed gallons."
         )
 
     def suggest_column_map(headers: str = "acct,addr,read,date") -> str:
         return (
-            f"[{tenant_id}] Suggested map for headers [{headers}]: "
+            f"[{place}] Suggested map for headers [{headers}]: "
             "account_id←acct, service_address←addr, reading←read, reading_date←date. "
             "Confirm before ingest."
         )
@@ -52,12 +53,12 @@ def _make_tools(tenant_id: str) -> List[StructuredTool]:
         StructuredTool.from_function(
             func=list_alerts,
             name="list_alerts",
-            description="List open Watch/Actionable alerts for this tenant only.",
+            description="List open Watch/Actionable alerts for this water system only.",
         ),
         StructuredTool.from_function(
             func=usage_summary,
             name="usage_summary",
-            description="Summarize usage/confidence guidance for this tenant only.",
+            description="Summarize usage/confidence guidance for this water system only.",
         ),
         StructuredTool.from_function(
             func=suggest_column_map,
@@ -90,8 +91,9 @@ def run_tool_agent(message: str, tenant_id: str, user_id: str) -> Dict[str, Any]
     observation = tool.invoke(tool_args)
     assert_no_cross_tenant_context(tenant_id, [message, str(observation)], [])
 
+    place = friendly_municipality_name(tenant_id)
     reply = (
-        f"I used tool `{tool_name}` inside tenant {tenant_id} only.\n\n"
+        f"I used tool `{tool_name}` for {place} only.\n\n"
         f"{observation}\n\n"
         "Say if you want me to explain an alert or help map a CSV."
     )
@@ -102,7 +104,8 @@ def run_tool_agent(message: str, tenant_id: str, user_id: str) -> Dict[str, Any]
             [
                 (
                     "system",
-                    f"You are Water Saver. Stay inside tenant {tenant_id}. "
+                    f"You are Water Saver. You are helping operators at {place} only. "
+                    "Never say “tenant” or use internal system ids. "
                     "Rewrite the operator reply calmly in 2-4 short sentences. "
                     "Do not invent other towns.",
                 ),

@@ -1,10 +1,10 @@
 <section class="page">
   <header class="page-head">
     <div>
-      <h1>Member dashboard</h1>
+      <h1>Dashboard</h1>
       <p class="lede">
-        Trends, water balance, and prioritized alerts for your system — built for rural operators, not
-        enterprise dashboards.
+        Hi {{ auth.firstName() }} — trends, water balance, and prioritized alerts for
+        {{ auth.placeName() }}. Built for rural operators, not enterprise noise.
       </p>
     </div>
     @if (auth.isLoggedIn()) {
@@ -20,14 +20,15 @@
 
   @if (!auth.isLoggedIn()) {
     <p-message severity="warn" styleClass="hint">
-      <a routerLink="/login">Sign in</a> to refresh live Confidence and alerts from your tenant data.
+      <a routerLink="/login">Sign in</a> to refresh live Confidence and alerts for
+      {{ auth.placeName() }}.
     </p-message>
   }
   @if (loadError()) {
     <p-message severity="error" styleClass="hint">{{ loadError() }}</p-message>
   }
 
-  <div class="kpi-grid">
+  <div class="kpi-grid" data-tour="dashboard-kpis">
     @for (kpi of kpis(); track kpi.label) {
       <p-card styleClass="kpi-card">
         <div class="kpi-label">{{ kpi.label }}</div>
@@ -37,10 +38,10 @@
     }
   </div>
 
-  <p-card header="System usage — billed over time" styleClass="usage">
+  <p-card header="System usage — billed over time" styleClass="usage" data-tour="usage-trend">
     @if (usageEmpty()) {
       <p class="muted">
-        No billed-usage trend yet. Ingest customer readings (and a second month when you can) so
+        No billed-usage trend yet. Upload customer readings (and a second month when you can) so
         spikes can show against a typical range.
       </p>
     } @else {
@@ -62,7 +63,7 @@
   </p-card>
 
   <div class="instrument-row">
-    <p-card header="Data Confidence" styleClass="confidence">
+    <p-card header="Data Confidence" styleClass="confidence" data-tour="data-confidence">
       <div class="confidence-head">
         <div>
           <div class="kpi-label">System overall</div>
@@ -70,7 +71,7 @@
             <span class="kpi-value">{{ confidence().level }}</span>
             <p-tag
               [severity]="confidenceSeverity(confidence().level)"
-              [value]="confidence().displayScore + ' / 100 display'"
+              [value]="confidence().displayScore + ' / 100'"
             />
           </div>
           <p class="confidence-meaning">{{ confidence().meaning }}</p>
@@ -93,14 +94,46 @@
     </p-card>
 
     @if (showHealth()) {
-      <p-card header="Meter health" styleClass="health">
-        <div class="chart-wrap chart-wrap--donut">
-          <p-chart type="doughnut" [data]="healthChartData()" [options]="doughnutOptions" />
+      <p-card header="Meter health" styleClass="health" data-tour="meter-health">
+        <div class="health-head">
+          <div class="health-copy">
+            <p class="health-lede">
+              A quick look at all {{ meterCount() }} meters in {{ auth.placeName() }} — how many look
+              fine vs how many have an open flag.
+            </p>
+            <ul class="health-legend">
+              <li>
+                <span class="swatch swatch--normal" aria-hidden="true"></span>
+                <div>
+                  <strong>Looking fine</strong>
+                  <span>No open flag right now.</span>
+                </div>
+              </li>
+              <li>
+                <span class="swatch swatch--watch" aria-hidden="true"></span>
+                <div>
+                  <strong>Worth a look</strong>
+                  <span
+                    >Soft signal (we call this “Watch”). Check when you can — not an emergency.</span
+                  >
+                </div>
+              </li>
+              <li>
+                <span class="swatch swatch--actionable" aria-hidden="true"></span>
+                <div>
+                  <strong>Needs a check</strong>
+                  <span
+                    >Stronger signal (we call this “Actionable”) — stuck meter, diagnostic, or
+                    similar. Worth a field look.</span
+                  >
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="chart-wrap chart-wrap--donut chart-wrap--health">
+            <p-chart type="doughnut" [data]="healthChartData()" [options]="doughnutOptions" />
+          </div>
         </div>
-        <p class="muted chart-note">
-          Normal meters vs open Watch / Actionable flags — portfolio at a glance for
-          {{ meterCount() }} meters.
-        </p>
       </p-card>
     }
   </div>
@@ -154,13 +187,13 @@
     </div>
     <p class="muted">
       {{ balance().hint }}
-      Configure <a routerLink="/sources">named sources</a> and ingest readings to refresh.
+      Configure <a routerLink="/sources">named sources</a> and upload readings to refresh.
     </p>
   </p-card>
 
   <p-card header="Priority alert feed" styleClass="feed">
     @if (liveAlerts().length === 0) {
-      <p class="muted">No live alerts yet — ingest readings and sign in to refresh.</p>
+      <p class="muted">No live alerts yet — upload readings and sign in to refresh.</p>
     }
     @for (alert of liveAlerts(); track alert.id) {
       <div class="alert-row">
@@ -181,8 +214,8 @@
           <div class="muted">{{ alert.confidenceNote }}</div>
           @if (alert.kind === 'meter') {
             <div class="muted">
-              <a routerLink="/alerts">Open Alerts → History</a> for usage stats and sparkline on this
-              meter.
+              <a routerLink="/alerts">Open Alerts → History</a> for usage stats and sparkline on
+              this meter.
             </div>
           }
         </div>

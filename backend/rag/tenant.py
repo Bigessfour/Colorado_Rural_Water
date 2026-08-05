@@ -3,6 +3,7 @@
 Mem0 and session memory MUST be keyed as tenant_id:userId from server headers
 (or trusted gateway). Never trust client-supplied tenant alone when headers exist.
 """
+
 from __future__ import annotations
 
 import re
@@ -70,7 +71,9 @@ def assert_no_cross_tenant_context(
         raise PermissionError(f"Agent isolation violation: {'; '.join(leaks)}")
 
 
-def require_tenant_headers(request, data: Dict[str, Any] | None = None) -> Tuple[str, str]:
+def require_tenant_headers(
+    request, data: Dict[str, Any] | None = None
+) -> Tuple[str, str]:
     """Resolve tenant/user from trusted headers first, then body (Compose demos).
 
     Production Compose should sit behind auth that sets X-Tenant-Id / X-User-Id.

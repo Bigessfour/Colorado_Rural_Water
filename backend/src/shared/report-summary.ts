@@ -3,8 +3,8 @@
  * Browser print → PDF; no server-side PDF engine in MVP.
  */
 
-import type { ConfidenceSnapshot } from './alert-engine.js';
-import type { WaterBalanceResult } from './water-balance.js';
+import type { ConfidenceSnapshot } from "./alert-engine.js";
+import type { WaterBalanceResult } from "./water-balance.js";
 
 export interface SummaryAlertRow {
   meterId: string;
@@ -28,18 +28,20 @@ export interface OperationsSummaryInput {
 
 function esc(s: string): string {
   return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
-export function buildOperationsSummaryHtml(input: OperationsSummaryInput): string {
+export function buildOperationsSummaryHtml(
+  input: OperationsSummaryInput,
+): string {
   const bal = input.balance;
   const unaccounted =
-    bal.status === 'insufficient' || bal.unaccountedPct == null
-      ? '— (need In + Out)'
-      : `${bal.unaccountedPct.toFixed(1)}% (${bal.unaccountedGal?.toLocaleString() ?? '—'} gal)`;
+    bal.status === "insufficient" || bal.unaccountedPct == null
+      ? "— (need In + Out)"
+      : `${bal.unaccountedPct.toFixed(1)}% (${bal.unaccountedGal?.toLocaleString() ?? "—"} gal)`;
 
   const alertRows =
     input.topAlerts.length === 0
@@ -47,9 +49,9 @@ export function buildOperationsSummaryHtml(input: OperationsSummaryInput): strin
       : input.topAlerts
           .map(
             (a) =>
-              `<tr><td>${esc(a.meterId)}</td><td>${esc(a.serviceAddress ?? '—')}</td><td>${esc(a.mode)}</td><td>${esc(a.summary)}</td></tr>`,
+              `<tr><td>${esc(a.meterId)}</td><td>${esc(a.serviceAddress ?? "—")}</td><td>${esc(a.mode)}</td><td>${esc(a.summary)}</td></tr>`,
           )
-          .join('');
+          .join("");
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -77,7 +79,7 @@ export function buildOperationsSummaryHtml(input: OperationsSummaryInput): strin
     <div class="kpi"><span>Data Confidence</span><strong>${esc(input.confidence.level)}</strong><small>${input.confidence.monthsOfHistory} mo history · ${input.confidence.coveragePct}% coverage</small></div>
     <div class="kpi"><span>Open flagged meters</span><strong>${input.openAlertCount}</strong><small>${input.actionableCount} Actionable · ${input.watchCount} Watch</small></div>
     <div class="kpi"><span>Water balance (${esc(bal.periodLabel)})</span><strong>${esc(bal.status)}</strong><small>Unaccounted: ${esc(unaccounted)}</small></div>
-    <div class="kpi"><span>In / Out</span><strong>${bal.producedGal?.toLocaleString() ?? '—'} / ${bal.billedGal?.toLocaleString() ?? '—'} gal</strong><small>Production vs customer usage</small></div>
+    <div class="kpi"><span>In / Out</span><strong>${bal.producedGal?.toLocaleString() ?? "—"} / ${bal.billedGal?.toLocaleString() ?? "—"} gal</strong><small>Production vs customer usage</small></div>
   </div>
   <h2>Top flagged meters</h2>
   <table>

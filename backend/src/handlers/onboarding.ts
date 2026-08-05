@@ -1,12 +1,21 @@
-import type { AuthedHandler } from '../shared/apigw.js';
-import { parseAuthFromClaims, requireTenantId } from '../shared/auth.js';
-import { createOnboardingStoreFromEnv, createTenantStoreFromEnv } from '../shared/dynamo-store.js';
-import { badRequest, forbidden, json, ok, unauthorized } from '../shared/http.js';
+import type { AuthedHandler } from "../shared/apigw.js";
+import { parseAuthFromClaims, requireTenantId } from "../shared/auth.js";
+import {
+  createOnboardingStoreFromEnv,
+  createTenantStoreFromEnv,
+} from "../shared/dynamo-store.js";
+import {
+  badRequest,
+  forbidden,
+  json,
+  ok,
+  unauthorized,
+} from "../shared/http.js";
 import {
   emptyOnboardingIntake,
   isOnboardingComplete,
   mergeOnboardingIntake,
-} from '../shared/onboarding-intake.js';
+} from "../shared/onboarding-intake.js";
 
 /**
  * GET /onboarding — tenant-scoped intake profile (creates empty shell if missing).
@@ -14,7 +23,7 @@ import {
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
-  if (!claims || typeof claims !== 'object') {
+  if (!claims || typeof claims !== "object") {
     return unauthorized();
   }
 
@@ -23,14 +32,14 @@ export const handler: AuthedHandler = async (event) => {
   try {
     tenantId = requireTenantId(auth);
   } catch (err) {
-    return forbidden(err instanceof Error ? err.message : 'Forbidden');
+    return forbidden(err instanceof Error ? err.message : "Forbidden");
   }
 
   const method = event.requestContext.http.method;
   const store = createOnboardingStoreFromEnv();
   const tenantStore = createTenantStoreFromEnv();
 
-  if (method === 'GET') {
+  if (method === "GET") {
     const [intake, profile] = await Promise.all([
       store.getOnboardingIntake(tenantId),
       tenantStore.getTenantProfile(tenantId),
@@ -42,7 +51,10 @@ export const handler: AuthedHandler = async (event) => {
     if (!data.mapTown && profile?.mapTown) {
       data.mapTown = profile.mapTown;
     }
-    if (data.meterCountEstimate == null && profile?.meterCountEstimate != null) {
+    if (
+      data.meterCountEstimate == null &&
+      profile?.meterCountEstimate != null
+    ) {
       data.meterCountEstimate = profile.meterCountEstimate;
     }
     return ok({
@@ -53,24 +65,29 @@ export const handler: AuthedHandler = async (event) => {
     });
   }
 
-  if (method === 'PUT') {
+  if (method === "PUT") {
     if (!event.body) {
-      return badRequest('Body must be JSON');
+      return badRequest("Body must be JSON");
     }
     let body: Record<string, unknown>;
     try {
       body = JSON.parse(event.body) as Record<string, unknown>;
     } catch {
-      return badRequest('Body must be JSON');
+      return badRequest("Body must be JSON");
     }
 
     const markComplete =
-      event.queryStringParameters?.complete === '1' ||
-      event.queryStringParameters?.complete === 'true' ||
+      event.queryStringParameters?.complete === "1" ||
+      event.queryStringParameters?.complete === "true" ||
       body.complete === true;
 
     const existing = await store.getOnboardingIntake(tenantId);
-    const merged = mergeOnboardingIntake(existing, tenantId, body, markComplete);
+    const merged = mergeOnboardingIntake(
+      existing,
+      tenantId,
+      body,
+      markComplete,
+    );
     if (!merged.ok) {
       return badRequest(merged.error);
     }
@@ -80,9 +97,11 @@ export const handler: AuthedHandler = async (event) => {
       tenantId,
       intake: merged.intake,
       complete: isOnboardingComplete(merged.intake),
-      message: markComplete ? 'Onboarding intake completed' : 'Onboarding intake saved',
+      message: markComplete
+        ? "Onboarding intake completed"
+        : "Onboarding intake saved",
     });
   }
 
-  return json(405, { error: 'Method not allowed' });
+  return json(405, { error: "Method not allowed" });
 };

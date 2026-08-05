@@ -1,7 +1,18 @@
 <section class="page page--narrow">
-  <header class="page-head">
-    <h1>Sign in</h1>
-    <p class="lede">Operator access for your water system. Accounts are provisioned by an admin.</p>
+  <header class="page-head login-brand">
+    <img
+      class="login-logo"
+      src="/brand/crwa-logo.jpg"
+      width="205"
+      height="71"
+      alt="Colorado Rural Water Association"
+    />
+    <h1>Sign in to Water Saver</h1>
+    <p class="lede">
+      A CRWA member service for your water system. An admin creates accounts — ask
+      <a href="https://www.crwa.net/" target="_blank" rel="noopener noreferrer">CRWA</a>
+      if you need an invite.
+    </p>
   </header>
 
   @if (error()) {
@@ -49,7 +60,12 @@
           [integerOnly]="true"
           styleClass="otp"
         />
-        <p-button type="submit" label="Verify and continue" [loading]="busy()" [disabled]="busy()" />
+        <p-button
+          type="submit"
+          label="Verify and continue"
+          [loading]="busy()"
+          [disabled]="busy()"
+        />
         <p-button
           type="button"
           label="Back"
@@ -85,7 +101,12 @@
           />
         </label>
         <p class="policy">At least 12 characters with upper, lower, number, and symbol.</p>
-        <p-button type="submit" label="Save password and continue" [loading]="busy()" [disabled]="busy()" />
+        <p-button
+          type="submit"
+          label="Save password and continue"
+          [loading]="busy()"
+          [disabled]="busy()"
+        />
         <p-button
           type="button"
           label="Back"
@@ -113,8 +134,8 @@
             (onClick)="copySecret()"
           />
           <p class="policy">
-            In your authenticator app, add an account and paste this key (or open the otpauth link on
-            your phone).
+            In your authenticator app, add an account and paste this key (or open the otpauth link
+            on your phone).
           </p>
           @if (setupOtpauth) {
             <p class="otpauth"><a [href]="setupOtpauth">Open authenticator link</a></p>
@@ -128,7 +149,12 @@
           [integerOnly]="true"
           styleClass="otp"
         />
-        <p-button type="submit" label="Verify and finish sign-in" [loading]="busy()" [disabled]="busy()" />
+        <p-button
+          type="submit"
+          label="Verify and finish sign-in"
+          [loading]="busy()"
+          [disabled]="busy()"
+        />
         <p-button
           type="button"
           label="Back"

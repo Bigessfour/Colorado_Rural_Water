@@ -195,7 +195,7 @@ JSON attachment or inline block optional for archive.
 #### Ops checklist (ship week)
 
 1. [x] Cognito `kelly.review@watersaver.local` — groups `operators` + `crwa_admins`, tenant `town-wiley` (creds in local secrets, not git).
-2. [x] Deploy F5 API (`POST /review/sessions` live) + SES from/to verified; SPA `/review` via local `npm start` against live API (no CloudFront host yet).
+2. [x] Deploy F5 API (`POST /review/sessions` live) + SES from/to verified; SPA `/review` on CloudFront `https://duqk1pqvmrsuh.cloudfront.net/review`.
 3. [ ] Send Kelly: app URL (`/review`), credentials / [KELLY_REVIEW.md](KELLY_REVIEW.md), “~20–30 minutes, Submit at the end.”
 4. [ ] After Kelly submit: file feedback → Spec §7b / H8 (Confidence) and product backlog cuts.
 

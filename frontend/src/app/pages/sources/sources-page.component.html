@@ -1,13 +1,14 @@
 <section class="page">
   <h1>Named sources</h1>
   <p class="lede">
-    Name each well, spring, or purchased supply once, then enter or upload period production
-    readings. Dashboard water balance compares production (in) to billed customer usage (out).
+    Name each well, spring, or purchased supply for {{ auth.placeName() }}, then enter or upload
+    period production. Dashboard water balance compares production (in) to billed customer usage
+    (out).
   </p>
 
   @if (!auth.isLoggedIn()) {
     <p-message severity="warn" styleClass="hint">
-      <a routerLink="/login">Sign in</a> to manage sources for your tenant.
+      <a routerLink="/login">Sign in</a> to manage sources for {{ auth.placeName() }}.
     </p-message>
   }
   @if (error()) {
@@ -91,7 +92,7 @@
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="5">No named sources yet — add Well 1 / Well 2, or ingest a source CSV.</td>
+          <td colspan="5">No named sources yet — add Well 1 / Well 2, or upload a source CSV.</td>
         </tr>
       </ng-template>
     </p-table>
@@ -176,7 +177,7 @@
     <div class="form-actions ingest-actions">
       <p-button
         type="button"
-        label="Dry run"
+        label="Check first"
         severity="secondary"
         [loading]="ingesting()"
         [disabled]="ingesting() || !csvText || !auth.isLoggedIn()"
@@ -184,7 +185,7 @@
       />
       <p-button
         type="button"
-        label="Ingest source readings"
+        label="Import source readings"
         [loading]="ingesting()"
         [disabled]="ingesting() || !csvText || !auth.isLoggedIn()"
         (onClick)="ingestCsv(false)"

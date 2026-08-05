@@ -11,8 +11,13 @@ import { converseText, DEFAULT_BEDROCK_MODEL_ID } from '../shared/bedrock.js';
 import {
   createConversationStoreFromEnv,
   createMeterStoreFromEnv,
+  createTenantStoreFromEnv,
 } from '../shared/dynamo-store.js';
 import { badRequest, forbidden, ok, unauthorized } from '../shared/http.js';
+import {
+  friendlyMunicipalityName,
+  operatorFirstName,
+} from '../shared/persona.js';
 
 /**
  * Conversational agent (Epic E):
@@ -77,12 +82,23 @@ export const handler: AuthedHandler = async (event) => {
   ]);
   const confidence = assessTenantConfidence(readings, locations.length);
 
+  let municipality: string | null = null;
+  try {
+    const tenantStore = createTenantStoreFromEnv();
+    const profile = await tenantStore.getTenantProfile(tenantId);
+    municipality = profile?.displayName ?? profile?.mapTown ?? null;
+  } catch {
+    municipality = null;
+  }
+
   const input: AgentTurnInput = {
     tenantId,
     userId: auth.userId,
     message,
     history: prior.map((m) => ({ role: m.role, text: m.text })),
     confidence,
+    municipality,
+    operatorEmail: auth.email || null,
   };
 
   // E5: assembled context must not mention other tenant ids.
@@ -104,18 +120,44 @@ export const handler: AuthedHandler = async (event) => {
   let reply = templateAgentReply(input);
 
   // Optional Bedrock polish for free-form questions (cheapest Nova Lite).
+  // Skip model for short greetings — template already uses first name + place.
+  const isGreeting =
+    /^(hi|hello|hey)\b/i.test(message.trim()) ||
+    /\bjust say (a )?(short )?hello\b/i.test(message);
+  const wantsFeatureDeepDive =
+    /\b(tell me more|know more|explain (the )?feature|what can i enter|how (do|can) i get a report)\b/i.test(
+      message,
+    ) || /\bfeature:\s*/i.test(message);
   const wantsAi =
     !reply.needsConfirm &&
+    !isGreeting &&
     !/\b(onboard|confidence|watch|actionable|thin|solid|cost|billing|price)\b/i.test(message);
 
-  if (wantsAi) {
+  if (wantsAi || wantsFeatureDeepDive) {
+    const place = friendlyMunicipalityName(tenantId, municipality);
+    const first = operatorFirstName({ email: auth.email });
     const system = [
-      'You are Water Saver, a calm assistant for rural Colorado water operators.',
-      `Stay inside tenant ${tenantId} only. Never invent other municipalities or customer PII.`,
+      'You are Water Saver, a calm, friendly assistant for rural Colorado water operators.',
+      `You are helping ${first} with water operations for ${place}.`,
+      `Address them as ${first} when a greeting fits naturally — do not overuse the name.`,
+      `Never say “tenant” or use internal system ids. Always say “${place}” for the water system.`,
+      `Stay inside ${place} only. Never invent other municipalities or customer PII.`,
       'Never claim a confirmed leak from Thin Watch flags. Prefer “worth a look when you can.”',
       'Keep answers short and plain-language. Explain cost briefly if suggesting AI-heavy work.',
+      wantsFeatureDeepDive
+        ? [
+            'The operator asked for a deeper feature walkthrough.',
+            'Cover, in order when relevant: (1) What can be entered here?',
+            '(2) What does this do for their water system?',
+            '(3) How can they get a report or export?',
+            '(4) One calm next step they can take today.',
+            'Invite a follow-up question; stay on this feature until they move on.',
+          ].join(' ')
+        : '',
       reply.confidenceCoaching,
-    ].join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
     const historyText = input.history
       .slice(-6)
       .map((h) => `${h.role}: ${h.text}`)
@@ -123,7 +165,7 @@ export const handler: AuthedHandler = async (event) => {
     const polished = await converseText({
       system,
       user: `${historyText}\nuser: ${message}`.trim(),
-      maxTokens: 350,
+      maxTokens: wantsFeatureDeepDive ? 500 : 350,
     });
     if (polished) {
       reply = {

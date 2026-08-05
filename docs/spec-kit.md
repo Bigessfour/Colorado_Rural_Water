@@ -17,12 +17,12 @@ Upstream toolkit clone (not product code): see [spec-kit-workspace.md](spec-kit-
 
 ### Extensions (enabled)
 
-| Extension       | Purpose                                                                        | Skills                          |
-| --------------- | ------------------------------------------------------------------------------ | ------------------------------- |
+| Extension       | Purpose                                                                            | Skills                          |
+| --------------- | ---------------------------------------------------------------------------------- | ------------------------------- |
 | `agent-context` | Syncs plan pointer into `AGENTS.md`, `agent.md`, `.cursor/rules/specify-rules.mdc` | `/speckit-agent-context-update` |
-| `git`           | Feature branches (`feature/00N-slug`), validate, remote; **auto-commit OFF**     | `/speckit-git-*`                |
-| `assess`        | Idea intake → research → define → shape → decide (before specify)              | `/speckit-assess-*`             |
-| `bug`           | Bug assess → fix → test reports under `.specify/bugs/`                         | `/speckit-bug-*`                |
+| `git`           | Feature branches (`feature/00N-slug`), validate, remote; **auto-commit OFF**       | `/speckit-git-*`                |
+| `assess`        | Idea intake → research → define → shape → decide (before specify)                  | `/speckit-assess-*`             |
+| `bug`           | Bug assess → fix → test reports under `.specify/bugs/`                             | `/speckit-bug-*`                |
 
 Config:
 
@@ -86,7 +86,7 @@ Or run `/speckit-git-feature` manually before `/speckit-specify` (the `before_sp
 - **Default:** `cursor-agent` (Cursor skills).
 - **Grok:** installed with full core + extension skills under `.grok/skills/`.
 - To make Grok the Spec Kit default: `specify integration use grok` (then `use cursor-agent` to switch back).
-- Extension skills register for the *active* integration on `use` / `switch`; both trees are already synced after setup.
+- Extension skills register for the _active_ integration on `use` / `switch`; both trees are already synced after setup.
 
 ## What not to do
 

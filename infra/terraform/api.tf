@@ -4,7 +4,7 @@ module "storage" {
 
   project_name       = var.project_name
   environment        = var.environment
-  cors_allow_origins = ["http://localhost:4200", "http://localhost:8080"]
+  cors_allow_origins = local.browser_cors_origins
 }
 
 module "security" {
@@ -20,6 +20,7 @@ module "api" {
 
   project_name                = var.project_name
   environment                 = var.environment
+  cors_allow_origins          = local.browser_cors_origins
   cognito_user_pool_id        = module.cognito[0].user_pool_id
   cognito_user_pool_client_id = module.cognito[0].spa_client_id
   cognito_user_pool_arn       = module.cognito[0].user_pool_arn

@@ -8,6 +8,8 @@ import { SelectButton } from 'primeng/selectbutton';
 import { AuthService } from '../core/auth.service';
 import { ReviewService } from '../review/review.service';
 import { ThemeService, type UiTheme } from '../core/theme.service';
+import { ProductTourOverlayComponent } from '../tour/product-tour-overlay.component';
+import { ProductTourService } from '../tour/product-tour.service';
 import { environment } from '../../environments/environment';
 
 @Component({
@@ -20,6 +22,7 @@ import { environment } from '../../environments/environment';
     ButtonModule,
     MessageModule,
     SelectButton,
+    ProductTourOverlayComponent,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
@@ -28,6 +31,7 @@ export class ShellComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly review = inject(ReviewService);
   readonly theme = inject(ThemeService);
+  readonly tour = inject(ProductTourService);
   readonly composeDemo = environment.composeDemo;
 
   readonly themeOptions = [
@@ -46,7 +50,14 @@ export class ShellComponent implements OnInit {
       document.body.classList.toggle('compose-demo', this.composeDemo);
     }
     if (this.auth.isLoggedIn()) {
-      void this.auth.refreshProfile();
+      void this.auth.refreshProfile().finally(() => {
+        // One-time product tour for new operators (per email + tour version).
+        // Skip when Kelly guided review is already running.
+        window.setTimeout(() => {
+          if (this.review.active()) return;
+          this.tour.maybeAutoStart();
+        }, 900);
+      });
     }
     this.syncReviewModeFromUrl();
     this.router.events

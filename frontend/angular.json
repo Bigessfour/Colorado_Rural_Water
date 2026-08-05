@@ -59,6 +59,32 @@
                 "fonts": false
               }
             },
+            "hosted": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1.5MB",
+                  "maximumError": "2.5MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "8kB",
+                  "maximumError": "16kB"
+                }
+              ],
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": true,
+                "fonts": false
+              },
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/primeng-license.ts",
+                  "with": "src/environments/primeng-license.local.ts"
+                }
+              ]
+            },
             "compose": {
               "budgets": [
                 {

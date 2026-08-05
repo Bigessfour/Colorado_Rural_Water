@@ -28,6 +28,17 @@ describe('parseCognitoGroups', () => {
     assert.deepEqual(parseCognitoGroups('["crwa_admins"]'), ['crwa_admins']);
     assert.deepEqual(parseCognitoGroups(['operators']), ['operators']);
   });
+
+  it('parses API Gateway space-separated multi-group claims', () => {
+    assert.deepEqual(parseCognitoGroups('crwa_admins operators'), [
+      'crwa_admins',
+      'operators',
+    ]);
+    assert.deepEqual(parseCognitoGroups('[crwa_admins operators]'), [
+      'crwa_admins',
+      'operators',
+    ]);
+  });
 });
 
 describe('parseAuthFromClaims', () => {

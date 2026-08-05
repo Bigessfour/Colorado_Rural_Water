@@ -1,9 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  ClientErrorReporter,
-  installBrowserErrorBridge,
-} from './client-error-reporter';
+import { ClientErrorReporter, installBrowserErrorBridge } from './client-error-reporter';
 import { AuthService } from './auth.service';
 
 describe('ClientErrorReporter', () => {

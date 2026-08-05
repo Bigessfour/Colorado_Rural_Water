@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import { afterEach, describe, it } from 'node:test';
+import assert from "node:assert/strict";
+import { afterEach, describe, it } from "node:test";
 import {
   createAlertStatusStoreFromEnv,
   createBalanceThresholdStoreFromEnv,
@@ -8,9 +8,9 @@ import {
   createSourceStoreFromEnv,
   createTenantStoreFromEnv,
   DynamoMeterStore,
-} from './dynamo-store.js';
+} from "./dynamo-store.js";
 
-describe('dynamo-store env factories', () => {
+describe("dynamo-store env factories", () => {
   const prevTable = process.env.DATA_TABLE;
 
   afterEach(() => {
@@ -18,7 +18,7 @@ describe('dynamo-store env factories', () => {
     else process.env.DATA_TABLE = prevTable;
   });
 
-  it('throws when DATA_TABLE is missing', () => {
+  it("throws when DATA_TABLE is missing", () => {
     delete process.env.DATA_TABLE;
     for (const factory of [
       createMeterStoreFromEnv,
@@ -32,8 +32,8 @@ describe('dynamo-store env factories', () => {
     }
   });
 
-  it('returns DynamoMeterStore when DATA_TABLE is set', () => {
-    process.env.DATA_TABLE = 'water-saver-test-table';
+  it("returns DynamoMeterStore when DATA_TABLE is set", () => {
+    process.env.DATA_TABLE = "water-saver-test-table";
     const store = createMeterStoreFromEnv();
     assert.ok(store instanceof DynamoMeterStore);
   });

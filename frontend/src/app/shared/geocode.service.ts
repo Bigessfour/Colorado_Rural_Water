@@ -70,9 +70,7 @@ function pickBestFeature(
 
   scored.sort((a, b) => b.score - a.score);
   const best = scored[0];
-  return best
-    ? { latitude: best.latitude, longitude: best.longitude, props: best.props }
-    : null;
+  return best ? { latitude: best.latitude, longitude: best.longitude, props: best.props } : null;
 }
 
 /** Bias rural CO lookups — always send a Colorado-aware query to Photon. */

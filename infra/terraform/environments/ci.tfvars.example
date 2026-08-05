@@ -8,3 +8,4 @@ assessment_tag = "true"
 enable_cognito = true
 enable_api     = true
 enable_storage = true
+enable_spa     = true

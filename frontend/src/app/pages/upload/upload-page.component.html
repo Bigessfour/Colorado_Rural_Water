@@ -2,23 +2,33 @@
   <header class="page-head">
     <h1>Upload meter readings</h1>
     <p class="lede">
-      Drop a messy CSV or Excel export. We guess columns in everyday language — address stays with the
-      meter; occupant name can change. Choose multiple files for a bulk historical load (H2).
+      Bring in a meter reading export for {{ auth.placeName() }} — even if columns are out of order
+      or labeled differently than we expect. We help match each column in plain language. Address
+      stays with the meter; customer names can change. Choose several files when loading older
+      months at once.
     </p>
   </header>
 
-  <p-message severity="info" styleClass="hint">{{ sampleHint }}</p-message>
+  <p-message severity="info" styleClass="hint" data-tour="upload-sample">{{ sampleHint }}</p-message>
   @if (!auth.isLoggedIn()) {
-    <p class="signin-hint"><a routerLink="/login">Sign in</a> to ingest readings for your tenant.</p>
+    <p class="signin-hint">
+      <a routerLink="/login">Sign in</a> to import readings for {{ auth.placeName() }}.
+    </p>
   }
 
-  <p-card header="Ingestion status" styleClass="status-card">
+  <p-card header="Upload progress" styleClass="status-card" data-tour="upload-flow">
     <ol class="phase-list">
       <li [class.done]="ingestPhase !== 'idle' && ingestPhase !== 'loading'">1. Load file</li>
-      <li [class.done]="ingestPhase === 'mapped' || ingestPhase === 'dry_run_ok' || ingestPhase === 'committed'">
+      <li
+        [class.done]="
+          ingestPhase === 'mapped' || ingestPhase === 'dry_run_ok' || ingestPhase === 'committed'
+        "
+      >
         2. Map columns
       </li>
-      <li [class.done]="ingestPhase === 'dry_run_ok' || ingestPhase === 'committed'">3. Dry run</li>
+      <li [class.done]="ingestPhase === 'dry_run_ok' || ingestPhase === 'committed'">
+        3. Check first
+      </li>
       <li [class.done]="ingestPhase === 'committed'">4. Import</li>
     </ol>
     @if (progressLabel || progressValue > 0 || progressMode === 'indeterminate') {
@@ -81,7 +91,8 @@
   @if (isExcel && sheetOptions.length) {
     <p-card header="Workbook sheet" styleClass="upload-card map-card">
       <p class="map-lede">
-        Clerk Notes and free-text sheets are hidden. Prefer Meter Reads / July for the current cycle.
+        Clerk Notes and free-text sheets are hidden. Prefer Meter Reads / July for the current
+        cycle.
       </p>
       <label class="map-row sheet-row">
         <span>Sheet</span>
@@ -102,7 +113,7 @@
           inputId="mergeArchive"
           name="mergeArchive"
         />
-        <span>Also merge Older Reads / archive sheet on ingest</span>
+        <span>Also merge Older Reads / archive sheet on import</span>
       </label>
     </p-card>
   }
@@ -151,15 +162,10 @@
 
       <div class="actions">
         @if (!auth.isLoggedIn()) {
-          <p class="signin-hint"><a routerLink="/login">Sign in</a> to ingest readings.</p>
+          <p class="signin-hint"><a routerLink="/login">Sign in</a> to import readings.</p>
         }
-        <p-button
-          label="Dry run"
-          [outlined]="true"
-          [loading]="busy"
-          (onClick)="ingest(true)"
-        />
-        <p-button label="Ingest readings" [loading]="busy" (onClick)="ingest(false)" />
+        <p-button label="Check first" [outlined]="true" [loading]="busy" (onClick)="ingest(true)" />
+        <p-button label="Import readings" [loading]="busy" (onClick)="ingest(false)" />
       </div>
     </p-card>
   }
