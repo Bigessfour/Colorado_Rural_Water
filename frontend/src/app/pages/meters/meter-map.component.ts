@@ -219,7 +219,8 @@ export class MeterMapComponent {
     if (!id || !this.map) return;
     const marker = this.markers.get(id);
     if (!marker) return;
-    this.map.panTo(marker.getLatLng());
+    // Zoom in enough to see the service location when focusing from Stats → Map.
+    this.map.setView(marker.getLatLng(), Math.max(this.map.getZoom(), 16), { animate: true });
     marker.openPopup();
   }
 }

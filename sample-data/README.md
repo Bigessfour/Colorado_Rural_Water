@@ -2,11 +2,12 @@
 
 Messy, real-world-style meter export fixtures for demos and ingestion tests.
 
-| File | Intent |
-| ---- | ------ |
+| File / folder                           | Intent                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `town-wiley-24mo/`                      | **24-month Town of Wiley pack** (300 meters, 2 wells, intentional stuck/high/gap/balance cases). See that folder’s README.                                                                                                                                                                                                                       |
 | `Town_of_Steve_Meter_Export_MESSY.xlsx` | **Primary stress fixture** — 3 sheets (Meter Reads July 2026 / Older Reads archive / Clerk Notes). Title rows, awkward headers (`Meter #`, `Acct`, `Read Dt`, `Flag / Alarm`), blank mid-rows, mixed dates, comma readings, CF unit, leak/stuck/low-battery anomalies (STEVE-004/005/012), footer noise. Clerk Notes is ignored by the importer. |
-| `messy-readings-july.csv` | Customer meters CSV: mixed dates, **Service Address** (stable) + **Customer** name churn on meter 1042, stuck meter, spike |
-| `messy-source-readings-july.csv` | Named wells / production meters for water-balance demos |
+| `messy-readings-july.csv`               | Customer meters CSV: mixed dates, **Service Address** (stable) + **Customer** name churn on meter 1042, stuck meter, spike                                                                                                                                                                                                                       |
+| `messy-source-readings-july.csv`        | Named wells / production meters for water-balance demos                                                                                                                                                                                                                                                                                          |
 
 ## Excel upload (Town of Steve)
 
@@ -24,8 +25,8 @@ Messy, real-world-style meter export fixtures for demos and ingestion tests.
 
 ## Anomaly meters (Excel)
 
-| Meter | Pattern |
-| ----- | ------- |
+| Meter     | Pattern                                                       |
+| --------- | ------------------------------------------------------------- |
 | STEVE-004 | Leak flags (`LEAK` / `Leak indicator` / `leak`) then repaired |
-| STEVE-005 | Stuck at 4200 gal across many months |
-| STEVE-012 | Collapsing usage + `Low battery` flag |
+| STEVE-005 | Stuck at 4200 gal across many months                          |
+| STEVE-012 | Collapsing usage + `Low battery` flag                         |

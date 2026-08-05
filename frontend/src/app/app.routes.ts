@@ -16,6 +16,13 @@ import { SettingsPageComponent } from './pages/settings/settings-page.component'
 import { OnboardingPageComponent } from './pages/onboarding/onboarding-page.component';
 import { ReportsPageComponent } from './pages/reports/reports-page.component';
 
+/**
+ * SPA routes — Kelly Stay demo path vs Pilot extras (Spec §0).
+ *
+ * Kelly walkthrough: login → upload → sources → dashboard → alerts
+ *   (+ optional onboarding / reports / review).
+ * Pilot (skip unless asked): assistant, crwa, admin, billing, MFA on account.
+ */
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
   {
@@ -23,6 +30,7 @@ export const routes: Routes = [
     component: ShellComponent,
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      // --- Kelly Stay (primary demo) ---
       { path: 'dashboard', component: DashboardPageComponent },
       { path: 'upload', component: UploadPageComponent },
       { path: 'meters', component: MetersPageComponent },
@@ -31,12 +39,13 @@ export const routes: Routes = [
       { path: 'onboarding', component: OnboardingPageComponent },
       { path: 'reports', component: ReportsPageComponent },
       { path: 'settings', component: SettingsPageComponent },
+      { path: 'review', component: ReviewHowtoPageComponent },
+      // --- Pilot / Assessment extras ---
       { path: 'assistant', component: AgentPageComponent },
       { path: 'account', component: AccountPageComponent },
       { path: 'admin', component: AdminPageComponent },
       { path: 'billing', component: BillingPageComponent },
       { path: 'crwa', component: CrwaRollupPageComponent },
-      { path: 'review', component: ReviewHowtoPageComponent },
     ],
   },
 ];

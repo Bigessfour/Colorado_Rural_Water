@@ -10,8 +10,7 @@ export function friendlyMunicipalityName(
   if (!slug) return 'your water system';
   const parts = slug.split('-').filter(Boolean);
   if (!parts.length) return 'your water system';
-  const title = (t: string) =>
-    t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : t;
+  const title = (t: string) => (t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : t);
   if (parts[0] === 'town' && parts.length > 1) {
     return `Town of ${parts.slice(1).map(title).join(' ')}`;
   }

@@ -93,10 +93,11 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 | --- | -------------------------------------------------- | -------- | ------ | ----- | ---------------------------------------------------------------- |
 | E1  | Agent shell + conversation history (tenant-scoped) | P1       | done   | Pilot | `GET/POST /agent`; Dynamo `CONV#`; SPA `/assistant`              |
 | E2  | Onboarding interview flow                          | P1       | todo   | Pilot | Thin inventory via Assistant “Start onboarding”; full flow later |
-| E3  | Mapping assistance + config help                   | P1       | todo   | Pilot |                                                                  |
+| E3  | Mapping assistance + config help                   | P1       | todo   | Pilot | Feature 014 live `suggest_column_map` tool                       |
 | E4  | Cost-transparency + confirmation guardrails        | P0       | done   | Pilot | Cost note + CONFIRM DELETE/CHANGE; cheapest-first                |
 | E5  | Tenant isolation tests for AI context              | P0       | done   | Pilot | `agent-isolation.test.ts` + assertNoCrossTenantContext           |
 | E6  | Confidence coaching copy in agent                  | P1       | done   | Pilot | Watch vs Actionable; never-overclaim; with H7                    |
+| E7  | Cognito JWT RAG + Bedrock KB (Feature 014)         | P0       | wip    | Pilot | KB Retrieve filter + Converse; colorado-ops; live tools          |
 
 ## Epic F — Polish for Kelly Stone demo
 
@@ -238,14 +239,15 @@ Water Saver as a **CRWA member service** (dues / pilot status) — not municipal
 
 ## Suggested next sprint (Pilot)
 
-1. **Send Kelly** F5 invite (`/review` + creds + [KELLY_REVIEW.md](KELLY_REVIEW.md)); wait for real submit
-2. Smoke live **D4 roll-up** (CRWA Admin → `/crwa`) and **Assistant** (`/assistant` + `GET/POST /agent`)
-3. Smoke **B6** upload status + **H2** multi-file; confirm archive merge no longer wipes occupant names
-4. Finish **E2/E3** mapping/onboarding interview depth (H1 thin stub already live)
-5. **I3** CRWA processor discovery conversation (blocks I4–I8)
-6. **H8** after Kelly Confidence-threshold feedback from F5
-7. True session-tag ABAC when multi-municipality scale demands it (A6 residual)
+1. **Ship E7 / Feature 014** — Cognito JWT RAG (Bedrock KB) + prove residual + Watch on SPA `/assistant`
+2. **Send Kelly** F5 invite (`/review` + creds + [KELLY_REVIEW.md](KELLY_REVIEW.md)); wait for real submit
+3. Smoke live **D4 roll-up** (CRWA Admin → `/crwa`) and **Assistant** (JWT RAG path)
+4. Smoke **B6** upload status + **H2** multi-file; confirm archive merge no longer wipes occupant names
+5. Finish **E2** onboarding interview depth (H1 thin stub already live)
+6. **I3** CRWA processor discovery conversation (blocks I4–I8)
+7. **H8** after Kelly Confidence-threshold feedback from F5
+8. True session-tag ABAC when multi-municipality scale demands it (A6 residual)
 
-Do **not** start vNext (AMI, resident portal, **municipal CIS** billing write-back, custom ML, formal address parse, agent AWS provisioning).
+Do **not** start vNext (AMI, resident portal, **municipal CIS** billing write-back, custom ML, formal address parse, **agent-driven AWS resource provisioning** beyond Feature 014 RAG).
 
 Do **not** start membership payment-processor code (I4+) until I3 is closed with a written decision.

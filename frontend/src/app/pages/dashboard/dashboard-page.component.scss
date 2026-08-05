@@ -87,14 +87,20 @@
 
 .confidence-head {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 200px);
   gap: 1rem;
+  align-items: center;
   font-family: 'Source Sans 3', system-ui, sans-serif;
 }
 
 @media (max-width: 720px) {
   .confidence-head {
     grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .confidence-head > div:first-child {
+    justify-self: stretch;
   }
 }
 
@@ -169,41 +175,51 @@
 .chart-wrap {
   height: 220px;
   margin-bottom: 0.5rem;
+  position: relative;
 }
 
 .chart-wrap--hero {
   height: 260px;
 }
 
+/* Square donut slot that scales with the card column (Chart.js needs a real box size). */
 .chart-wrap--donut {
-  height: 180px;
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1;
+  height: auto;
+  min-height: 140px;
+  margin: 0 auto;
 }
 
 .chart-wrap--health {
-  min-height: 180px;
-  flex: 0 0 min(42%, 200px);
+  max-width: 200px;
+}
+
+/* PrimeNG Chart fills the wrap when maintainAspectRatio is false. */
+:host ::ng-deep .chart-wrap .p-chart,
+:host ::ng-deep .chart-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .health-head {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(140px, 0.85fr);
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 200px);
   gap: 1rem;
-  align-items: start;
+  align-items: center;
   font-family: 'Source Sans 3', system-ui, sans-serif;
 }
 
 @media (max-width: 720px) {
   .health-head {
     grid-template-columns: 1fr;
+    justify-items: center;
   }
 
-  .chart-wrap--health {
-    flex: none;
-    max-width: 220px;
-    margin: 0 auto;
+  .health-copy {
+    justify-self: stretch;
   }
 }
 

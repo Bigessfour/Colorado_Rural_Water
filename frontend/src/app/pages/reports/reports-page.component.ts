@@ -1,3 +1,8 @@
+/**
+ * Reports hub — work-order CSV/XLS + printable HTML ops summary (feature 012).
+ * Downloads call GET /reports/* with Bearer token; no tenant in the query string.
+ */
+
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -75,6 +80,22 @@ export class ReportsPageComponent {
   lastRun(reportId: string): string {
     const hit = this.activity().find((a) => a.reportId === reportId && a.status === 'success');
     return hit ? new Date(hit.at).toLocaleString() : '—';
+  }
+
+  /** Visible catalog action label (PrimeNG p-button — not legacy pButton). */
+  actionLabel(row: ReportProcessDef): string {
+    switch (row.action) {
+      case 'work-order-csv':
+        return 'Download CSV';
+      case 'work-order-xlsx':
+        return 'Download Excel';
+      case 'summary-html':
+        return 'Open / Print PDF';
+      case 'alerts-flagged-csv':
+        return 'Download CSV';
+      default:
+        return 'Run';
+    }
   }
 
   async runReport(row: ReportProcessDef): Promise<void> {
@@ -174,8 +195,21 @@ export class ReportsPageComponent {
         return;
       }
       const html = await res.text();
-      openHtmlInNewTab(html);
-      const msg = 'Opened printable summary — Print → Save as PDF.';
+      if (!html.trim()) {
+        const msg = 'Summary report was empty. Try again or refresh the dashboard first.';
+        this.error.set(msg);
+        this.logActivity(def, 'HTML', 'error', msg);
+        return;
+      }
+      const opened = openHtmlInNewTab(html);
+      if (!opened) {
+        const msg =
+          'Browser blocked the summary window. Allow pop-ups for this site, then try Open / Print PDF again.';
+        this.error.set(msg);
+        this.logActivity(def, 'HTML', 'error', msg);
+        return;
+      }
+      const msg = 'Opened printable summary — use Browser Print → Save as PDF.';
       this.notice.set(msg);
       this.logActivity(def, 'HTML', 'success', msg);
     } catch (err) {

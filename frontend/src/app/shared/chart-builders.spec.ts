@@ -93,13 +93,24 @@ describe('chart-builders', () => {
   });
 
   it('buildMeterSparkline prefers period usage deltas', () => {
-    const { empty, data } = buildMeterSparkline([
+    const { empty, data, singleCycle } = buildMeterSparkline([
       { timestamp: '2026-05-01T00:00:00.000Z', cumulativeReading: 1000 },
       { timestamp: '2026-06-01T00:00:00.000Z', cumulativeReading: 1100 },
       { timestamp: '2026-07-01T00:00:00.000Z', cumulativeReading: 1100 },
     ]);
     expect(empty).toBe(false);
+    expect(singleCycle).toBe(false);
     expect(data.datasets[0]!.data).toEqual([100, 0]);
+  });
+
+  it('buildMeterSparkline treats a single cycle as empty (no lone-dot chart)', () => {
+    const { empty, singleCycle, data } = buildMeterSparkline([
+      { timestamp: '2026-06-01T00:00:00.000Z', cumulativeReading: 1000 },
+      { timestamp: '2026-07-01T00:00:00.000Z', cumulativeReading: 4350 },
+    ]);
+    expect(empty).toBe(true);
+    expect(singleCycle).toBe(true);
+    expect(data.datasets).toEqual([]);
   });
 
   it('computeHealthCounts prioritizes Actionable per meter', () => {

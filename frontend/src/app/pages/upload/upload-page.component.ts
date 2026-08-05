@@ -1,3 +1,10 @@
+/**
+ * Customer meter upload — Kelly demo step 2.
+ * Flow: pick Excel/CSV → visual column map → dry run → POST /ingest commit.
+ * Preferred fixture: sample-data/Town_of_Steve_Meter_Export_MESSY.xlsx (CSV also works).
+ * Tenant from JWT only. Large bulk drops use S3 ops path (mapping already saved).
+ */
+
 import { Component, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -11,6 +18,8 @@ import { CheckboxModule } from 'primeng/checkbox';
 import * as XLSX from 'xlsx';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
+import { autoPinMissingFromApi } from '../../shared/meter-auto-pin';
+import type { GeocodeBias } from '../../shared/geocode.service';
 
 type CanonicalField =
   | 'meterId'
@@ -49,31 +58,56 @@ const FIELD_LABELS: Record<CanonicalField, string> = {
 
 /** Keep in sync with backend HEADER_ALIASES (csv-parse) for preview guesses. */
 const ALIASES: Record<CanonicalField, string[]> = {
-  meterId: ['meter id', 'meterid', 'meter #', 'meter number', 'meter', 'meter no'],
+  meterId: ['meter id', 'meterid', 'meter #', 'meter number', 'meter_no', 'meter', 'meter no'],
   serviceAddress: [
     'service address',
     'address',
+    'service addr',
     'location',
     'service location',
+    'street address',
     'location address',
     'location / address',
   ],
-  occupantName: ['customer', 'customer name', 'occupant', 'name', 'owner'],
-  accountNumber: ['account #', 'account', 'account number', 'acct', 'acct #'],
-  timestamp: ['read date', 'reading date', 'date', 'timestamp', 'read dt'],
+  occupantName: [
+    'customer',
+    'customer name',
+    'occupant',
+    'occupant name',
+    'name',
+    'owner',
+    'account name',
+  ],
+  accountNumber: ['account #', 'account', 'account number', 'acct', 'acct #', 'account_no'],
+  timestamp: [
+    'read date',
+    'reading date',
+    'date',
+    'timestamp',
+    'read_dt',
+    'read dt',
+    'reading datetime',
+    'read_date',
+  ],
   cumulativeReading: [
     'reading (gal)',
     'reading',
     'cumulative',
+    'cumulative reading',
+    'usage',
     'gallons',
+    'read',
     'current reading',
     'reading gal',
+    'reading_gal',
   ],
-  unit: ['unit', 'units'],
-  route: ['route', 'route #'],
+  unit: ['unit', 'units', 'uom'],
+  route: ['route', 'route #', 'book', 'cycle'],
   diagnosticFlags: [
     'diag',
     'diagnostic',
+    'diagnostic flag',
+    'diagnostics',
     'flags',
     'flag',
     'flag alarm',
@@ -89,9 +123,19 @@ const ALIASES: Record<CanonicalField, string[]> = {
     'installed',
     'date installed',
     'installation date',
+    'install_dt',
     'install dt',
   ],
-  radioId: ['radio id', 'radio', 'endpoint id', 'endpoint', 'ami id', 'ami', 'mxu'],
+  radioId: [
+    'radio id',
+    'radio',
+    'endpoint id',
+    'endpoint',
+    'ami id',
+    'ami',
+    'mxu',
+    'transmitter id',
+  ],
 };
 
 /** Match backend MAX_EXCEL_BYTES — API JSON+base64 cannot carry 20MB workbooks. */
@@ -128,7 +172,9 @@ export class UploadPageComponent {
   readonly fieldLabels = FIELD_LABELS;
   readonly fields = Object.keys(FIELD_LABELS) as CanonicalField[];
   readonly sampleHint =
-    'Try a practice file from sample-data/ (for example Town_of_Steve_Meter_Export_MESSY.xlsx or messy-readings-july.csv). “Messy” just means the columns are imperfect — like a real export — so you can try the mapper safely.';
+    'Try a practice Excel file from sample-data/ — start with Town_of_Steve_Meter_Export_MESSY.xlsx (messy-readings-july.csv also works). “Messy” means imperfect columns like a real billing export, so you can try the mapper safely.';
+  /** Cap long skip/warning lists in the progress card. */
+  readonly warningDisplayLimit = 8;
 
   headers: string[] = [];
   mapping: Partial<Record<CanonicalField, string>> = {};
@@ -155,6 +201,29 @@ export class UploadPageComponent {
   progressValue = 0;
   progressMode: 'determinate' | 'indeterminate' = 'determinate';
   progressLabel = '';
+
+  /** Headers currently assigned to a canonical field. */
+  get mappedHeaders(): string[] {
+    const used = new Set<string>();
+    for (const v of Object.values(this.mapping)) {
+      if (v) used.add(v);
+    }
+    return this.headers.filter((h) => used.has(h));
+  }
+
+  /** Headers present in the file but not mapped this time. */
+  get unusedHeaders(): string[] {
+    const used = new Set(this.mappedHeaders);
+    return this.headers.filter((h) => !used.has(h));
+  }
+
+  get visibleWarnings(): string[] {
+    return this.ingestWarnings.slice(0, this.warningDisplayLimit);
+  }
+
+  get hiddenWarningCount(): number {
+    return Math.max(0, this.ingestWarnings.length - this.warningDisplayLimit);
+  }
 
   onCustomUpload(event: FileUploadHandlerEvent): void {
     // Copy before clear — customUpload leaves files stuck as "Pending" otherwise.
@@ -192,7 +261,7 @@ export class UploadPageComponent {
     this.setProgress(5, `Reading ${file.name}…`);
 
     if (file.size > MAX_UPLOAD_BYTES) {
-      this.statusMessage = `File is too large (${Math.round(file.size / 1024 / 1024)} MB). Max is 5 MB for Upload — use a smaller export.`;
+      this.statusMessage = `File is too large (${Math.round(file.size / 1024 / 1024)} MB). Max is 5 MB for this upload path — split by year, or ask an admin to use the S3 drop-zone when mapping is already saved.`;
       this.statusSeverity = 'warn';
       this.ingestPhase = 'failed';
       this.lastStatusFriendly = this.statusMessage;
@@ -318,10 +387,17 @@ export class UploadPageComponent {
     this.setProgress(0, `Bulk load 0 of ${files.length}…`);
     for (let i = 0; i < files.length; i += 1) {
       const file = files[i]!;
-      this.setProgress((i / files.length) * 100, `Bulk load ${i + 1} of ${files.length}: ${file.name}`);
+      this.setProgress(
+        (i / files.length) * 100,
+        `Bulk load ${i + 1} of ${files.length}: ${file.name}`,
+      );
       const loaded = await this.beginLoadFile(file);
       if (!loaded || (!this.csvText.trim() && !this.excelBase64)) {
-        this.queue.push({ name: file.name, status: this.statusMessage || 'Failed to load', ok: false });
+        this.queue.push({
+          name: file.name,
+          status: this.statusMessage || 'Failed to load',
+          ok: false,
+        });
         continue;
       }
       await this.ingest(false);
@@ -374,10 +450,16 @@ export class UploadPageComponent {
     let bestScore = 0;
     const scan = Math.min(lines.length, 25);
     for (let i = 0; i < scan; i += 1) {
-      const cells = this.splitCsvLine(lines[i]).map((c) => c.trim()).filter(Boolean);
+      const cells = this.splitCsvLine(lines[i])
+        .map((c) => c.trim())
+        .filter(Boolean);
       let score = 0;
       for (const cell of cells) {
-        const key = cell.toLowerCase().replace(/[_/#]+/g, ' ').replace(/\s+/g, ' ').trim();
+        const key = cell
+          .toLowerCase()
+          .replace(/[_/#]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
         for (const aliases of Object.values(ALIASES)) {
           if (aliases.includes(key)) {
             score += 3;
@@ -391,7 +473,9 @@ export class UploadPageComponent {
       }
     }
 
-    this.headers = this.splitCsvLine(lines[headerIdx]).map((h) => h.trim()).filter(Boolean);
+    this.headers = this.splitCsvLine(lines[headerIdx])
+      .map((h) => h.trim())
+      .filter(Boolean);
     this.mapping = this.guessMapping(this.headers);
     this.previewRows = lines.slice(headerIdx + 1, headerIdx + 6).map((line) => {
       const cells = this.splitCsvLine(line);
@@ -407,7 +491,12 @@ export class UploadPageComponent {
     const mapping: Partial<Record<CanonicalField, string>> = {};
     const norm = headers.map((h) => ({
       raw: h,
-      key: h.trim().toLowerCase().replace(/[_/#]+/g, ' ').replace(/\s+/g, ' ').trim(),
+      key: h
+        .trim()
+        .toLowerCase()
+        .replace(/[_/#]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
     }));
     const used = new Set<string>();
     for (const field of this.fields) {
@@ -420,9 +509,10 @@ export class UploadPageComponent {
     return mapping;
   }
 
+  /** dryRun=true previews parse results; false commits locations + readings for the JWT tenant. */
   async ingest(dryRun = false): Promise<void> {
     if (!this.csvText.trim() && !this.excelBase64) {
-      this.statusMessage = 'Choose a CSV or Excel file first.';
+      this.statusMessage = 'Choose an Excel or CSV file first.';
       this.statusSeverity = 'warn';
       return;
     }
@@ -472,28 +562,31 @@ export class UploadPageComponent {
         return;
       }
       this.ingestWarnings = Array.isArray(payload.warnings) ? payload.warnings : [];
-      if (payload.status?.friendly) {
-        this.lastStatusFriendly = payload.status.friendly;
-      }
       const sheetNote = payload.selectedSheet ? ` (sheet: ${payload.selectedSheet})` : '';
       if (dryRun) {
         this.ingestPhase = 'dry_run_ok';
         this.statusMessage =
-          payload.status?.friendly ??
+          (payload.status?.friendly as string | undefined) ??
           `Check OK — ${payload.rowCount} rows ready to import${sheetNote}.`;
         this.setProgress(85, 'Check OK — ready to import');
       } else {
         this.ingestPhase = 'committed';
         this.statusMessage =
-          payload.status?.friendly ??
+          (payload.status?.friendly as string | undefined) ??
           `Imported ${payload.readingsWritten} readings across ${payload.metersTracked} meters${sheetNote}.` +
             (payload.addressConflicts?.length
               ? ` ${payload.addressConflicts.length} address conflict(s) kept on existing location.`
               : '');
-        this.setProgress(100, 'Import complete');
+        this.setProgress(92, 'Import complete — suggesting map pins…');
+        this.lastStatusFriendly = this.statusMessage;
+        this.statusSeverity =
+          typeof payload.rowsSkipped === 'number' && payload.rowsSkipped > 0 ? 'warn' : 'success';
+        await this.autoPinAfterIngest(token);
+        return;
       }
       this.lastStatusFriendly = this.statusMessage;
-      this.statusSeverity = 'success';
+      this.statusSeverity =
+        typeof payload.rowsSkipped === 'number' && payload.rowsSkipped > 0 ? 'warn' : 'success';
     } catch (err) {
       this.ingestPhase = 'failed';
       this.statusMessage = err instanceof Error ? err.message : 'Network error';
@@ -502,6 +595,57 @@ export class UploadPageComponent {
       this.setProgress(0, 'Import failed');
     } finally {
       this.busy = false;
+    }
+  }
+
+  private tenantGeocodeBias(): GeocodeBias {
+    const center = this.auth.mapCenter();
+    const town = (center?.town ?? this.auth.placeName() ?? '').trim();
+    return {
+      town: town || null,
+      zip: /\bwiley\b/i.test(town) ? '81092' : null,
+      lat: center?.lat ?? null,
+      lng: center?.lng ?? null,
+      maxMiles: 35,
+    };
+  }
+
+  /** After a successful import, pin meters that still lack coordinates. */
+  private async autoPinAfterIngest(token: string): Promise<void> {
+    try {
+      const result = await autoPinMissingFromApi({
+        apiBaseUrl: environment.apiBaseUrl,
+        token,
+        bias: this.tenantGeocodeBias(),
+        onProgress: (p) => {
+          if (p.total === 0) return;
+          this.setProgress(
+            92 + Math.round((p.done / Math.max(p.total, 1)) * 8),
+            `Auto-pinning ${p.done} of ${p.total} meters…`,
+          );
+        },
+      });
+      if (result.total === 0) {
+        this.setProgress(100, 'Import complete');
+        return;
+      }
+      const pinNote =
+        result.pinned > 0
+          ? ` Auto-pinned ${result.pinned} meter${result.pinned === 1 ? '' : 's'} from address` +
+            (result.skipped || result.failed
+              ? ` (${result.skipped} no match, ${result.failed} failed).`
+              : '.') +
+            ' Fine-tune on Meters → Map if needed.'
+          : ` Could not auto-pin ${result.total} meter${result.total === 1 ? '' : 's'} — open Meters → Map to place pins.`;
+      this.statusMessage = `${this.statusMessage}${pinNote}`;
+      this.lastStatusFriendly = this.statusMessage;
+      this.setProgress(100, 'Import + map pins complete');
+    } catch (err) {
+      this.statusMessage = `${this.statusMessage} Map auto-pin skipped (${
+        err instanceof Error ? err.message : 'error'
+      }). Open Meters to pin later.`;
+      this.lastStatusFriendly = this.statusMessage;
+      this.setProgress(100, 'Import complete');
     }
   }
 

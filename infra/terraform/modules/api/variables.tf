@@ -65,3 +65,15 @@ variable "review_from_email" {
   description = "F5: SES From address for review summary. Empty = store-only submit."
   default     = ""
 }
+
+variable "bedrock_guardrail_id" {
+  type        = string
+  description = "Optional Bedrock Guardrail ID for agent Converse (Feature 014). Empty = off."
+  default     = ""
+}
+
+variable "bedrock_guardrail_version" {
+  type        = string
+  description = "Bedrock Guardrail version when guardrail id is set"
+  default     = "DRAFT"
+}

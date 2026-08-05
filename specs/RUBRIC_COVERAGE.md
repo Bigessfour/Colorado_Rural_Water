@@ -19,6 +19,8 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 | LangSmith observability                  | B    | [002](002-langgraph-langsmith-agent/) | done (verified) | same evidence · Water_Saver LangSmith run URLs · [`evidence/langsmith/`](../evidence/langsmith/)                                      |
 | Custom autonomous agent (tool-using)     | B    | [002](002-langgraph-langsmith-agent/) | done (verified) | same evidence · `agent_tools.py` (`StructuredTool`)                                                                                   |
 
+**Product path (Pilot, not rubric):** Cognito JWT RAG lives under [014](014-cognito-rag-assistant/) — Bedrock Knowledge Bases + Dynamo `CONV#`. Compose FAISS/Mem0 above remains the Assessment III evidence spine.
+
 ## 2. Terraform (10%)
 
 | Brief item                                | Type | Feature                              | Status          | Evidence                                                                                             |
@@ -94,6 +96,7 @@ Per-feature grading checklists live at the bottom of each `specs/00X-.../spec.md
 
 ## Optional product (not Assessment III %)
 
-| Item                      | Feature               | Status   | Notes                                                                                                                  |
-| ------------------------- | --------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Meter map (Leaflet + OSM) | [011](011-meter-map/) | verified | Optional product polish — [`evidence/011-meter-map.md`](../evidence/011-meter-map.md); does not score Assessment III % |
+| Item                      | Feature                           | Status       | Notes                                                                                                                            |
+| ------------------------- | --------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Meter map (Leaflet + OSM) | [011](011-meter-map/)             | verified     | Optional product polish — [`evidence/011-meter-map.md`](../evidence/011-meter-map.md); does not score Assessment III %           |
+| Cognito JWT RAG Assistant | [014](014-cognito-rag-assistant/) | implementing | Product Pilot path — [`evidence/014-cognito-rag-assistant.md`](../evidence/014-cognito-rag-assistant.md); Compose remains rubric |

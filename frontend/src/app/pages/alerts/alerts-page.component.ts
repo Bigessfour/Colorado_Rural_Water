@@ -1,3 +1,9 @@
+/**
+ * Alerts workspace — Kelly demo: Refresh → Act on alert → note → Accept.
+ * Watch = look when you can; Actionable stuck/diagnostic may need a field check.
+ * Actions POST to /alerts with JWT tenant scope; status + activity audit persist.
+ */
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -133,6 +139,7 @@ export class AlertsPageComponent implements OnInit {
     void this.refresh();
   }
 
+  /** Load meter + balance alerts with plain-language explain (?explain=1). */
   async refresh(): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) {
@@ -244,9 +251,7 @@ export class AlertsPageComponent implements OnInit {
       const blob = await res.blob();
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `flagged-meters-${stamp}.csv`);
-      this.notice.set(
-        'Downloaded flagged meters CSV (includes Confidence note on Watch rows).',
-      );
+      this.notice.set('Downloaded flagged meters CSV (includes Confidence note on Watch rows).');
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Network error');
     } finally {
@@ -347,17 +352,14 @@ export class AlertsPageComponent implements OnInit {
       notes: nullIfBlank(form.notes),
     };
     try {
-      const res = await fetch(
-        `${environment.apiBaseUrl}/meters/${encodeURIComponent(h.meterId)}`,
-        {
-          method: 'PUT',
-          headers: {
-            authorization: `Bearer ${token}`,
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify(body),
+      const res = await fetch(`${environment.apiBaseUrl}/meters/${encodeURIComponent(h.meterId)}`, {
+        method: 'PUT',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
         },
-      );
+        body: JSON.stringify(body),
+      });
       const resBody = await res.json();
       if (!res.ok) {
         this.historyError.set(resBody.error ?? `Save failed (${res.status})`);
@@ -405,6 +407,7 @@ export class AlertsPageComponent implements OnInit {
     }
   }
 
+  /** Demo: Act dialog → Accept / Dispatch / Resolve with optional operator note. */
   async submitAction(action: AlertAction): Promise<void> {
     const alert = this.actionAlert();
     if (!alert) return;
@@ -480,11 +483,7 @@ export class AlertsPageComponent implements OnInit {
     return alert.status;
   }
 
-  private async updateStatus(
-    alert: AlertRow,
-    action: AlertAction,
-    note = '',
-  ): Promise<void> {
+  private async updateStatus(alert: AlertRow, action: AlertAction, note = ''): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) {
       this.error.set('Sign in to update alerts.');

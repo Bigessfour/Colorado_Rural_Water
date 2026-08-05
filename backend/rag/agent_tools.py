@@ -14,8 +14,8 @@ from typing import Any, Dict, List
 
 from langchain_core.tools import StructuredTool
 from rag.llm import LLMConfigurationError, get_chat_model
-from rag.settings import configure_langsmith
 from rag.persona import friendly_municipality_name
+from rag.settings import configure_langsmith
 from rag.tenant import (
     assert_no_cross_tenant_context,
     normalize_tenant_id,

@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  assistantWelcome,
-  friendlyMunicipalityName,
-  operatorFirstName,
-} from './persona';
+import { assistantWelcome, friendlyMunicipalityName, operatorFirstName } from './persona';
 
 describe('persona helpers', () => {
   it('builds Town/City labels from tenant slugs', () => {

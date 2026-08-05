@@ -15,6 +15,10 @@
   </ul>
 
   <p class="cost-note">{{ costNote() }}</p>
+  <p class="cost-note">
+    Guidance here is educational — your approved plans and certified operator judgment always come
+    first.
+  </p>
   @if (coaching()) {
     <p-message severity="info" styleClass="hint">{{ coaching() }}</p-message>
   }
@@ -63,6 +67,21 @@
           <div class="who">{{ msg.role === 'user' ? 'You' : 'Water Saver' }}</div>
           @if (msg.role === 'assistant') {
             <div class="text md" [innerHTML]="msg.text | safeMarkdown"></div>
+            @if (msg.sources?.length) {
+              <ul class="sources" aria-label="Sources">
+                @for (src of msg.sources; track src.source + $index) {
+                  <li>
+                    @if (src.uri) {
+                      <a [href]="src.uri" target="_blank" rel="noopener noreferrer">{{
+                        src.source
+                      }}</a>
+                    } @else {
+                      <span>{{ src.source }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
           } @else {
             <div class="text">{{ msg.text }}</div>
           }

@@ -45,10 +45,7 @@
           <td>{{ unaccountedLabel(row) }}</td>
           <td>{{ row.periodLabel }}</td>
           <td>
-            <p-tag
-              [severity]="confidenceSeverity(row.confidence)"
-              [value]="row.confidence"
-            />
+            <p-tag [severity]="confidenceSeverity(row.confidence)" [value]="row.confidence" />
           </td>
           <td>{{ row.monthsOfHistory }}</td>
           <td>{{ row.billingStatus }}</td>

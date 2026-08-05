@@ -40,8 +40,8 @@ export const REPORT_CATALOG: ReportProcessDef[] = [
     id: 'ops-summary',
     name: 'Monthly operations summary',
     description:
-      'Printable KPI snapshot: Confidence, water balance In/Out, open alerts. Browser Print → Save as PDF.',
-    formats: ['HTML', 'PDF (print)'],
+      'Printable KPI snapshot: Confidence, water balance In/Out, open alerts. Opens HTML in a new tab — use Browser Print → Save as PDF (no separate PDF file).',
+    formats: ['HTML', 'Print → PDF'],
     category: 'operations',
     apiPath: '/reports/summary?format=html',
     action: 'summary-html',

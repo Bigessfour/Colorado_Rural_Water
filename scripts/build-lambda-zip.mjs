@@ -8,6 +8,7 @@ import {
   writeFileSync,
   readFileSync,
   existsSync,
+  cpSync,
 } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,6 +54,13 @@ await esbuild.build({
   external: [],
 });
 
+// Feature 014 — bundle curated knowledge for local-corpus fallback when KB unset.
+const knowledgeSrc = join(backend, "knowledge");
+const knowledgeDest = join(outDir, "knowledge");
+if (existsSync(knowledgeSrc)) {
+  cpSync(knowledgeSrc, knowledgeDest, { recursive: true });
+}
+
 if (existsSync(zipPath)) rmSync(zipPath);
 execSync(`cd "${outDir}" && zip -qr "${zipPath}" .`);
 const size = readFileSync(zipPath).length;
@@ -63,6 +71,7 @@ writeFileSync(
       builtAt: new Date().toISOString(),
       bytes: size,
       entries: Object.keys(entryPoints),
+      knowledgeBundled: existsSync(knowledgeDest),
     },
     null,
     2,

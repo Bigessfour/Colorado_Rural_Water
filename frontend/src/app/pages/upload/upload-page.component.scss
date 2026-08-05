@@ -158,6 +158,43 @@
   font-size: 0.9rem;
 }
 
+.warn-more {
+  margin: 0.35rem 0 0;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: #4a6368;
+}
+
+.column-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.85rem 1.25rem;
+  margin: 0 0 0.75rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-size: 0.9rem;
+  color: #0f3d42;
+}
+
+.column-summary-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.column-summary ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #4a6368;
+}
+
+.column-summary .muted,
+.extra-ok {
+  color: #4a6368;
+}
+
+.extra-ok {
+  margin-top: 0;
+}
+
 .queue-title {
   font-weight: 600;
   margin-top: 0.75rem;

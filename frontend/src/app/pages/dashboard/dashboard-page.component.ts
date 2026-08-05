@@ -1,3 +1,10 @@
+/**
+ * Operator home — Kelly demo centerpiece.
+ * Loads GET /alerts + GET /balance with the Cognito Bearer token only
+ * (no client tenant switch). Talk track: In/Out/Unaccounted, Data Confidence
+ * (history depth, not leak %), Watch vs Actionable alert counts.
+ */
+
 import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -151,6 +158,7 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 
+  /** Parallel live refresh — KPIs, confidence, balance bars, health donut. */
   async refreshLive(): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) {
@@ -159,6 +167,7 @@ export class DashboardPageComponent implements OnInit {
     }
     this.busy.set(true);
     try {
+      // Tenant isolation: Authorization Bearer only — API resolves tenant_id from JWT.
       const [alertsRes, balanceRes] = await Promise.all([
         fetch(`${environment.apiBaseUrl}/alerts`, {
           headers: { authorization: `Bearer ${token}` },
@@ -323,7 +332,11 @@ export class DashboardPageComponent implements OnInit {
       });
 
       this.kpis.set([
-        { label: 'Meters monitored', value: String(meterCount || '—'), hint: 'From your meter list' },
+        {
+          label: 'Meters monitored',
+          value: String(meterCount || '—'),
+          hint: 'From your meter list',
+        },
         {
           label: 'Open alerts',
           value: String(alerts.length),

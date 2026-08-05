@@ -1,3 +1,9 @@
+/**
+ * Named water sources (wells/springs) + production readings — Kelly demo steps 3–4.
+ * Dashboard water balance needs both sides: these sources (In) + customer meters (Out).
+ * Fixture: sample-data/messy-source-readings-july.csv.
+ */
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';

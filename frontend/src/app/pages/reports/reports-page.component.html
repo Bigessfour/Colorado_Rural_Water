@@ -35,7 +35,7 @@
                 <th>Formats</th>
                 <th>Status</th>
                 <th>Last run (this device)</th>
-                <th></th>
+                <th>Action</th>
               </tr>
             </ng-template>
             <ng-template #body let-row>
@@ -50,16 +50,14 @@
                   <p-tag [value]="statusLabel(row)" [severity]="statusSeverity(row)" />
                 </td>
                 <td>{{ lastRun(row.id) }}</td>
-                <td>
-                  <button
-                    type="button"
-                    pButton
-                    label="Run"
+                <td class="row-actions">
+                  <p-button
+                    [label]="actionLabel(row)"
                     size="small"
-                    (click)="runReport(row)"
                     [loading]="busy()"
                     [disabled]="row.requiresAuth && !auth.isLoggedIn()"
-                  ></button>
+                    (onClick)="runReport(row)"
+                  />
                 </td>
               </tr>
             </ng-template>
@@ -73,40 +71,35 @@
             Trouble-ticket export for field crews — includes map links when coordinates exist.
           </p>
           <div class="actions">
-            <button
-              type="button"
-              pButton
+            <p-button
               label="Download CSV"
-              (click)="downloadWorkOrders('csv')"
               [loading]="busy()"
               [disabled]="!auth.isLoggedIn()"
-            ></button>
-            <button
-              type="button"
-              pButton
+              (onClick)="downloadWorkOrders('csv')"
+            />
+            <p-button
               label="Download Excel (XLSX)"
               severity="secondary"
-              (click)="downloadWorkOrders('xlsx')"
               [loading]="busy()"
               [disabled]="!auth.isLoggedIn()"
-            ></button>
+              (onClick)="downloadWorkOrders('xlsx')"
+            />
             <a routerLink="/alerts" class="link">View alerts feed</a>
           </div>
         </p-card>
 
         <p-card header="Monthly operations summary" styleClass="block">
           <p class="card-lede">
-            KPI snapshot for superintendents — open in a new tab, then Print → Save as PDF.
+            KPI snapshot for superintendents — opens in a new tab. Use the browser Print dialog →
+            Save as PDF (there is no separate PDF file download).
           </p>
           <div class="actions">
-            <button
-              type="button"
-              pButton
-              label="Open printable summary"
-              (click)="openSummaryReport()"
+            <p-button
+              label="Open print / PDF summary"
               [loading]="busy()"
               [disabled]="!auth.isLoggedIn()"
-            ></button>
+              (onClick)="openSummaryReport()"
+            />
             <a routerLink="/dashboard" class="link">Dashboard charts</a>
           </div>
         </p-card>
@@ -116,15 +109,13 @@
             Original C4 export path — same data as Alerts → Export flagged CSV.
           </p>
           <div class="actions">
-            <button
-              type="button"
-              pButton
+            <p-button
               label="Download flagged CSV"
               severity="secondary"
-              (click)="downloadAlertsCsv()"
               [loading]="busy()"
               [disabled]="!auth.isLoggedIn()"
-            ></button>
+              (onClick)="downloadAlertsCsv()"
+            />
           </div>
         </p-card>
       </p-tabpanel>

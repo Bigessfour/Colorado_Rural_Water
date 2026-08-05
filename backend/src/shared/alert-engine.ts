@@ -1,3 +1,13 @@
+/**
+ * Meter alert evaluation + Data Confidence (Kelly demo spine).
+ *
+ * Talk track:
+ * - Watch = look when you can; Actionable stuck/diagnostic may need a field check.
+ * - Confidence = history depth + coverage — never “leak accuracy %”.
+ * - Thin/Building history keeps statistical flags on Watch (Spec §7b).
+ * Do not claim “we found a leak” from Thin Watch rows.
+ */
+
 import type { MeterLocation, MeterReading } from "./meter-location.js";
 
 export type AlertMode = "Watch" | "Actionable";
@@ -96,6 +106,11 @@ export function assessTenantConfidence(
   };
 }
 
+/**
+ * Run all meter detectors for one tenant’s locations + readings.
+ * Stuck/diagnostic can be Actionable even on Thin data; peer/high-usage
+ * and other statistical rules defer to `confidence.statisticalMode`.
+ */
 export function evaluateAlerts(
   locations: MeterLocation[],
   readings: MeterReading[],
@@ -110,6 +125,7 @@ export function evaluateAlerts(
     alerts.push(...dropAlerts(series, confidence));
   }
 
+  // Peer / statistical outliers — Watch until Confidence is Solid+.
   alerts.push(...highUsagePeerAlerts([...byMeter.values()], confidence));
 
   alerts.sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));

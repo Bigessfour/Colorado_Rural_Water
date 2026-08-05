@@ -18,6 +18,7 @@ import {
 } from "../shared/onboarding-intake.js";
 
 /**
+ * Member onboarding intake (feature 012) — META#onboarding per JWT tenant.
  * GET /onboarding — tenant-scoped intake profile (creates empty shell if missing).
  * PUT /onboarding — merge fields; ?complete=1 marks intake done.
  */

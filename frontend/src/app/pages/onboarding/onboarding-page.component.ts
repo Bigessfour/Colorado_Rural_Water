@@ -1,3 +1,8 @@
+/**
+ * Six-step member onboarding wizard (feature 012) — GET/PUT /onboarding per JWT tenant.
+ * Shell may nudge when intake is incomplete; optional in Kelly walk if time allows.
+ */
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';

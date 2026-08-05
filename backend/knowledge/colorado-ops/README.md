@@ -5,14 +5,20 @@ Curated extracts for Compose Assistant (`POST /api/rag`) live here as `.md` / `.
 
 ## Files
 
-| File                                | Role                                      |
-| ----------------------------------- | ----------------------------------------- |
-| `00-disclaimer.md`                  | Do not invent dosing; cite sources        |
-| `01-online-sources.md`              | Master online URL index                   |
-| `02-drinking-water-hub.md`          | https://cdphe.colorado.gov/drinking-water |
-| `03-disinfectant-residual.md`       | Residual / GW quick guide + Aqua Talk     |
-| `04-monitoring-plans-mors.md`       | Plans, schedules, MORs                    |
-| `05-regulation-11-and-operators.md` | Reg 11 + ORC / CCWP pointers              |
+| File                                 | Role                                      |
+| ------------------------------------ | ----------------------------------------- |
+| `00-disclaimer.md`                   | Do not invent dosing; cite sources        |
+| `01-online-sources.md`               | Master online URL index                   |
+| `02-drinking-water-hub.md`           | https://cdphe.colorado.gov/drinking-water |
+| `03-disinfectant-residual.md`        | Residual / GW quick guide + Aqua Talk     |
+| `04-monitoring-plans-mors.md`        | Plans, schedules, MORs                    |
+| `05-regulation-11-and-operators.md`  | Reg 11 + ORC / CCWP pointers              |
+| `06-sampling-basics.md`              | Sampling + schedules pointers             |
+| `07-boil-water-and-public-notice.md` | Boil-water / public notice (refuse draft) |
+| `08-seasonal-systems.md`             | Seasonal system start-up pointers         |
+| `09-contacts-index.md`               | CDPHE / CCWP contacts                     |
+
+Each `.md` has a sibling `*.metadata.json` (`scope=shared`) for Bedrock KB filtering.
 
 ## Re-ingest after edits
 

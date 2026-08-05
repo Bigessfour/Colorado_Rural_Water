@@ -28,8 +28,9 @@ import {
 } from "../shared/work-order-export.js";
 
 /**
- * GET /reports/work-orders?format=csv|xlsx — flagged meter work orders with map links.
- * GET /reports/summary?format=html — printable operations summary.
+ * Operator reports (feature 012) — work orders + printable ops summary.
+ * GET /reports/work-orders?format=csv|xlsx — flagged meters with map links (field export).
+ * GET /reports/summary?format=html — printable KPI summary for print/PDF.
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;

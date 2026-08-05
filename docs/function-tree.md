@@ -102,7 +102,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  subgraph compose [Compose_8080]
+  subgraph compose [Compose_8080_Assessment]
     AsstUI["/assistant"]
     RagApi["POST /api/rag"]
     ChatBedrock["ChatBedrock + FAISS"]
@@ -110,20 +110,23 @@ flowchart LR
     AsstUI --> RagApi --> ChatBedrock
     RagApi --> Mem0
   end
-  subgraph aws [Cognito_JWT]
+  subgraph aws [Cognito_JWT_Product_014]
     AgentApi["GET/POST /agent"]
     Guard["agent-context isolation + confirm"]
-    Template["templateAgentReply"]
-    Bedrock["bedrock converseText optional"]
-    Explain["POST /alerts/explain"]
-    ExplainTpl["explainAlertTemplate"]
-    AgentApi --> Guard --> Template
-    Guard -.-> Bedrock
-    Explain --> ExplainTpl
-    Explain -.-> Bedrock
+    Tools["live agent-tools"]
+    KB["Bedrock KB Retrieve filter"]
+    Local["local corpus fallback"]
+    Converse["Converse Nova + Guardrail"]
+    Conv["Dynamo CONV#"]
+    AgentApi --> Guard --> Tools
+    Guard --> KB
+    KB --> Converse
+    KB -.-> Local
+    Local --> Converse
+    Converse --> Conv
   end
 ```
 
-Assessment Features **001 / 007 / 008** prove Compose RAG + browser UI; AWS `/agent` remains templates-first with optional Bedrock.
+Assessment Features **001 / 007 / 008** prove Compose LangChain RAG. Feature **014** is the Cognito product path (KB + tools + CONV#).
 
-See [action-items.md](./action-items.md) for proof status per function · [PROVE_FEATURES.md](./PROVE_FEATURES.md) · [specs/RUBRIC_COVERAGE.md](../specs/RUBRIC_COVERAGE.md).
+See [action-items.md](./action-items.md) · [PROVE_FEATURES.md](./PROVE_FEATURES.md) · [evidence/014-cognito-rag-assistant.md](../evidence/014-cognito-rag-assistant.md).

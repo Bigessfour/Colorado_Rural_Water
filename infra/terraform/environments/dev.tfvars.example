@@ -4,10 +4,11 @@ aws_region     = "us-east-1"
 environment    = "dev"
 project_name   = "water-saver"
 assessment_tag = "true"
-enable_cognito = true
-enable_api     = true
-enable_storage = true
-enable_spa     = true
+enable_cognito    = true
+enable_api        = true
+enable_storage    = true
+enable_spa        = true
+enable_bedrock_kb = true
 
 # F5 Kelly Review SES (optional; empty = store-only submit)
 # review_notify_to  = "you@example.com"

@@ -63,6 +63,12 @@ variable "enable_spa" {
   default     = true
 }
 
+variable "enable_bedrock_kb" {
+  type        = bool
+  description = "Feature 014: Bedrock Knowledge Base + S3 Vectors + knowledge S3 bucket"
+  default     = true
+}
+
 variable "review_notify_to" {
   type        = string
   description = "F5 Kelly Review: email that receives the submitted summary"

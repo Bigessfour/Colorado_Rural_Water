@@ -1,3 +1,9 @@
+/**
+ * Authenticated app chrome — nav, theme toggle, product tour, Kelly review mode.
+ * Compose Assessment (`environment.composeDemo`) loosens Cognito for the AI spine;
+ * production SPA always uses JWT Bearer from AuthService.
+ */
+
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';

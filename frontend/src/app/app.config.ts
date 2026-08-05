@@ -1,3 +1,7 @@
+/**
+ * Root providers: router, HTTP, PrimeNG Aura (CrwaAura preset), client error → /me telemetry.
+ */
+
 import {
   ApplicationConfig,
   ErrorHandler,

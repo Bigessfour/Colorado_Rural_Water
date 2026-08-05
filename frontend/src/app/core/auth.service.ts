@@ -1,3 +1,11 @@
+/**
+ * Cognito auth for the SPA — tokens in sessionStorage, profile from GET /me.
+ *
+ * Demo isolation: API calls send `Authorization: Bearer <idToken>` only.
+ * Municipality comes from JWT `custom:tenant_id` on the server — the UI never
+ * posts a tenant override. Compose demo uses `environment.demoTenantId` headers instead.
+ */
+
 import { Injectable, computed, signal } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { friendlyMunicipalityName, operatorFirstName } from '../shared/persona';
@@ -111,8 +119,7 @@ export class AuthService {
   /** Friendly municipality label for operator UI (never a raw tenant slug). */
   readonly placeName = computed(() => {
     const p = this.profile();
-    const tenant =
-      this.tenantId() || (environment.composeDemo ? environment.demoTenantId : null);
+    const tenant = this.tenantId() || (environment.composeDemo ? environment.demoTenantId : null);
     return friendlyMunicipalityName(
       tenant,
       p?.displayName ?? p?.mapTown ?? this.mapCenter()?.town ?? null,

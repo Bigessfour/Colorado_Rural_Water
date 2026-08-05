@@ -1,3 +1,11 @@
+/**
+ * DynamoDB document-store factories (meters, sources, alerts, agent, onboarding, …).
+ *
+ * Isolation model: every query/put is keyed by `tenantId` from the JWT
+ * (`TENANT#<id>` partition). Handlers must never accept a client-supplied tenant.
+ * Demo talk track: “the browser cannot switch municipalities.”
+ */
+
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DeleteCommand,

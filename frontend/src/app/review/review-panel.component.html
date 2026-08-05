@@ -78,11 +78,7 @@
           (onClick)="skip()"
         />
         @if (review.stepIndex() < review.totalSteps - 1) {
-          <p-button
-            label="Save & next"
-            [disabled]="review.busy()"
-            (onClick)="saveAndNext()"
-          />
+          <p-button label="Save & next" [disabled]="review.busy()" (onClick)="saveAndNext()" />
         } @else {
           <p-button
             label="Submit review"

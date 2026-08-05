@@ -18,6 +18,10 @@
   gap: 0.75rem;
 }
 
+.row-actions {
+  white-space: nowrap;
+}
+
 .link {
   font-family: 'Source Sans 3', system-ui, sans-serif;
   color: var(--ws-teal);

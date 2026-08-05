@@ -1,7 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { downloadBlob, openHtmlInNewTab } from './download.util';
 
 describe('download.util', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('downloadBlob creates a temporary anchor', () => {
     const click = vi.fn();
     vi.spyOn(document, 'createElement').mockReturnValue({
@@ -16,12 +20,21 @@ describe('download.util', () => {
     expect(click).toHaveBeenCalled();
   });
 
-  it('openHtmlInNewTab writes document when window opens', () => {
-    const write = vi.fn();
-    const close = vi.fn();
-    vi.spyOn(window, 'open').mockReturnValue({ document: { write, close } } as unknown as Window);
-    openHtmlInNewTab('<p>hi</p>');
-    expect(write).toHaveBeenCalledWith('<p>hi</p>');
-    expect(close).toHaveBeenCalled();
+  it('openHtmlInNewTab opens a blob URL and returns true', () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:html-1');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+
+    expect(openHtmlInNewTab('<p>hi</p>')).toBe(true);
+    expect(open).toHaveBeenCalledWith('blob:html-1', '_blank');
+  });
+
+  it('openHtmlInNewTab returns false when the popup is blocked', () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:html-2');
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    vi.spyOn(window, 'open').mockReturnValue(null);
+
+    expect(openHtmlInNewTab('<p>blocked</p>')).toBe(false);
+    expect(revoke).toHaveBeenCalledWith('blob:html-2');
   });
 });

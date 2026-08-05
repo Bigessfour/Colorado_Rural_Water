@@ -1,31 +1,32 @@
 /**
  * Forgiving CSV parse + column mapping for customer meter exports (tickets B3–B5).
  * Tolerates title rows, awkward headers, blank mid-rows, footers, mixed dates/units.
+ * Demo fixture: sample-data/messy-readings-july.csv — mapper + dryRun before commit.
  */
 
 /** Hard cap for POST /ingest csvText (chars) — keeps Lambda memory bounded. */
 export const MAX_CSV_CHARS = 5 * 1024 * 1024;
 
 export type CanonicalField =
-  | 'meterId'
-  | 'serviceAddress'
-  | 'occupantName'
-  | 'accountNumber'
-  | 'timestamp'
-  | 'cumulativeReading'
-  | 'unit'
-  | 'route'
-  | 'diagnosticFlags'
-  | 'manufacturer'
-  | 'model'
-  | 'serialNumber'
-  | 'meterSize'
-  | 'installDate'
-  | 'meterType'
-  | 'locationDetail'
-  | 'radioId'
-  | 'lastTestedAt'
-  | 'notes';
+  | "meterId"
+  | "serviceAddress"
+  | "occupantName"
+  | "accountNumber"
+  | "timestamp"
+  | "cumulativeReading"
+  | "unit"
+  | "route"
+  | "diagnosticFlags"
+  | "manufacturer"
+  | "model"
+  | "serialNumber"
+  | "meterSize"
+  | "installDate"
+  | "meterType"
+  | "locationDetail"
+  | "radioId"
+  | "lastTestedAt"
+  | "notes";
 
 export type ColumnMapping = Partial<Record<CanonicalField, string>>;
 
@@ -68,126 +69,216 @@ export interface IngestParseResult {
   rows: MappedReadingRow[];
   errors: string[];
   warnings: string[];
+  /** Data rows considered after header/noise filtering. */
+  rowsSeen: number;
+  /** Rows that mapped cleanly into readings. */
+  rowsAccepted: number;
+  /** Data rows skipped (blank Meter ID, bad date/reading, etc.). */
+  rowsSkipped: number;
+  /** Duplicate rows removed when merging archive sheets (optional). */
+  rowsDeduped?: number;
+}
+
+/** Zero row counters for early error returns. */
+export function emptyRowCounts(): Pick<
+  IngestParseResult,
+  "rowsSeen" | "rowsAccepted" | "rowsSkipped"
+> {
+  return { rowsSeen: 0, rowsAccepted: 0, rowsSkipped: 0 };
+}
+
+export type RowImportSummaryInput = Pick<
+  IngestParseResult,
+  "rowsSeen" | "rowsAccepted" | "rowsSkipped"
+> & {
+  /** Duplicate rows removed when merging archive sheets (not quality skips). */
+  rowsDeduped?: number;
+  /** Actual readings written on commit (may be < rowsAccepted). */
+  readingsWritten?: number;
+};
+
+function skipReasonPhrase(skipped: number, deduped: number): string {
+  const parts: string[] = [];
+  if (skipped > 0) {
+    parts.push(
+      `${skipped.toLocaleString("en-US")} skipped (blank Meter ID, bad dates, or incomplete rows)`,
+    );
+  }
+  if (deduped > 0) {
+    parts.push(
+      `${deduped.toLocaleString("en-US")} duplicate row(s) across sheets not double-counted`,
+    );
+  }
+  return parts.join("; ");
+}
+
+/** Plain-language import summary for dry-run / commit status.friendly. */
+export function formatRowImportSummary(
+  counts: RowImportSummaryInput,
+  phase: "dry_run" | "committed",
+): string {
+  const seen = counts.rowsSeen;
+  const accepted = counts.rowsAccepted;
+  const skipped = counts.rowsSkipped;
+  const deduped = counts.rowsDeduped ?? 0;
+  const a = accepted.toLocaleString("en-US");
+  const s = seen.toLocaleString("en-US");
+  const reason = skipReasonPhrase(skipped, deduped);
+
+  if (phase === "dry_run") {
+    if (skipped > 0 || deduped > 0) {
+      return `Looks good — ${a} of ${s} rows would import. ${reason}.`;
+    }
+    return `Looks good — ${a} rows would import. Review warnings, then ingest.`;
+  }
+
+  // Prefer readingsWritten so commit copy matches what actually persisted.
+  const written = counts.readingsWritten ?? accepted;
+  const w = written.toLocaleString("en-US");
+  const commitDropped = Math.max(0, accepted - written);
+  const parts: string[] = [];
+  if (skipped > 0 || deduped > 0 || written !== seen) {
+    parts.push(`Imported ${w} of ${s} rows.`);
+    if (reason) parts.push(`${reason}.`);
+  } else {
+    parts.push(`Imported ${w} rows.`);
+  }
+  if (commitDropped > 0) {
+    parts.push(
+      `${commitDropped.toLocaleString("en-US")} parse-ready row(s) were not written — no service address and meter not on file yet.`,
+    );
+  }
+  return parts.join(" ");
 }
 
 const HEADER_ALIASES: Record<CanonicalField, string[]> = {
   meterId: [
-    'meter id',
-    'meterid',
-    'meter #',
-    'meter number',
-    'meter_no',
-    'meter',
-    'meter no',
+    "meter id",
+    "meterid",
+    "meter #",
+    "meter number",
+    "meter_no",
+    "meter",
+    "meter no",
   ],
   serviceAddress: [
-    'service address',
-    'address',
-    'service addr',
-    'location',
-    'service location',
-    'street address',
-    'location address',
-    'location / address',
+    "service address",
+    "address",
+    "service addr",
+    "location",
+    "service location",
+    "street address",
+    "location address",
+    "location / address",
   ],
   occupantName: [
-    'customer',
-    'customer name',
-    'occupant',
-    'name',
-    'owner',
-    'account name',
+    "customer",
+    "customer name",
+    "occupant",
+    "occupant name",
+    "name",
+    "owner",
+    "account name",
   ],
   accountNumber: [
-    'account #',
-    'account',
-    'account number',
-    'acct',
-    'acct #',
-    'account_no',
+    "account #",
+    "account",
+    "account number",
+    "acct",
+    "acct #",
+    "account_no",
   ],
   timestamp: [
-    'read date',
-    'reading date',
-    'date',
-    'timestamp',
-    'read_dt',
-    'read dt',
-    'reading datetime',
-    'read_date',
+    "read date",
+    "reading date",
+    "date",
+    "timestamp",
+    "read_dt",
+    "read dt",
+    "reading datetime",
+    "read_date",
   ],
   cumulativeReading: [
-    'reading (gal)',
-    'reading',
-    'cumulative',
-    'cumulative reading',
-    'usage',
-    'gallons',
-    'read',
-    'current reading',
-    'reading gal',
-    'reading_gal',
+    "reading (gal)",
+    "reading",
+    "cumulative",
+    "cumulative reading",
+    "usage",
+    "gallons",
+    "read",
+    "current reading",
+    "reading gal",
+    "reading_gal",
   ],
-  unit: ['unit', 'units', 'uom'],
-  route: ['route', 'route #', 'book', 'cycle'],
+  unit: ["unit", "units", "uom"],
+  route: ["route", "route #", "book", "cycle"],
   diagnosticFlags: [
-    'diag',
-    'diagnostic',
-    'diagnostics',
-    'flags',
-    'flag',
-    'flag alarm',
-    'flag / alarm',
-    'alarm',
+    "diag",
+    "diagnostic",
+    "diagnostic flag",
+    "diagnostics",
+    "flags",
+    "flag",
+    "flag alarm",
+    "flag / alarm",
+    "alarm",
   ],
-  manufacturer: ['manufacturer', 'mfr', 'make', 'meter manufacturer', 'meter make'],
-  model: ['model', 'meter model', 'model number', 'model #'],
+  manufacturer: [
+    "manufacturer",
+    "mfr",
+    "make",
+    "meter manufacturer",
+    "meter make",
+  ],
+  model: ["model", "meter model", "model number", "model #"],
   serialNumber: [
-    'serial',
-    'serial number',
-    'serial #',
-    'serial no',
-    'meter serial',
-    'sn',
+    "serial",
+    "serial number",
+    "serial #",
+    "serial no",
+    "meter serial",
+    "sn",
   ],
-  meterSize: ['meter size', 'size', 'size (in)', 'size in', 'meter_size'],
+  meterSize: ["meter size", "size", "size (in)", "size in", "meter_size"],
   installDate: [
-    'install date',
-    'installed',
-    'date installed',
-    'installation date',
-    'install_dt',
-    'install dt',
+    "install date",
+    "installed",
+    "date installed",
+    "installation date",
+    "install_dt",
+    "install dt",
   ],
-  meterType: ['meter type', 'meter_type'],
+  meterType: ["meter type", "meter_type"],
   locationDetail: [
-    'location detail',
-    'meter location',
-    'location type',
-    'set location',
+    "location detail",
+    "meter location",
+    "location type",
+    "set location",
   ],
   radioId: [
-    'radio id',
-    'radio',
-    'endpoint id',
-    'endpoint',
-    'ami id',
-    'ami',
-    'transmitter id',
-    'mxu',
+    "radio id",
+    "radio",
+    "endpoint id",
+    "endpoint",
+    "ami id",
+    "ami",
+    "transmitter id",
+    "mxu",
   ],
   lastTestedAt: [
-    'last tested',
-    'tested',
-    'test date',
-    'certification date',
-    'last test date',
+    "last tested",
+    "tested",
+    "test date",
+    "certification date",
+    "last test date",
   ],
-  notes: ['notes', 'note', 'comments', 'comment', 'remarks'],
+  notes: ["notes", "note", "comments", "comment", "remarks"],
 };
 
 const ALL_ALIAS_KEYS = new Set(
-  Object.values(HEADER_ALIASES).flatMap((aliases) => aliases.map((a) => normalizeHeader(a))),
+  Object.values(HEADER_ALIASES).flatMap((aliases) =>
+    aliases.map((a) => normalizeHeader(a)),
+  ),
 );
 
 const FOOTER_PATTERNS = [
@@ -199,7 +290,7 @@ const FOOTER_PATTERNS = [
 ];
 
 export function parseCsvText(text: string): ParsedCsv {
-  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
   let skippedCommentLines = 0;
   const matrix: string[][] = [];
 
@@ -209,7 +300,7 @@ export function parseCsvText(text: string): ParsedCsv {
       matrix.push([]);
       continue;
     }
-    if (trimmed.startsWith('#')) {
+    if (trimmed.startsWith("#")) {
       skippedCommentLines += 1;
       continue;
     }
@@ -217,7 +308,10 @@ export function parseCsvText(text: string): ParsedCsv {
   }
 
   const table = parseTableMatrix(matrix);
-  return { ...table, skippedCommentLines: skippedCommentLines + table.skippedCommentLines };
+  return {
+    ...table,
+    skippedCommentLines: skippedCommentLines + table.skippedCommentLines,
+  };
 }
 
 /**
@@ -235,12 +329,14 @@ export function parseTableMatrix(matrix: string[][]): ParsedCsv {
     };
   }
 
-  const headers = (matrix[headerRowIndex] ?? []).map((h) => String(h ?? '').trim());
+  const headers = (matrix[headerRowIndex] ?? []).map((h) =>
+    String(h ?? "").trim(),
+  );
   const rows: Record<string, string>[] = [];
   let skippedNoiseRows = 0;
 
   for (let i = headerRowIndex + 1; i < matrix.length; i += 1) {
-    const cells = (matrix[i] ?? []).map((c) => String(c ?? '').trim());
+    const cells = (matrix[i] ?? []).map((c) => String(c ?? "").trim());
     if (cells.every((c) => !c)) {
       skippedNoiseRows += 1;
       continue;
@@ -252,7 +348,7 @@ export function parseTableMatrix(matrix: string[][]): ParsedCsv {
     const row: Record<string, string> = {};
     headers.forEach((header, idx) => {
       if (!header) return;
-      row[header] = cells[idx] ?? '';
+      row[header] = cells[idx] ?? "";
     });
     rows.push(row);
   }
@@ -266,6 +362,31 @@ export function parseTableMatrix(matrix: string[][]): ParsedCsv {
   };
 }
 
+/**
+ * Keep only saved/override mapping entries whose column headers exist in this file.
+ * Prevents a prior export's MAP# (e.g. Excel "Read Dt") from wiping a new CSV ingest.
+ */
+export function retainMappingForHeaders(
+  headers: string[],
+  override?: ColumnMapping | null,
+): { kept: ColumnMapping; droppedColumns: string[] } {
+  if (!override || !Object.keys(override).length) {
+    return { kept: {}, droppedColumns: [] };
+  }
+  const present = new Set(headers);
+  const kept: ColumnMapping = {};
+  const droppedColumns: string[] = [];
+  for (const [field, col] of Object.entries(override) as [
+    CanonicalField,
+    string | undefined,
+  ][]) {
+    if (!col) continue;
+    if (present.has(col)) kept[field] = col;
+    else droppedColumns.push(col);
+  }
+  return { kept, droppedColumns };
+}
+
 /** Score first ~25 rows; pick the one that looks most like a column header. */
 export function findHeaderRowIndex(matrix: string[][], scanLimit = 25): number {
   let bestIdx = -1;
@@ -273,7 +394,9 @@ export function findHeaderRowIndex(matrix: string[][], scanLimit = 25): number {
   const limit = Math.min(matrix.length, scanLimit);
 
   for (let i = 0; i < limit; i += 1) {
-    const cells = (matrix[i] ?? []).map((c) => String(c ?? '').trim()).filter(Boolean);
+    const cells = (matrix[i] ?? [])
+      .map((c) => String(c ?? "").trim())
+      .filter(Boolean);
     if (cells.length < 2) continue;
     if (isNoiseRow(cells)) continue;
 
@@ -281,7 +404,11 @@ export function findHeaderRowIndex(matrix: string[][], scanLimit = 25): number {
     for (const cell of cells) {
       const key = normalizeHeader(cell);
       if (ALL_ALIAS_KEYS.has(key)) score += 3;
-      else if (/meter|acct|account|read|date|address|location|customer|flag|unit|gal/i.test(cell)) {
+      else if (
+        /meter|acct|account|read|date|address|location|customer|flag|unit|gal/i.test(
+          cell,
+        )
+      ) {
         score += 1;
       }
     }
@@ -293,11 +420,15 @@ export function findHeaderRowIndex(matrix: string[][], scanLimit = 25): number {
     }
   }
 
-  return bestScore >= 3 ? bestIdx : bestIdx >= 0 && bestScore >= 2 ? bestIdx : -1;
+  return bestScore >= 3
+    ? bestIdx
+    : bestIdx >= 0 && bestScore >= 2
+      ? bestIdx
+      : -1;
 }
 
 export function isNoiseRow(cells: string[]): boolean {
-  const joined = cells.filter(Boolean).join(' ');
+  const joined = cells.filter(Boolean).join(" ");
   if (!joined) return true;
   return FOOTER_PATTERNS.some((re) => re.test(joined));
 }
@@ -305,7 +436,7 @@ export function isNoiseRow(cells: string[]): boolean {
 /** Minimal CSV splitter: commas + double-quoted fields. */
 export function splitCsvLine(line: string): string[] {
   const out: string[] = [];
-  let cur = '';
+  let cur = "";
   let inQuotes = false;
   for (let i = 0; i < line.length; i += 1) {
     const ch = line[i];
@@ -322,9 +453,9 @@ export function splitCsvLine(line: string): string[] {
       }
     } else if (ch === '"') {
       inQuotes = true;
-    } else if (ch === ',') {
+    } else if (ch === ",") {
       out.push(cur);
-      cur = '';
+      cur = "";
     } else {
       cur += ch;
     }
@@ -338,7 +469,10 @@ export function guessColumnMapping(headers: string[]): ColumnMapping {
   const normalized = headers.map((h) => ({ raw: h, key: normalizeHeader(h) }));
   const used = new Set<string>();
 
-  for (const [field, aliases] of Object.entries(HEADER_ALIASES) as [CanonicalField, string[]][]) {
+  for (const [field, aliases] of Object.entries(HEADER_ALIASES) as [
+    CanonicalField,
+    string[],
+  ][]) {
     const aliasSet = new Set(aliases.map((a) => normalizeHeader(a)));
     const hit = normalized.find((h) => !used.has(h.raw) && aliasSet.has(h.key));
     if (hit) {
@@ -353,8 +487,8 @@ export function normalizeHeader(header: string): string {
   return header
     .trim()
     .toLowerCase()
-    .replace(/[_/#]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/[_/#]+/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -366,32 +500,49 @@ export function applyMapping(
   const errors: string[] = [];
   const warnings: string[] = [];
   const rows: MappedReadingRow[] = [];
-  const defaultUnit = options?.defaultUnit ?? 'gal';
+  const defaultUnit = options?.defaultUnit ?? "gal";
   const requireAddress = options?.requireAddress !== false;
+  const rowsSeen = parsed.rows.length;
+  let rowsSkipped = 0;
 
   if (!mapping.meterId) {
-    errors.push('We could not find a Meter ID column (looked for Meter #, Meter ID, etc.). Please map it.');
+    errors.push(
+      "We could not find a Meter ID column (looked for Meter #, Meter ID, etc.). Please map it.",
+    );
   }
   if (!mapping.serviceAddress) {
     if (requireAddress) {
       warnings.push(
-        'No Service Address column found. Rows without an address will be skipped unless you map one. Archive sheets can still attach readings to meters already on file when you merge.',
+        "No Service Address column found. Rows without an address will be skipped unless you map one. Archive sheets can still attach readings to meters already on file when you merge.",
       );
     } else {
       warnings.push(
-        'No address column on this sheet — readings will keep each meter’s saved address when one exists.',
+        "No address column on this sheet — readings will keep each meter’s saved address when one exists.",
       );
     }
   }
   if (!mapping.timestamp) {
-    errors.push('We could not find a read date / timestamp column (Read Dt, Read Date, etc.).');
+    errors.push(
+      "We could not find a read date / timestamp column (Read Dt, Read Date, etc.).",
+    );
   }
   if (!mapping.cumulativeReading) {
-    errors.push('We could not find a meter reading column (Current Reading, Reading, etc.).');
+    errors.push(
+      "We could not find a meter reading column (Current Reading, Reading, etc.).",
+    );
   }
 
   if (errors.length) {
-    return { mapping, mappingGuessed: false, rows, errors, warnings };
+    return {
+      mapping,
+      mappingGuessed: false,
+      rows,
+      errors,
+      warnings,
+      rowsSeen,
+      rowsAccepted: 0,
+      rowsSkipped: rowsSeen,
+    };
   }
 
   const lineBase = parsed.headerRowIndex >= 0 ? parsed.headerRowIndex + 2 : 2;
@@ -404,6 +555,7 @@ export function applyMapping(
     const tsRaw = cell(raw, mapping.timestamp);
 
     if (!meterId) {
+      rowsSkipped += 1;
       warnings.push(
         `Row ${lineNo}: skipped — this row has no Meter ID (blank Meter #). Other rows still import.`,
       );
@@ -411,6 +563,7 @@ export function applyMapping(
     }
 
     if (!readingRaw || !tsRaw) {
+      rowsSkipped += 1;
       warnings.push(
         `Row ${lineNo}: skipped — meter ${meterId} is incomplete (missing reading or date).`,
       );
@@ -418,6 +571,7 @@ export function applyMapping(
     }
 
     if (requireAddress && mapping.serviceAddress && !serviceAddress) {
+      rowsSkipped += 1;
       warnings.push(
         `Row ${lineNo}: skipped — meter ${meterId} has no service address. Address stays with the meter.`,
       );
@@ -426,6 +580,7 @@ export function applyMapping(
 
     const cumulativeReading = parseReadingNumber(readingRaw);
     if (cumulativeReading === null) {
+      rowsSkipped += 1;
       warnings.push(
         `Row ${lineNo}: skipped — reading "${readingRaw}" for meter ${meterId} is not a number.`,
       );
@@ -434,6 +589,7 @@ export function applyMapping(
 
     const timestamp = parseFlexibleDate(tsRaw);
     if (!timestamp) {
+      rowsSkipped += 1;
       warnings.push(
         `Row ${lineNo}: skipped — could not understand date "${tsRaw}" for meter ${meterId}.`,
       );
@@ -451,7 +607,7 @@ export function applyMapping(
     const lastTestedRaw = emptyToNull(cell(raw, mapping.lastTestedAt));
     rows.push({
       meterId,
-      serviceAddress: serviceAddress || '',
+      serviceAddress: serviceAddress || "",
       occupantName: emptyToNull(cell(raw, mapping.occupantName)),
       accountNumber: emptyToNull(cell(raw, mapping.accountNumber)),
       timestamp,
@@ -474,14 +630,23 @@ export function applyMapping(
   });
 
   if (!rows.length && !warnings.length) {
-    errors.push('No readable meter rows found in this file.');
+    errors.push("No readable meter rows found in this file.");
   } else if (!rows.length) {
     errors.push(
-      'No readable meter rows made it through. Check the warnings — often a missing Meter ID column or only footer/title rows.',
+      "No readable meter rows made it through. Check the warnings — often a missing Meter ID column or only footer/title rows.",
     );
   }
 
-  return { mapping, mappingGuessed: false, rows, errors, warnings };
+  return {
+    mapping,
+    mappingGuessed: false,
+    rows,
+    errors,
+    warnings,
+    rowsSeen,
+    rowsAccepted: rows.length,
+    rowsSkipped,
+  };
 }
 
 export function parseCustomerReadingsCsv(
@@ -498,6 +663,7 @@ export function parseCustomerReadingsCsv(
         `CSV text is too large (${text.length} chars; max ${MAX_CSV_CHARS}). Split the export or use the S3 drop-zone.`,
       ],
       warnings: [],
+      ...emptyRowCounts(),
     };
   }
   const parsed = parseCsvText(text);
@@ -507,18 +673,28 @@ export function parseCustomerReadingsCsv(
       mappingGuessed: false,
       rows: [],
       errors: [
-        'This file looks empty, or we could not find a header row (Meter #, Read Dt, etc.) in the first rows.',
+        "This file looks empty, or we could not find a header row (Meter #, Read Dt, etc.) in the first rows.",
       ],
       warnings: [],
+      ...emptyRowCounts(),
     };
   }
   const guessed = guessColumnMapping(parsed.headers);
-  const mapping = { ...guessed, ...mappingOverride };
+  const { kept: safeOverride, droppedColumns } = retainMappingForHeaders(
+    parsed.headers,
+    mappingOverride,
+  );
+  const mapping = { ...guessed, ...safeOverride };
   // Address required on rows only when an address column is mapped (archive sheets often omit it).
   const requireAddress =
     options?.requireAddress ?? Boolean(mapping.serviceAddress);
   const result = applyMapping(parsed, mapping, { requireAddress });
-  result.mappingGuessed = !mappingOverride || Object.keys(mappingOverride).length === 0;
+  result.mappingGuessed = Object.keys(safeOverride).length === 0;
+  if (droppedColumns.length) {
+    result.warnings.unshift(
+      `Ignored saved column map for missing headers (${droppedColumns.join(", ")}); guessed from this file instead.`,
+    );
+  }
   if (parsed.skippedCommentLines) {
     result.warnings.unshift(
       `Ignored ${parsed.skippedCommentLines} comment line(s) starting with #.`,
@@ -539,7 +715,9 @@ export function parseCustomerReadingsCsv(
 
 /** Parse numbers that may include thousands commas or quotes. */
 export function parseReadingNumber(raw: string): number | null {
-  const cleaned = String(raw).replace(/[",\s]/g, '').trim();
+  const cleaned = String(raw)
+    .replace(/[",\s]/g, "")
+    .trim();
   if (!cleaned) return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
@@ -547,15 +725,15 @@ export function parseReadingNumber(raw: string): number | null {
 
 export function normalizeUnit(
   raw: string | null,
-  defaultUnit = 'gal',
+  defaultUnit = "gal",
 ): { unit: string; warning?: string } {
   if (!raw) return { unit: defaultUnit };
   const key = raw.trim().toLowerCase();
   if (!key) return { unit: defaultUnit };
-  if (/^(gal|gallon|gallons|gals)$/.test(key)) return { unit: 'gal' };
+  if (/^(gal|gallon|gallons|gals)$/.test(key)) return { unit: "gal" };
   if (/^(cf|cu\s*ft|cu\.?\s*ft\.?|cubic\s*feet|cuf)$/.test(key)) {
     return {
-      unit: 'cf',
+      unit: "cf",
       warning: `unit is CF (cubic feet), not gallons — we kept it as cf so you can fix or convert later.`,
     };
   }
@@ -577,8 +755,8 @@ export function parseDiagnosticFlags(raw: string): string[] {
 }
 
 function cell(row: Record<string, string>, header: string | undefined): string {
-  if (!header) return '';
-  return row[header] ?? '';
+  if (!header) return "";
+  return row[header] ?? "";
 }
 
 function emptyToNull(value: string): string | null {
@@ -598,7 +776,7 @@ function toDateOnlyField(raw: string): string | null {
 
 /** Accepts common clerk handheld / Excel date shapes. */
 export function parseFlexibleDate(raw: string | number): string | null {
-  if (typeof raw === 'number' && Number.isFinite(raw)) {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
     return excelSerialToIso(raw);
   }
 
@@ -702,7 +880,11 @@ function normalizeYear(y: string): number {
 function toIsoDate(year: number, month: number, day: number): string | null {
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
   const d = new Date(Date.UTC(year, month - 1, day));
-  if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) {
+  if (
+    d.getUTCFullYear() !== year ||
+    d.getUTCMonth() !== month - 1 ||
+    d.getUTCDate() !== day
+  ) {
     return null;
   }
   return d.toISOString();

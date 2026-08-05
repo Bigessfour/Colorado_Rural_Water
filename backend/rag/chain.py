@@ -33,8 +33,8 @@ from rag.memory import (
     mem0_search,
     persist_mem0_turn,
 )
-from rag.settings import LLM_TIMEOUT_SEC
 from rag.persona import friendly_municipality_name, operator_first_name
+from rag.settings import LLM_TIMEOUT_SEC
 from rag.store import index_exists, load_store
 from rag.tenant import assert_no_cross_tenant_context
 

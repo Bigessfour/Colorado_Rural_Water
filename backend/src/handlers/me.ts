@@ -8,7 +8,9 @@ const MAX_STACK = 4000;
 const MAX_URL = 500;
 
 /**
+ * Identity + SPA telemetry.
  * GET /me — caller identity from JWT (+ tenant map center when profile exists).
+ *   Demo: SPA shell calls this after login to show email / municipality — not a client-picked tenant.
  * POST /telemetry/client-errors — SPA runtime errors → CloudWatch (structured JSON).
  */
 export const handler: AuthedHandler = async (event) => {
@@ -39,8 +41,17 @@ export const handler: AuthedHandler = async (event) => {
           mapCenterLng = profile.mapCenterLng ?? null;
           mapZoom = profile.mapZoom ?? null;
         }
-      } catch {
+      } catch (err) {
         // Profile table optional for older demo users — identity still returns.
+        // Do not swallow silently: missing DATA_TABLE left mapTown null and
+        // auto-pin scattered meters across Colorado.
+        console.error(
+          JSON.stringify({
+            event: "me.profile_load_failed",
+            tenantId: auth.tenantId,
+            message: err instanceof Error ? err.message : String(err),
+          }),
+        );
       }
     }
 

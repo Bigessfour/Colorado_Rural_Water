@@ -1,6 +1,10 @@
 import { primeNgLicense } from './primeng-license';
 
-/** Dev SPA → live Code Platoon API Gateway (Assessment III). */
+/**
+ * Dev SPA → live Code Platoon API Gateway (Assessment III).
+ * Use http://localhost:4200 (not 127.0.0.1) so Cognito/API CORS match.
+ * composeDemo=false → Cognito JWT path (Kelly upload → dashboard → alerts).
+ */
 export const environment = {
   production: false,
   composeDemo: false,

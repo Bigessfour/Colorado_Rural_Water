@@ -24,6 +24,7 @@ describe('ReportsPageComponent', () => {
           useValue: {
             getBearerToken: () => 'jwt',
             isLoggedIn: () => true,
+            placeName: () => 'Town of Wiley',
           },
         },
       ],
@@ -37,5 +38,14 @@ describe('ReportsPageComponent', () => {
     expect(text).toMatch(/Reports|All report processes|Run reports|Recent activity/i);
     expect(text).toMatch(/work order|summary/i);
     expect(text).toMatch(/Field \/ work orders|Operations|Legacy export/);
+  });
+
+  it('shows labeled catalog actions including Open / Print PDF', () => {
+    const fixture = TestBed.createComponent(ReportsPageComponent);
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toMatch(/Download CSV/);
+    expect(text).toMatch(/Download Excel/);
+    expect(text).toMatch(/Open \/ Print PDF/);
   });
 });

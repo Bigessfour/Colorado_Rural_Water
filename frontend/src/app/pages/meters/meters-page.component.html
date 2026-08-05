@@ -17,6 +17,9 @@
   @if (status()) {
     <p-message severity="info" styleClass="hint">{{ status() }}</p-message>
   }
+  @if (autoPinProgress()) {
+    <p-message severity="info" styleClass="hint">{{ autoPinProgress() }}</p-message>
+  }
 
   <div class="toolbar">
     <p-button
@@ -32,6 +35,27 @@
       (onClick)="refresh()"
       [disabled]="!auth.isLoggedIn()"
     />
+    <p-iconfield iconPosition="left" class="list-search">
+      <p-inputicon class="pi pi-search" />
+      <input
+        pInputText
+        type="search"
+        [ngModel]="listSearch()"
+        (ngModelChange)="onListSearchChange($event)"
+        placeholder="Search meters…"
+        aria-label="Search meters by id, address, occupant, account, or route"
+        [disabled]="!auth.isLoggedIn()"
+      />
+    </p-iconfield>
+    @if (filterActive()) {
+      <p-button
+        label="Clear"
+        severity="secondary"
+        [outlined]="true"
+        icon="pi pi-times"
+        (onClick)="clearListSearch()"
+      />
+    }
     <p-selectbutton
       [options]="viewOptions"
       [ngModel]="viewMode()"
@@ -46,9 +70,18 @@
       [outlined]="!fineTune()"
       icon="pi pi-map-marker"
       (onClick)="toggleFineTune()"
-      [disabled]="!auth.isLoggedIn() || !meters().length"
+      [disabled]="!auth.isLoggedIn() || !filteredMeters().length"
     />
   </div>
+
+  @if (auth.isLoggedIn() && filterActive()) {
+    <p class="search-status">
+      Showing {{ filteredMeters().length }} of {{ meters().length }} meters
+      @if (filteredMeters().length === 0) {
+        — try a different search.
+      }
+    </p>
+  }
 
   @if (auth.isLoggedIn() && meters().length) {
     <p-message severity="info" styleClass="hint map-status">
@@ -57,6 +90,9 @@
         ({{ missingCoordsCount() }} missing location)
       }
       — use Edit → Suggest from address, then Fine-tune pin on the map.
+      @if (filterActive()) {
+        Map and table both follow the search filter.
+      }
     </p-message>
   }
   @if (fineTune()) {
@@ -70,11 +106,19 @@
     @if (showTable()) {
       <p-card styleClass="table-card">
         <p-table
-          [value]="meters()"
+          [value]="filteredMeters()"
           [tableStyle]="{ 'min-width': '44rem' }"
           selectionMode="single"
           dataKey="meterId"
           [rowHover]="true"
+          [paginator]="true"
+          [alwaysShowPaginator]="false"
+          [rows]="tableRows()"
+          [first]="tableFirst()"
+          [rowsPerPageOptions]="rowsPerPageOptions"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Showing {first} to {last} of {totalRecords} meters"
+          (onPage)="onTablePage($event)"
         >
           <ng-template #header>
             <tr>
@@ -115,6 +159,14 @@
                   (onClick)="openStats(row)"
                 />
                 <p-button
+                  label="Map"
+                  size="small"
+                  severity="secondary"
+                  [outlined]="true"
+                  icon="pi pi-map-marker"
+                  (onClick)="showOnMap(row.meterId)"
+                />
+                <p-button
                   label="History"
                   size="small"
                   severity="secondary"
@@ -133,7 +185,11 @@
           <ng-template #emptymessage>
             <tr>
               <td colspan="8">
-                No meters yet — add one here, or upload a customer readings file to create them.
+                @if (filterActive()) {
+                  No meters match this search — clear the filter or try another term.
+                } @else {
+                  No meters yet — add one here, or upload a customer readings file to create them.
+                }
               </td>
             </tr>
           </ng-template>
@@ -144,7 +200,7 @@
     @if (showMap()) {
       <p-card styleClass="map-card">
         <app-meter-map
-          [meters]="meters()"
+          [meters]="filteredMeters()"
           [selectedMeterId]="selectedMeterId()"
           [fineTune]="fineTune()"
           [defaultCenter]="auth.mapCenter()"
@@ -179,8 +235,8 @@
             required
           />
         </label>
-        <label>
-          Service address
+        <label class="span-2">
+          Service address (street / location)
           <input
             pInputText
             name="serviceAddress"
@@ -188,8 +244,36 @@
             (ngModelChange)="updateAddField('serviceAddress', $event)"
             fluid
             required
+            placeholder="e.g. 112 N Main St"
           />
         </label>
+        <label>
+          Town / city (for map)
+          <input
+            pInputText
+            name="geocodeTown"
+            [ngModel]="form.geocodeTown"
+            (ngModelChange)="updateAddField('geocodeTown', $event)"
+            fluid
+            placeholder="Defaults to your system town"
+          />
+        </label>
+        <label>
+          ZIP (for map)
+          <input
+            pInputText
+            name="geocodeZip"
+            [ngModel]="form.geocodeZip"
+            (ngModelChange)="updateAddField('geocodeZip', $event)"
+            fluid
+            placeholder="optional, e.g. 81092"
+            inputmode="numeric"
+          />
+        </label>
+        <p class="muted geo-hint span-2">
+          Map pins use Town / ZIP above (defaults to {{ auth.placeName() }}) so a bare street does
+          not land in Denver. Street is what stays on the meter record.
+        </p>
         <label>
           Occupant
           <input
@@ -286,9 +370,13 @@
           />
         </label>
         <div class="geo-actions span-2">
+          <p class="muted geo-hint">
+            Map pin is suggested automatically from the service address when you pause typing or
+            save. Use the button only to re-run the lookup.
+          </p>
           <p-button
             type="button"
-            label="Suggest from address"
+            label="Re-suggest from address"
             icon="pi pi-search"
             severity="secondary"
             [outlined]="true"
@@ -495,7 +583,34 @@
             inputmode="decimal"
           />
         </label>
+        <label>
+          Town / city (for map)
+          <input
+            pInputText
+            name="geocodeTown"
+            [ngModel]="form.geocodeTown"
+            (ngModelChange)="updateEditField('geocodeTown', $event)"
+            fluid
+            placeholder="Defaults to your system town"
+          />
+        </label>
+        <label>
+          ZIP (for map)
+          <input
+            pInputText
+            name="geocodeZip"
+            [ngModel]="form.geocodeZip"
+            (ngModelChange)="updateEditField('geocodeZip', $event)"
+            fluid
+            placeholder="optional, e.g. 81092"
+            inputmode="numeric"
+          />
+        </label>
         <div class="geo-actions span-2">
+          <p class="muted geo-hint">
+            Suggest uses the stable street above plus Town / ZIP (defaults to
+            {{ auth.placeName() }}) so pins stay near your system, not Denver.
+          </p>
           <p-button
             type="button"
             label="Suggest from address"
@@ -616,6 +731,16 @@
           <div class="kpi-label">Service address</div>
           <div class="history-value">{{ s.serviceAddress }}</div>
         </div>
+      </div>
+      <div class="stats-map-actions">
+        <p-button
+          label="Map"
+          icon="pi pi-map-marker"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="showOnMap(s.meterId)"
+        />
+        <span class="muted geo-hint">Open this meter’s pin on the map (suggests from address if needed).</span>
       </div>
       <app-meter-usage-viz
         [meterId]="s.meterId"

@@ -46,12 +46,21 @@
     </p-message>
   } @else {
     <h3 class="section-title">Period usage</h3>
-    <p class="muted">
-      Between reads — a flat line often means stuck; a spike means unusual use.
-    </p>
-    <div class="chart-wrap chart-wrap--spark">
-      <p-chart type="line" [data]="sparkline().data" [options]="sparklineOptions" />
-    </div>
+    <p class="muted">Between reads — a flat line often means stuck; a spike means unusual use.</p>
+    @if (sparkline().empty) {
+      <p-message severity="info" styleClass="hint">
+        @if (sparkline().singleCycle && stats().cycleGal != null) {
+          Only one billing cycle on file ({{ stats().cycleGal | number }} gal). Another read will
+          show period-to-period change.
+        } @else {
+          Need at least two billing cycles to chart period usage for this meter.
+        }
+      </p-message>
+    } @else {
+      <div class="chart-wrap chart-wrap--spark">
+        <p-chart type="line" [data]="sparkline().data" [options]="sparklineOptions" />
+      </div>
+    }
 
     <h3 class="section-title">Year over year</h3>
     @if (yoy().empty) {

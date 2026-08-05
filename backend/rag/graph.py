@@ -16,8 +16,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, TypedDict
 
-from rag.settings import configure_langsmith
 from rag.persona import friendly_municipality_name
+from rag.settings import configure_langsmith
 from rag.tenant import normalize_tenant_id, normalize_user_id
 
 logger = logging.getLogger(__name__)

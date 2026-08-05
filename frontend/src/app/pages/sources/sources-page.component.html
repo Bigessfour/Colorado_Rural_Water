@@ -22,13 +22,7 @@
     <form class="form" (ngSubmit)="save()">
       <label>
         Display name
-        <input
-          pInputText
-          name="name"
-          [(ngModel)]="name"
-          fluid
-          aria-label="Source display name"
-        />
+        <input pInputText name="name" [(ngModel)]="name" fluid aria-label="Source display name" />
       </label>
       <label>
         Type
@@ -54,7 +48,12 @@
           [disabled]="saving() || !auth.isLoggedIn()"
         />
         @if (editingId) {
-          <p-button type="button" label="Cancel edit" severity="secondary" (onClick)="resetForm()" />
+          <p-button
+            type="button"
+            label="Cancel edit"
+            severity="secondary"
+            (onClick)="resetForm()"
+          />
         }
         <p-button
           type="button"

@@ -36,6 +36,7 @@ Agents and humans use this section to decide what “done” means. Prefer this 
 - Real Confidence calculator + store (H3), bulk history UX (H2), full H6 gating polish
 - Roles D1–D3; CRWA roll-up D4 + H5
 - Conversational AI shell + onboarding interview + mapping help + cost/safety (Epic E) with Confidence coaching
+- **Cognito JWT RAG Assistant (Feature 014):** Bedrock Knowledge Base retrieval (shared colorado-ops + tenant SOPs), live alert/usage tools, Dynamo conversation history — Compose LangChain/FAISS remains Assessment-only
 - True per-tenant IAM ABAC (A6); MFA UX shipped (D5 — Account + login challenges)
 - Per-meter Confidence; configurable reading cycles (beyond UTC calendar month)
 
@@ -47,7 +48,7 @@ Agents and humans use this section to decide what “done” means. Prefer this 
 - Custom ML / Bayesian leak models
 - Exhaustive billing-system connectors
 - Formal address parse beyond single-line service address
-- Complex multi-step AWS provisioning driven by the agent
+- Complex multi-step agent-driven AWS resource provisioning (beyond Feature 014 RAG)
 - Native mobile apps
 
 ---

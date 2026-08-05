@@ -33,6 +33,30 @@ module "api" {
   review_from_email           = var.review_from_email
 }
 
+module "bedrock_kb" {
+  count  = var.enable_bedrock_kb && var.enable_api && length(module.api) > 0 ? 1 : 0
+  source = "./modules/bedrock-kb"
+
+  project_name     = var.project_name
+  environment      = var.environment
+  lambda_role_name = module.api[0].lambda_role_name
+}
+
+output "knowledge_bucket_name" {
+  value       = try(module.bedrock_kb[0].knowledge_bucket_name, null)
+  description = "Feature 014 knowledge S3 bucket — sync via scripts/knowledge-sync.sh"
+}
+
+output "knowledge_base_id" {
+  value       = try(module.bedrock_kb[0].knowledge_base_id, null)
+  description = "Bedrock Knowledge Base ID (also in SSM /{project}-{env}/knowledge-base-id)"
+}
+
+output "knowledge_data_source_id" {
+  value       = try(module.bedrock_kb[0].data_source_id, null)
+  description = "Shared KB data source ID — start ingestion after sync"
+}
+
 output "api_endpoint" {
   value       = try(module.api[0].api_endpoint, null)
   description = "HTTP API endpoint"

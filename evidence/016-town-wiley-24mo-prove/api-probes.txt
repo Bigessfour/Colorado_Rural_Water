@@ -1,0 +1,82 @@
+=== /me ===
+{"userId":"a4d8b418-90d1-7002-34f9-9da5aa70fb4b","email":"demo.operator@watersaver.local","tenantId":"town-wiley","roles":["operator"],"displayName":null,"mapTown":null,"mapCenterLat":null,"mapCenterLng":null,"mapZoom":null}
+=== /balance ===
+{
+  "period": "2026-07",
+  "periodLabel": "July 2026",
+  "status": "loss",
+  "unaccountedPct": 42,
+  "producedGal": 2402956,
+  "billedGal": 1392582,
+  "sourceReadingCount": 4,
+  "meterDeltaCount": 172
+}
+trend_len 12
+=== /alerts summary ===
+confidence Solid 24 mo 54 % meters 319 score 93 mode Actionable
+alerts 6 balanceAlerts 1
+  stuck_meter Actionable 1045 acknowledged Meter 1045 at 210 Vacant Lot Rd Wiley CO looks stuck or non-registerin
+  unusual_high_usage Actionable 1046 open Meter 1046 at Park Loop Meter Pit Wiley CO used ~20.9× typical for thi
+  unusual_high_usage Actionable M-1156 open Meter M-1156 at 1192 Prairie View, Wiley, CO 81092 used ~5.0× typical 
+  unusual_high_usage Actionable M-1033 open Meter M-1033 at 331 Pioneer Rd, Wiley, CO 81092 used ~4.2× typical for
+  unusual_high_usage Actionable M-1089 open Meter M-1089 at 723 Ranch Rd, Wiley, CO 81092 used ~3.8× typical for t
+  diagnostic_flag Actionable 1043 open Handheld diagnostic flag on meter 1043 at 45 County Rd 18 Wiley CO: L.
+=== /meters count ===
+count 319
+sample ['1042', '1043', '1044', '1045', '1046']
+M-1012 {'meterId': 'M-1012', 'serviceAddress': '184 South Loop, Wiley, CO 81092', 'occupantName': 'Resident 1012', 'accountNumber': 'A-20012', 'route': 'R1', 'manufacturer': None, 'model': None, 'serialNumber': None, 'meterSize': None, 'installDate': None, 'meterType': None, 'locationDetail': None, 'radioId': None, 'lastTestedAt': None, 'notes': None, 'latitude': None, 'longitude': None, 'updatedAt': '2026-08-05T01:49:28.060Z', 'readingCount': 24}
+=== /sources ===
+[('well-1-north', 'Well 1 - North', 'well'), ('well-1-north-011817', 'Well 1 North', 'well'), ('SRC-SOUTH', 'Well 2 - South', 'well'), ('well-2-town', 'Well 2 - Town', 'well'), ('well-2-south-011818', 'Well 2 South', 'well'), ('well-3-east', 'Well 3 - East', 'well')]
+=== /alerts csv ===
+http 200 lines        7 head:
+meterId,serviceAddress,occupantName,mode,type,summary,confidenceNote,status
+1045,210 Vacant Lot Rd Wiley CO,Empty Lot,Actionable,stuck_meter,Meter 1045 at 210 Vacant Lot Rd Wiley CO looks stuck or non-registering (0 / NR).,Deterministic meter signal — Actionable even with thin history,acknowledged
+1046,Park Loop Meter Pit Wiley CO,Irrigation HOA,Actionable,unusual_high_usage,"Meter 1046 at Park Loop Meter Pit Wiley CO used ~20.9× typical for this route (133,890 gal). Possible leak or irrigation change.",Solid (~24 mo) — Actionable,open
+=== /reports/work-orders ===
+http 200 bytes     2081
+meterId,serviceAddress,occupantName,latitude,longitude,mapLink,mode,type,summary,confidenceNote,status,recommendedAction
+1045,210 Vacant Lot Rd Wiley CO,Empty Lot,,,/meters?selected=1045&view=map,Actionable,stuck_meter,Meter 1045 at 210 Vacant Lot Rd Wiley CO looks stuck or non-registering (0 / NR).,Deterministic meter signal — Actionable even with thin history,acknowledged,Field check: verify register / endpoint; repair or replace if stuck.
+=== /reports/summary ===
+http 200
+Town of Wiley
+Town of Wiley
+Solid
+M-10
+M-10
+M-10
+M-10
+=== /agent residual ===
+keys ['tenantId', 'reply', 'model', 'modelId', 'sources', 'retrievalMode', 'tool', 'guardrails', 'needsConfirm', 'confirmPrompt', 'costNote', 'confidenceCoaching', 'confidence', 'request_id', 'rateRemaining']
+reply_len 884
+Demo, for a Colorado groundwater system, you should maintain a detectable disinfectant residual in the distribution system, measured at the same time and place as total coliform samples. The minimum requirement is at least 0.2 mg/L residual at the entry point to the distribution system. Some systems may need to maintain a system-specific residual greater than 0.2 mg/L to provide at least 4-log virus treatment when required.
+
+For more details, you can refer to the [CDPHE Compliance Assurance quick guide](https://hermes.cde.state.co.us/islandora/object/co%3A21174/datastream/OBJ/download/Quick_gu
+sources 4
+  03-disinfectant-residual.md
+  03-disinfectant-residual.md
+  03-disinfectant-residual.md
+  00-disclaimer.md
+=== agent retrievalMode ===
+retrievalMode None
+tool None
+sources []
+reply_head 
+=== ingest dryRun ===
+=== agent Watch vs Actionable (browser session follow-up) ===
+retrievalMode bedrock-kb
+tool list_alerts
+sources 4
+['s3://water-saver-dev-knowledge-388691194728/knowledge/shared/runbook.md', 'https://cdphe.colorado.gov/drinking-water', 'https://wqcdcompliance.com/schedules', 'https://cdphe.colorado.gov/drinking-water']
+reply_head Demo, for Town of Wiley, "Watch" alerts are unusual but not urgent, suggesting a potential issue that may not require immediate action but should be monitored. "Actionable" alerts are stronger signals, especially when th
+=== ingest dryRun 3-row sample ===
+=== ingest dryRun 3-row sample ===
+=== ingest dryRun csvText ===
+{
+  "dryRun": true,
+  "tenantId": "town-wiley",
+  "rowsSeen": 3,
+  "rowsAccepted": 3,
+  "rowsSkipped": 0
+}
+mapping {'meterId': 'Meter ID', 'serviceAddress': 'Service Address', 'occupantName': 'Customer', 'accountNumber': 'Account #', 'timestamp': 'Read Date', 'cumulativeReading': 'Reading (gal)', 'route': 'Route', 'diagnosticFlags': 'Diag'}
+top_keys ['dryRun', 'mapping', 'rowCount', 'rowsAccepted', 'rowsSeen', 'rowsSkipped', 'sample', 'status', 'tenantId', 'warnings']

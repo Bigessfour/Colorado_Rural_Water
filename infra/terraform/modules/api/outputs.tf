@@ -78,6 +78,16 @@ output "agent_url" {
   description = "GET/POST /agent conversational AI (JWT, Epic E)"
 }
 
+output "lambda_role_name" {
+  value       = aws_iam_role.lambda.name
+  description = "Shared API Lambda role (Feature 014 KB Retrieve attaches here)"
+}
+
+output "lambda_role_arn" {
+  value       = aws_iam_role.lambda.arn
+  description = "Shared API Lambda role ARN"
+}
+
 output "review_sessions_url" {
   value       = "${aws_apigatewayv2_api.http.api_endpoint}/review/sessions"
   description = "POST /review/sessions and related Kelly Review routes (JWT, F5)"

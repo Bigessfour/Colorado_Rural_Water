@@ -16,7 +16,9 @@
   position: fixed;
   border-radius: 0.65rem;
   /* Ring only — dimming is handled by .tour-dim so pointer events stay blocked. */
-  box-shadow: 0 0 0 3px #2e3192, 0 0 0 6px rgba(46, 49, 146, 0.25);
+  box-shadow:
+    0 0 0 3px #2e3192,
+    0 0 0 6px rgba(46, 49, 146, 0.25);
   background: transparent;
   pointer-events: none;
   z-index: 1201;

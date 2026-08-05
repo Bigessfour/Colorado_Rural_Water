@@ -26,9 +26,25 @@ export async function converseText(params: {
   user: string;
   maxTokens?: number;
   modelId?: string;
-}): Promise<{ text: string; modelId: string } | null> {
+  /** Feature 014 optional Bedrock Guardrail */
+  guardrailId?: string | null;
+  guardrailVersion?: string | null;
+}): Promise<{
+  text: string;
+  modelId: string;
+  inputTokens?: number;
+  outputTokens?: number;
+} | null> {
   if (!bedrockEnabled()) return null;
   const modelId = params.modelId ?? DEFAULT_BEDROCK_MODEL_ID;
+  const guardrailId =
+    params.guardrailId?.trim() ||
+    process.env.BEDROCK_GUARDRAIL_ID?.trim() ||
+    "";
+  const guardrailVersion =
+    params.guardrailVersion?.trim() ||
+    process.env.BEDROCK_GUARDRAIL_VER?.trim() ||
+    "DRAFT";
   try {
     const res = await client.send(
       new ConverseCommand({
@@ -39,6 +55,14 @@ export async function converseText(params: {
           maxTokens: params.maxTokens ?? 400,
           temperature: 0.2,
         },
+        ...(guardrailId
+          ? {
+              guardrailConfig: {
+                guardrailIdentifier: guardrailId,
+                guardrailVersion,
+              },
+            }
+          : {}),
       }),
     );
     const text = res.output?.message?.content
@@ -46,7 +70,12 @@ export async function converseText(params: {
       .join("")
       .trim();
     if (!text) return null;
-    return { text, modelId };
+    return {
+      text,
+      modelId,
+      inputTokens: res.usage?.inputTokens,
+      outputTokens: res.usage?.outputTokens,
+    };
   } catch {
     // Fall back to deterministic templates when model access / IAM fails.
     return null;

@@ -44,6 +44,8 @@
 
 .chart-wrap {
   margin-bottom: 0.5rem;
+  position: relative;
+  width: 100%;
 }
 
 .chart-wrap--spark {
@@ -52,6 +54,14 @@
 
 .chart-wrap--yoy {
   height: 200px;
+}
+
+/* PrimeNG Chart needs an explicit block size when maintainAspectRatio is false. */
+:host ::ng-deep .chart-wrap .p-chart,
+:host ::ng-deep .chart-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 :host ::ng-deep .hint {

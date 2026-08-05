@@ -1,6 +1,9 @@
 /**
  * Conversational agent context builders + guardrails (Epic E / E4 / E5 / E6 / H7).
- * Isolation: prompts must only contain the caller's tenantId — never other tenants.
+ *
+ * Isolation: prompts must only contain the caller's tenantId — never other tenants
+ * (`assertNoCrossTenantContext` / `findCrossTenantLeaks` are the hard gate).
+ * Demo: never say “we found a leak” from Thin Watch — coach Watch vs Actionable.
  */
 
 import type { ConfidenceSnapshot } from "./alert-engine.js";
@@ -141,8 +144,7 @@ export function templateAgentReply(input: AgentTurnInput): AgentReply {
   ) {
     reply = `${confirm.confirmPrompt}\n\n${coaching}`;
   } else if (/^confirm\s+(delete|change)\b/i.test(input.message.trim())) {
-    reply =
-      `Thanks for confirming, ${first}. In this pilot build I explain the step and keep changes inside ${place}; full guided mutations ship as Epic E hardens. Nothing was changed in another municipality.`;
+    reply = `Thanks for confirming, ${first}. In this pilot build I explain the step and keep changes inside ${place}; full guided mutations ship as Epic E hardens. Nothing was changed in another municipality.`;
   } else if (
     /^(hi|hello|hey)\b/i.test(input.message.trim()) ||
     /\bjust say (a )?(short )?hello\b/i.test(input.message)
@@ -152,8 +154,12 @@ export function templateAgentReply(input: AgentTurnInput): AgentReply {
       "Ask about alerts, uploads, water balance, reports, or what to enter on a page.",
       "If something is unclear, tell me which screen you're on and I'll walk through it.",
     ].join("\n\n");
-  } else if (/\b(tell me more|know more|explain (the )?feature|what can i enter|how (do|can) i get a report)\b/i.test(lower)
-    || /\bfeature:\s*/i.test(input.message)) {
+  } else if (
+    /\b(tell me more|know more|explain (the )?feature|what can i enter|how (do|can) i get a report)\b/i.test(
+      lower,
+    ) ||
+    /\bfeature:\s*/i.test(input.message)
+  ) {
     reply = [
       `Happy to go deeper, ${first}. For ${place}, I'll cover: what you can enter, what it does, and how to get a report or export when one exists.`,
       "Ask a follow-up anytime — or name the page (Dashboard, Upload, Alerts, Meters, Sources, Reports).",
@@ -193,17 +199,33 @@ export function findCrossTenantLeaks(params: {
   otherTenantIds: string[];
 }): string[] {
   const violations: string[] = [];
+  const caller = params.callerTenantId.toLowerCase();
   const hay = params.textParts.join("\n").toLowerCase();
   for (const other of params.otherTenantIds) {
-    if (!other || other === params.callerTenantId) continue;
+    if (!other || other.toLowerCase() === caller) continue;
     const needle = other.toLowerCase();
     if (hay.includes(needle)) {
       violations.push(`Foreign tenant id "${other}" present in agent context`);
     }
   }
-  // Customer PII markers that must never cross tenants — roll-up / agent prompts.
-  if (/\boccupantName\b/i.test(hay) && /tenant#/i.test(hay)) {
-    // Soft check only when serializing raw records; templates avoid field names.
+  // Belt-and-suspenders: catch KB/S3 URIs even when otherTenantIds was incomplete.
+  const pathRe = /tenants\/([a-z0-9][a-z0-9-]*)\//gi;
+  let pathMatch: RegExpExecArray | null;
+  while ((pathMatch = pathRe.exec(hay)) !== null) {
+    const id = pathMatch[1];
+    if (id && id !== caller) {
+      const msg = `Foreign tenant path "tenants/${id}/" present in agent context`;
+      if (!violations.includes(msg)) violations.push(msg);
+    }
+  }
+  const pkRe = /tenant#([a-z0-9][a-z0-9-]*)/gi;
+  let pkMatch: RegExpExecArray | null;
+  while ((pkMatch = pkRe.exec(hay)) !== null) {
+    const id = pkMatch[1];
+    if (id && id !== caller) {
+      const msg = `Foreign tenant key "TENANT#${id}" present in agent context`;
+      if (!violations.includes(msg)) violations.push(msg);
+    }
   }
   return violations;
 }

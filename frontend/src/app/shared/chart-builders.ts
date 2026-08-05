@@ -59,7 +59,20 @@ export function shortPeriodLabel(label: string): string {
   if (m) return m[1]!;
   const ym = label.match(/^\d{4}-(\d{2})$/);
   if (ym) {
-    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const names = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return names[Number(ym[1]) - 1] ?? label;
   }
   return label.slice(0, 3) || label;
@@ -251,35 +264,18 @@ export function buildHealthDonut(counts: {
 /**
  * Meter sparkline from cumulative readings → period usage deltas.
  * Flat line = stuck / no change; spikes = usage spikes.
+ * Needs ≥2 period points (3+ reads) so Chart.js can draw a line — a single
+ * cycle otherwise renders as a stray lone dot with no trend.
  */
 export function buildMeterSparkline(readings: MeterReadingPoint[]): {
   data: ChartData;
   empty: boolean;
+  /** True when we have one cycle of usage but not enough to chart a trend. */
+  singleCycle: boolean;
 } {
   const sorted = [...readings].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   if (sorted.length < 2) {
-    // Fall back to cumulative points if only one read.
-    if (sorted.length === 1) {
-      return {
-        empty: false,
-        data: {
-          labels: [sorted[0]!.timestamp.slice(0, 10)],
-          datasets: [
-            {
-              label: 'Reading',
-              data: [sorted[0]!.cumulativeReading],
-              borderColor: CHART_COLORS.teal,
-              backgroundColor: 'transparent',
-              tension: 0.25,
-              pointRadius: 2,
-              borderWidth: 2,
-              fill: false,
-            },
-          ],
-        },
-      };
-    }
-    return { data: { labels: [], datasets: [] }, empty: true };
+    return { data: { labels: [], datasets: [] }, empty: true, singleCycle: false };
   }
 
   const labels: string[] = [];
@@ -290,8 +286,18 @@ export function buildMeterSparkline(readings: MeterReadingPoint[]): {
     usage.push(Math.max(0, delta));
   }
 
+  // One inter-read delta → one Chart.js point → looks like a stray UI dot.
+  if (usage.length < 2) {
+    return {
+      empty: true,
+      singleCycle: usage.length === 1,
+      data: { labels: [], datasets: [] },
+    };
+  }
+
   return {
     empty: false,
+    singleCycle: false,
     data: {
       labels,
       datasets: [
@@ -390,27 +396,19 @@ export const balanceBarOptions = {
   },
 };
 
+/** Donut charts in dashboard cards — legend lives in adjacent copy, not Chart.js. */
 export const doughnutOptions = {
+  responsive: true,
   maintainAspectRatio: false,
+  cutout: '62%',
   plugins: {
-    legend: {
-      position: 'bottom' as const,
-      labels: {
-        // Hide zero-count slices so empty categories do not clutter the legend.
-        // Chart.js may pass chart data or a chart instance as the second arg.
-        filter: (item: { datasetIndex?: number; index?: number }, chartOrData: unknown) => {
-          try {
-            const raw = chartOrData as {
-              datasets?: ChartDataset[];
-              data?: { datasets?: ChartDataset[] };
-            };
-            const datasets = raw?.datasets ?? raw?.data?.datasets;
-            const ds = datasets?.[item.datasetIndex ?? 0];
-            const value = Array.isArray(ds?.data) ? Number(ds.data[item.index ?? 0] ?? 0) : 0;
-            return value > 0;
-          } catch {
-            return true;
-          }
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (ctx: { label?: string; formattedValue?: string; parsed?: number }) => {
+          const label = ctx.label ?? '';
+          const value = ctx.formattedValue ?? String(ctx.parsed ?? '');
+          return label ? `${label}: ${value}` : value;
         },
       },
     },
@@ -418,11 +416,22 @@ export const doughnutOptions = {
 };
 
 export const sparklineOptions = {
+  responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: { display: false },
-    tooltip: { enabled: true },
+    tooltip: {
+      enabled: true,
+      callbacks: {
+        label: (ctx: { parsed: { y: number | null } }) => {
+          const y = ctx.parsed.y;
+          if (y == null) return '';
+          return `${y.toLocaleString()} gal`;
+        },
+      },
+    },
   },
+  layout: { padding: { top: 6, right: 6, bottom: 4, left: 6 } },
   scales: {
     x: { display: false },
     y: { display: false, beginAtZero: true },

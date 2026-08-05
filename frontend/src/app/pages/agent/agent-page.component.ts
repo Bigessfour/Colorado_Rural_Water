@@ -1,3 +1,9 @@
+/**
+ * AI Assistant — Pilot / Assessment Compose spine (not Kelly Stay primary path).
+ * Cognito: POST /agent with JWT. Compose: tenant headers + local RAG backend :8080.
+ * Guardrails (cost note, confirm, no cross-tenant) come from the API response.
+ */
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -15,10 +21,18 @@ import {
 } from '../../shared/persona';
 import { SafeMarkdownPipe } from '../../shared/safe-markdown.pipe';
 
+interface ChatSource {
+  source: string;
+  excerpt?: string;
+  uri?: string | null;
+}
+
 interface ChatMsg {
   role: 'user' | 'assistant';
   text: string;
   createdAt?: string;
+  /** Feature 014 — Cognito RAG citations */
+  sources?: ChatSource[];
 }
 
 /** Compose RAG session key — must match POST /api/rag and GET /api/history. */
@@ -185,8 +199,7 @@ export class AgentPageComponent implements OnInit {
           ? `${environment.demoUserId}@local`
           : null);
     const tenantId = this.auth.tenantId() || environment.demoTenantId || 'town-wiley';
-    const displayName =
-      this.auth.mapCenter()?.town ?? this.auth.placeName() ?? null;
+    const displayName = this.auth.mapCenter()?.town ?? this.auth.placeName() ?? null;
     this.messages.set([
       {
         role: 'assistant',
@@ -317,9 +330,14 @@ export class AgentPageComponent implements OnInit {
           this.error.set(body.error ?? `Assistant failed (${res.status})`);
           return;
         }
+        const composeSources = (body.sources ?? []) as ChatSource[];
         this.messages.update((m) => [
           ...m,
-          { role: 'assistant', text: body.answer ?? body.reply ?? '(no answer)' },
+          {
+            role: 'assistant',
+            text: body.answer ?? body.reply ?? '(no answer)',
+            sources: composeSources,
+          },
         ]);
         return;
       }
@@ -330,6 +348,7 @@ export class AgentPageComponent implements OnInit {
         this.messages.update((m) => m.slice(0, -1));
         return;
       }
+      // Cognito product path: Bearer only — never send client tenant overrides.
       const res = await fetch(`${environment.apiBaseUrl}${environment.agentPath}`, {
         method: 'POST',
         headers: {
@@ -348,7 +367,8 @@ export class AgentPageComponent implements OnInit {
         this.error.set('The assistant returned an empty answer. Try again in a moment.');
         return;
       }
-      this.messages.update((m) => [...m, { role: 'assistant', text: replyText }]);
+      const sources = (body.sources ?? []) as ChatSource[];
+      this.messages.update((m) => [...m, { role: 'assistant', text: replyText, sources }]);
       if (body.costNote) this.costNote.set(body.costNote);
       if (body.confidenceCoaching) this.coaching.set(body.confidenceCoaching);
       this.needsConfirm.set(Boolean(body.needsConfirm));

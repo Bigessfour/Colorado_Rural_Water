@@ -1,15 +1,17 @@
 <section class="page">
   <header class="page-head">
-    <h1>Upload meter readings</h1>
+    <h1>Upload Excel or CSV from your billing system</h1>
     <p class="lede">
-      Bring in a meter reading export for {{ auth.placeName() }} — even if columns are out of order
-      or labeled differently than we expect. We help match each column in plain language. Address
-      stays with the meter; customer names can change. Choose several files when loading older
-      months at once.
+      Export or Save As from QuickBooks, Caselle, Excel, or your handheld software — no conversion
+      required. We help match columns in plain language for {{ auth.placeName() }}. Address stays
+      with the meter; customer names can change. For a first load, the last 12 months is enough; add
+      older years when ready. Choose several files when loading older months at once.
     </p>
   </header>
 
-  <p-message severity="info" styleClass="hint" data-tour="upload-sample">{{ sampleHint }}</p-message>
+  <p-message severity="info" styleClass="hint" data-ptest="upload-sample">{{
+    sampleHint
+  }}</p-message>
   @if (!auth.isLoggedIn()) {
     <p class="signin-hint">
       <a routerLink="/login">Sign in</a> to import readings for {{ auth.placeName() }}.
@@ -46,12 +48,15 @@
     @if (statusMessage) {
       <p-message [severity]="statusSeverity" styleClass="hint">{{ statusMessage }}</p-message>
     }
-    @if (ingestWarnings.length) {
+    @if (visibleWarnings.length) {
       <ul class="warn-list">
-        @for (w of ingestWarnings; track w) {
+        @for (w of visibleWarnings; track w) {
           <li>{{ w }}</li>
         }
       </ul>
+      @if (hiddenWarningCount > 0) {
+        <p class="warn-more">…and {{ hiddenWarningCount }} more warning(s).</p>
+      }
     }
     @if (queue.length) {
       <div class="queue">
@@ -70,7 +75,7 @@
       #uploader
       mode="advanced"
       name="readings"
-      chooseLabel="Choose file(s)"
+      chooseLabel="Choose Excel or CSV"
       uploadLabel="Load for mapping"
       cancelLabel="Clear"
       [customUpload]="true"
@@ -82,7 +87,8 @@
     >
       <ng-template #empty>
         <div class="drop">
-          Drag CSV/Excel here (one file to map, or several for bulk history). Max 5 MB each.
+          Drag Excel here (CSV also works). One file to map, or several for bulk history. Max 5 MB
+          each for this upload path.
         </div>
       </ng-template>
     </p-fileupload>
@@ -123,6 +129,36 @@
       <p class="map-lede">
         Service address is required and should not change for a meter. Occupant name may update on
         move-in or sale.
+      </p>
+      <div class="column-summary" data-tour="column-summary">
+        <div class="column-summary-block">
+          <div class="column-summary-title">Mapped</div>
+          @if (mappedHeaders.length) {
+            <ul>
+              @for (h of mappedHeaders; track h) {
+                <li>{{ h }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="muted">None yet — pick Meter ID, date, and reading below.</p>
+          }
+        </div>
+        <div class="column-summary-block">
+          <div class="column-summary-title">Not used this time</div>
+          @if (unusedHeaders.length) {
+            <ul>
+              @for (h of unusedHeaders; track h) {
+                <li>{{ h }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="muted">Every column is mapped.</p>
+          }
+        </div>
+      </div>
+      <p class="map-lede extra-ok">
+        Extra columns are OK — Meter ID, date, and reading are enough to start. Map serial, size, or
+        notes if you want.
       </p>
       <div class="map-grid">
         @for (field of fields; track field) {

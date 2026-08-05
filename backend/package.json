@@ -18,11 +18,13 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.1103.0",
     "@aws-sdk/client-bedrock-runtime": "^3.1101.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.1101.0",
     "@aws-sdk/client-dynamodb": "^3.1101.0",
     "@aws-sdk/client-s3": "^3.1101.0",
     "@aws-sdk/client-ses": "^3.1101.0",
+    "@aws-sdk/client-ssm": "^3.1103.0",
     "@aws-sdk/lib-dynamodb": "^3.1101.0",
     "@aws-sdk/s3-request-presigner": "^3.1101.0",
     "esbuild": "^0.28.1",
