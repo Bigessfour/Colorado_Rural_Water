@@ -34,8 +34,9 @@ Work orders include meter ID, address, alert summary, Confidence note, recommend
 ## Settings (`/settings`)
 
 - **Display** — light/dark theme (same as shell toggle; saved in `localStorage` as `ws-ui-theme`)
+- **Help & guides** — Operator guide + CRWA admin guide (`/help`, `/help/tenant`, `/help/crwa`)
 - **Your session** — profile from `GET /me` when signed in
-- Quick links to Account, Member intake, and Reports
+- Quick links to Account, Member intake, Reports, and Help
 
 ## Theme
 

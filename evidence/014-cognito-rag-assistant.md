@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-04
 **Account:** `388691194728` / `codeplatoon` / `us-east-1`
-**Status:** infra applied (S3 Vectors KB); live SPA prove still open
+**Status:** CLOSED 2026-08-05 — infra applied (S3 Vectors KB); Cognito SPA prove + security sign-off complete (see Live prove / Security sections below)
 
 ## Dual path (honest)
 

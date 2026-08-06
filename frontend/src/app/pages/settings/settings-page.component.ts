@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
@@ -36,6 +36,7 @@ export class SettingsPageComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly theme = inject(ThemeService);
   readonly tour = inject(ProductTourService);
+  private readonly router = inject(Router);
 
   readonly themeOptions = [
     { label: 'Light', value: 'light' as UiTheme, icon: 'pi pi-sun' },
@@ -52,6 +53,10 @@ export class SettingsPageComponent implements OnInit {
 
   onThemeChange(mode: UiTheme): void {
     this.theme.setMode(mode);
+  }
+
+  openGuide(path: '/help' | '/help/tenant' | '/help/crwa'): void {
+    void this.router.navigateByUrl(path);
   }
 
   roleLabel(role: string): string {

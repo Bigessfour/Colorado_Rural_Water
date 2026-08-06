@@ -22,6 +22,30 @@
   </p-card>
 
   @if (auth.isLoggedIn()) {
+    <p-card header="Help &amp; guides" styleClass="block" data-help-guides>
+      <p class="card-lede">
+        How to use every main screen — for municipal operators and for CRWA staff (provision towns,
+        invite users, roll-up).
+      </p>
+      <div class="guide-actions">
+        <p-button
+          label="Operator guide"
+          icon="pi pi-book"
+          [outlined]="true"
+          (onClick)="openGuide('/help/tenant')"
+        />
+        <p-button
+          label="CRWA admin guide"
+          icon="pi pi-users"
+          [outlined]="true"
+          (onClick)="openGuide('/help/crwa')"
+        />
+        <p-button label="All guides" icon="pi pi-list" [text]="true" (onClick)="openGuide('/help')" />
+      </div>
+    </p-card>
+  }
+
+  @if (auth.isLoggedIn()) {
     <p-card header="Product tour" styleClass="block" data-tour="settings-tour">
       <p class="card-lede">
         A short walk through the main screens — what each area does, with highlights. New operators
@@ -61,6 +85,7 @@
         <a routerLink="/account">Account &amp; MFA</a>
         <a routerLink="/onboarding">Member intake</a>
         <a routerLink="/reports">Reports</a>
+        <a routerLink="/help">Help &amp; guides</a>
       </div>
     </p-card>
   } @else {

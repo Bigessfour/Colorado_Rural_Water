@@ -1,6 +1,6 @@
 # Plan — Feature 014: Production Cognito RAG Assistant
 
-**Status:** implementing
+**Status:** CLOSED (verified 2026-08-05 — Bedrock KB live; Cognito SPA prove + security sign-off; evidence/014 + evidence/016)
 
 ## Approach
 

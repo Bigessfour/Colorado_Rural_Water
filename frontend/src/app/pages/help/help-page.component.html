@@ -1,0 +1,41 @@
+<section class="page">
+  <h1>Help &amp; guides</h1>
+  <p class="lede">
+    Step-by-step how to use Water Saver. Pick the guide that matches your role — municipal operators
+    and CRWA staff have different jobs.
+  </p>
+
+  <p class="back-row">
+    <a routerLink="/settings">← Settings</a>
+    @if (active()) {
+      <span class="sep">·</span>
+      <a routerLink="/help">All guides</a>
+    }
+  </p>
+
+  @if (error()) {
+    <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
+  }
+
+  @if (!active()) {
+    <div class="guide-grid">
+      @for (g of guides; track g.id) {
+        <p-card [header]="g.title" styleClass="block">
+          <p class="card-lede">{{ g.blurb }}</p>
+          <p-button
+            [label]="'Open ' + g.title"
+            icon="pi pi-book"
+            (onClick)="openGuide(g.id)"
+          />
+        </p-card>
+      }
+    </div>
+  } @else {
+    @if (busy()) {
+      <p class="muted">Loading guide…</p>
+    }
+    @if (body()) {
+      <article class="guide-body" [innerHTML]="body() | safeMarkdown"></article>
+    }
+  }
+</section>

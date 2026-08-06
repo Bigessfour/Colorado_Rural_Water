@@ -1,0 +1,79 @@
+.lede {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: var(--ws-muted);
+  max-width: 40rem;
+}
+
+.back-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 1rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+}
+
+.back-row a {
+  color: var(--ws-teal);
+}
+
+.sep {
+  color: var(--ws-muted);
+}
+
+.card-lede {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: var(--ws-muted);
+  margin: 0 0 1rem;
+}
+
+.guide-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.muted {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: var(--ws-muted);
+}
+
+.guide-body {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: var(--ws-ink);
+  max-width: 42rem;
+  line-height: 1.55;
+}
+
+:host ::ng-deep .guide-body .md-h {
+  margin: 1.25rem 0 0.5rem;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-weight: 600;
+  color: var(--ws-ink);
+}
+
+:host ::ng-deep .guide-body .md-list {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.25rem;
+}
+
+:host ::ng-deep .guide-body .md-a {
+  color: var(--ws-teal);
+}
+
+:host ::ng-deep .guide-body code {
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--ws-teal) 10%, transparent);
+}
+
+:host ::ng-deep .block {
+  margin-bottom: 1rem;
+  background: color-mix(in srgb, var(--ws-card) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ws-teal) 12%, transparent);
+}
+
+:host ::ng-deep .hint {
+  margin-bottom: 1rem;
+  width: 100%;
+}

@@ -1,6 +1,6 @@
 # Plan — Feature 013: Kelly Ship Prove & Ops
 
-**Status:** In progress (prove session 2026-08-04)
+**Status:** CLOSED (ops complete 2026-08-06 — Kelly invite sent; CloudFront/review/API live)
 
 ## Approach
 
@@ -12,15 +12,15 @@
 
 ## Phases
 
-| Phase | Deliverable                                |
-| ----- | ------------------------------------------ |
-| A     | Alerts export + Meters CRUD prove          |
-| B     | Account MFA + Review walkthrough prove     |
-| C     | Admin/CRWA prove + Reports signed-in prove |
-| D     | Ops checklist + Kelly invite readiness     |
+| Phase | Deliverable                                | Result                                 |
+| ----- | ------------------------------------------ | -------------------------------------- |
+| A     | Alerts export + Meters CRUD prove          | done                                   |
+| B     | Account MFA + Review walkthrough prove     | Review done; MFA deferred Pilot        |
+| C     | Admin/CRWA prove + Reports signed-in prove | done (Reports evidence/016)            |
+| D     | Ops checklist + Kelly invite               | smoke done; invite **sent 2026-08-06** |
 
 ## Dependencies
 
-- Demo operator Cognito user (`demo.operator@watersaver.local` or equivalent)
+- Demo / Kelly Cognito users on us-east-1 SPA pool
 - Live API (`codeplatoon` / Assessment III)
-- SPA `npm start` on `:4200`
+- CloudFront SPA `https://duqk1pqvmrsuh.cloudfront.net` (Deployed; re-verified 2026-08-06)

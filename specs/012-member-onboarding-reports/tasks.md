@@ -32,5 +32,5 @@
 
 ## Phase E: Convergence
 
-- [ ] T012-19: Signed-in browser prove — Reports CSV/XLS download + summary HTML open per spec acceptance (partial) — **blocked** live API 404 until terraform apply
+- [x] T012-19: Signed-in browser prove — Reports CSV/XLS download + summary HTML open per spec acceptance — **pass** 2026-08-05 (T013-06; [`evidence/016-town-wiley-24mo-prove`](../../evidence/016-town-wiley-24mo-prove/); [PROVE_FEATURES](../../docs/PROVE_FEATURES.md)); routes live 2026-08-06 (`GET /reports/*` → 401 without JWT, not 404)
 - [x] T012-20: Close inventory proof for `report-catalog.categoryLabel` — extend reports spec or action-items (partial)

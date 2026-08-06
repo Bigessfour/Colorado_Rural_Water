@@ -1,11 +1,11 @@
-# Kelly invite — ready to send (ops)
+# Kelly invite — sent (ops)
 
-**Status:** Engineering complete · **Your action:** send this to Kelly Stone.
+**Status:** Invite sent **2026-08-06** · CloudFront / review URLs re-verified live the same day.
 
 **Live SPA (CloudFront):** `https://duqk1pqvmrsuh.cloudfront.net`
 **Guided review:** `https://duqk1pqvmrsuh.cloudfront.net/review`
 
-## What to send
+## What was sent
 
 **Subject:** Water Saver — guided review (20–30 min)
 
@@ -33,11 +33,11 @@
 
 ## Pre-send checklist
 
-- [x] CloudFront SPA live — `https://duqk1pqvmrsuh.cloudfront.net` (2026-08-04 deploy; Cognito login + `/review` proved)
-- [x] API Gateway / review Lambda healthy — `GET /health` 200; review submit SES path proved 2026-08-04 Steve dry-run
+- [x] CloudFront SPA live — `https://duqk1pqvmrsuh.cloudfront.net` (2026-08-04 deploy; Cognito login + `/review` proved; **re-verified HTTP 200 / Deployed 2026-08-06**)
+- [x] API Gateway / review Lambda healthy — `GET /health` 200; review submit SES path proved 2026-08-04 Steve dry-run; **health re-verified 2026-08-06**
 - [x] Kelly can sign in with review credentials — recreated in **us-east-1** SPA pool (`us-east-1_oZlKJ1y39`); password file updated
 - [x] `./scripts/smoke.sh` or [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md) F2 boxes reviewed — all F2 boxes checked 2026-08-04
-- [ ] **Steve:** Send invite email / message with CloudFront URL + credential delivery out-of-band
+- [x] **Steve:** Send invite email / message with CloudFront URL + credential delivery out-of-band — **sent 2026-08-06**
 
 ## Redeploy SPA after UI changes
 

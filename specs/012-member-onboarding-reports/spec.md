@@ -1,7 +1,7 @@
 # Feature 012: Member Onboarding Intake & Reports
 
 **Rubric:** Pilot product (Epic E2 + Reports extension)
-**Status:** verified (MVP shipped 2026-08-04)
+**Status:** CLOSED (verified 2026-08-04 MVP; Reports prove 2026-08-05/06)
 **Product:** Water Saver (Colorado Rural Water)
 **Isolation:** `tenant_id` on all intake, report, and export paths
 **Depends on:** D3 tenant provision, Epic B ingest, C4 export, Feature 011 map coords

@@ -31,6 +31,8 @@ describe('SettingsPageComponent', () => {
           useValue: {
             isLoggedIn: () => true,
             getBearerToken: () => 'jwt',
+            firstName: () => 'Demo',
+            placeName: () => 'Town of Wiley',
           },
         },
       ],
@@ -42,6 +44,7 @@ describe('SettingsPageComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(fixture.nativeElement.textContent).toMatch(/Settings|Display|Light|Dark/i);
+    expect(fixture.nativeElement.textContent).toMatch(/Help|Operator guide|CRWA/i);
     expect(fetch).toHaveBeenCalled();
   });
 });

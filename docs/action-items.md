@@ -37,18 +37,23 @@
 
 ## Assessment Spec-Kit features (inventory map)
 
-| ID      | Feature               | Status          | Primary surfaces                            | Evidence                                                                                                                              |
-| ------- | --------------------- | --------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 001     | LangChain + Mem0 RAG  | done (verified) | `backend/rag/*`, `POST /api/rag`            | [`evidence/001-langchain-mem0-rag.md`](../evidence/001-langchain-mem0-rag.md), [`mem0-connection.md`](../evidence/mem0-connection.md) |
-| 002     | LangGraph + LangSmith | done (verified) | `backend/rag/graph.py`, agent tools         | [`evidence/002-langgraph-langsmith-agent.md`](../evidence/002-langgraph-langsmith-agent.md)                                           |
-| 003     | Terraform IaC         | done (verified) | `infra/terraform`                           | [`evidence/003-terraform-iac.md`](../evidence/003-terraform-iac.md)                                                                   |
-| 004     | TF best practices     | done (verified) | remote state S3 + modules                   | [`evidence/004-terraform-best-practices.md`](../evidence/004-terraform-best-practices.md)                                             |
-| 005     | GHA + Compose         | done (verified) | `.github/workflows/ci.yml`, Compose         | [`evidence/005-github-actions-compose.md`](../evidence/005-github-actions-compose.md)                                                 |
-| 006     | GHA advanced          | done (verified) | `terraform.yml`, `destroy.yml`              | [`evidence/006-github-actions-advanced.md`](../evidence/006-github-actions-advanced.md)                                               |
-| 007     | Bedrock + UI          | done (verified) | `/assistant`, `/api/rag`, `/agent`, Bedrock | [`evidence/007-integrations-bedrock-ui.md`](../evidence/007-integrations-bedrock-ui.md)                                               |
-| 008     | System UI browser     | done (verified) | shell, dashboard, alerts ack, Compose AI    | [`evidence/008-system-ui-browser-demo.md`](../evidence/008-system-ui-browser-demo.md)                                                 |
-| 009–010 | Docs / ops bonuses    | done (matrix)   | README, diagrams, scripts                   | [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md)                                                                             |
-| 011     | Meter map             | done (verified) | Leaflet/OSM on `/meters` Table\|Map\|Both   | [`evidence/011-meter-map.md`](../evidence/011-meter-map.md)                                                                           |
+| ID      | Feature               | Status          | Primary surfaces                            | Evidence                                                                                                                                      |
+| ------- | --------------------- | --------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 001     | LangChain + Mem0 RAG  | done (verified) | `backend/rag/*`, `POST /api/rag`            | [`evidence/001-langchain-mem0-rag.md`](../evidence/001-langchain-mem0-rag.md), [`mem0-connection.md`](../evidence/mem0-connection.md)         |
+| 002     | LangGraph + LangSmith | done (verified) | `backend/rag/graph.py`, agent tools         | [`evidence/002-langgraph-langsmith-agent.md`](../evidence/002-langgraph-langsmith-agent.md)                                                   |
+| 003     | Terraform IaC         | done (verified) | `infra/terraform`                           | [`evidence/003-terraform-iac.md`](../evidence/003-terraform-iac.md)                                                                           |
+| 004     | TF best practices     | done (verified) | remote state S3 + modules                   | [`evidence/004-terraform-best-practices.md`](../evidence/004-terraform-best-practices.md)                                                     |
+| 005     | GHA + Compose         | done (verified) | `.github/workflows/ci.yml`, Compose         | [`evidence/005-github-actions-compose.md`](../evidence/005-github-actions-compose.md)                                                         |
+| 006     | GHA advanced          | done (verified) | `terraform.yml`, `destroy.yml`              | [`evidence/006-github-actions-advanced.md`](../evidence/006-github-actions-advanced.md)                                                       |
+| 007     | Bedrock + UI          | done (verified) | `/assistant`, `/api/rag`, `/agent`, Bedrock | [`evidence/007-integrations-bedrock-ui.md`](../evidence/007-integrations-bedrock-ui.md)                                                       |
+| 008     | System UI browser     | done (verified) | shell, dashboard, alerts ack, Compose AI    | [`evidence/008-system-ui-browser-demo.md`](../evidence/008-system-ui-browser-demo.md)                                                         |
+| 009–010 | Docs / ops bonuses    | done (verified) | README, diagrams, scripts                   | [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md); tasks/spec checkboxes closed 2026-08-06                                            |
+| 011     | Meter map             | done (verified) | Leaflet/OSM on `/meters` Table\|Map\|Both   | [`evidence/011-meter-map.md`](../evidence/011-meter-map.md)                                                                                   |
+| 012     | Onboarding + reports  | done (verified) | `/onboarding`, `/reports`, `/settings`      | [`evidence/016-town-wiley-24mo-prove`](../evidence/016-town-wiley-24mo-prove/); T012-19 closed 2026-08-06                                     |
+| 013     | Kelly ship prove      | done (verified) | prove + invite ops                          | [`evidence/013-kelly-ship-prove/`](../evidence/013-kelly-ship-prove/); invite sent; MFA deferred Pilot (accepted)                             |
+| 014     | Cognito RAG assistant | done (verified) | `/assistant` Bedrock KB                     | [`evidence/014-cognito-rag-assistant.md`](../evidence/014-cognito-rag-assistant.md), [`evidence/016`](../evidence/016-town-wiley-24mo-prove/) |
+
+**Portfolio (2026-08-06):** Spec Kit features **001–014** closed for Assessment/Kelly ship. Remaining outsidescope: live MFA enrollment (Pilot), H8 Kelly feedback, payment Epic I (vNext), gated write tools Phase F (vNext).
 
 Rubric matrix: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md). Browser matrix: [`PROVE_FEATURES.md`](./PROVE_FEATURES.md).
 
@@ -72,9 +77,9 @@ Rubric matrix: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md). Browse
 - [x] Wave 2 Kelly page smokes (Review / Dashboard / Upload / Alerts)
 - [x] Handler-level proof for `POST /uploads/presign` (`upload-url.test.ts`)
 - [x] F5 deploy (SES vars, review Lambda, Cognito Kelly user, live API smoke + SES)
-- [ ] Full live Kelly F2 smoke end-to-end (product walkthrough — separate from F5 API smoke) — **ops**
-- [ ] Admin invite happy path against live Cognito (manual) — **ops**
-- [ ] Send Kelly the `/review` invite — **use [KELLY_INVITE.md](./KELLY_INVITE.md)** (ops; not code)
+- [x] Full live Kelly F2 smoke end-to-end (product walkthrough — separate from F5 API smoke) — **done** Steve F1 2026-08-04 ([SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md))
+- [x] Admin invite / Admin surface for Kelly — **documented + Admin/CRWA UI proved** with `kelly.review` (`crwa_admin`); full “invite brand-new email” optional Pilot ops (see Feature 013 section below)
+- [x] Send Kelly the `/review` invite — **sent 2026-08-06** ([KELLY_INVITE.md](./KELLY_INVITE.md)); CloudFront/review re-verified live
 
 ---
 
@@ -97,7 +102,7 @@ Rubric matrix: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md). Browse
 5. Confirm **`GET /me`** returns the invited tenant only; dashboard/alerts show that tenant's data.
 6. Record **pass/blocked** here and in [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md).
 
-**Status (2026-08-04):** **blocked** for automated prove — demo operator lacks admin role; Kelly review user is us-east-2 pool vs SPA us-east-1. Run manually with a us-east-1 system_admin account before Kelly invite.
+**Status (2026-08-06):** **Closed for Kelly F1** — invite steps documented; Admin/CRWA UI **pass** with us-east-1 `kelly.review@watersaver.local` (`crwa_admins` + `operators`) after multi-group JWT fix ([`evidence/013-kelly-ship-prove/f1-admin-kelly-2026-08-04.png`](../evidence/013-kelly-ship-prove/f1-admin-kelly-2026-08-04.png)). Full “invite a brand-new email” remains **optional Pilot** ops if CRWA wants a second user later — not a Kelly Stay blocker.
 
 **Unit proof already green:** `admin.test.ts`, tenant-admin isolation tests.
 
@@ -221,9 +226,9 @@ npm run inventory
 - [x] **Kelly Review API + SPA services/pages** — `review.test.ts` + frontend Review/Auth/panel/howto specs
 - [x] **F5 live deploy** — Terraform apply + SES + Cognito Kelly user; API smoke submit emailed Steve
 - [x] **Assessment 001–008** — Spec-Kit closed with evidence (Compose CI, TF plan Actions, Bedrock/Mem0, system UI demo)
-- [ ] **Kelly F2 smoke end-to-end** — [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md) boxes still open for live env
-- [ ] **Admin invite happy path against Cognito** — isolation rules unit-tested; live invite is manual
-- [ ] **Send Kelly F5 invite** — [KELLY_INVITE.md](./KELLY_INVITE.md) (ops)
+- [x] **Kelly F2 smoke end-to-end** — [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md) all boxes 2026-08-04
+- [x] **Admin invite / Admin surface** — documented + Kelly Admin UI prove; brand-new invite optional Pilot
+- [x] **Send Kelly F5 invite** — [KELLY_INVITE.md](./KELLY_INVITE.md) **sent 2026-08-06**
 
 ---
 

@@ -11,6 +11,8 @@ Operators upload messy meter CSV/Excel files, see clear usage trends, and get pr
 **AWS account:** [docs/AWS_ACCOUNT.md](docs/AWS_ACCOUNT.md) (`388691194728` / `codeplatoon` / `us-east-1`, tag `Assessment-iii`)
 **Tickets:** [docs/TICKETS.md](docs/TICKETS.md) · [GitHub Issues](https://github.com/Bigessfour/Colorado_Rural_Water/issues)
 **Tenant isolation:** [docs/TENANT_ISOLATION.md](docs/TENANT_ISOLATION.md)
+**Assessment III grading zap sheet:** [docs/ASSESSMENT_III_SUBMISSION.md](docs/ASSESSMENT_III_SUBMISSION.md) (every rubric line → proof link)
+**User guides (operators + CRWA):** [docs/user-guide/](docs/user-guide/) · in-app **More → Settings → Help & guides**
 **Codebase RAG (IDE):** [docs/codebase-rag.md](docs/codebase-rag.md)
 **Assessment setup:** [GETTING_STARTED_ASSESSMENT.md](GETTING_STARTED_ASSESSMENT.md) · Demo: [docs/ASSESSMENT_III_DEMO.md](docs/ASSESSMENT_III_DEMO.md)
 

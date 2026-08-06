@@ -18,6 +18,11 @@ export class SafeMarkdownPipe implements PipeTransform {
       .replace(/"/g, '&quot;');
 
     let html = escaped;
+    // Safe relative or https links only (guides / in-app paths).
+    html = html.replace(
+      /\[([^\]]+)\]\((\/[^)\s]*|https:\/\/[^)\s]+)\)/g,
+      '<a href="$2" class="md-a">$1</a>',
+    );
     html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
     html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     // Italics: single * not adjacent to another *
@@ -26,6 +31,7 @@ export class SafeMarkdownPipe implements PipeTransform {
     html = html.replace(/^## (.+)$/gm, '<h3 class="md-h">$1</h3>');
     html = html.replace(/^# (.+)$/gm, '<h3 class="md-h">$1</h3>');
     html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
     html = html.replace(/(?:<li>.*<\/li>\n?)+/g, (block) => `<ul class="md-list">${block}</ul>`);
     html = html.replace(/\n\n/g, '</p><p class="md-p">');
     html = html.replace(/\n/g, '<br />');

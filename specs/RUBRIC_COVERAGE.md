@@ -99,4 +99,4 @@ Per-feature grading checklists live at the bottom of each `specs/00X-.../spec.md
 | Item                      | Feature                           | Status       | Notes                                                                                                                            |
 | ------------------------- | --------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | Meter map (Leaflet + OSM) | [011](011-meter-map/)             | verified     | Optional product polish — [`evidence/011-meter-map.md`](../evidence/011-meter-map.md); does not score Assessment III %           |
-| Cognito JWT RAG Assistant | [014](014-cognito-rag-assistant/) | implementing | Product Pilot path — [`evidence/014-cognito-rag-assistant.md`](../evidence/014-cognito-rag-assistant.md); Compose remains rubric |
+| Cognito JWT RAG Assistant | [014](014-cognito-rag-assistant/) | verified     | Product Pilot path — [`evidence/014-cognito-rag-assistant.md`](../evidence/014-cognito-rag-assistant.md); Compose remains rubric |
