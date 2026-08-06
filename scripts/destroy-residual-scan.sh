@@ -87,6 +87,16 @@ if [[ -n ${LOGS} && ${LOGS} != None ]]; then
 	done
 fi
 
+# Secrets Manager stubs pending deletion (block re-apply with same name)
+SECRETS="$(aws_cli secretsmanager list-secrets --include-planned-deletion \
+	--query "SecretList[?contains(Name, 'water-saver') && DeletedDate!=null].Name" --output text 2>/dev/null || true)"
+if [[ -n ${SECRETS} && ${SECRETS} != None ]]; then
+	echo "NOTE pending-deletion secrets — force deleting: ${SECRETS}"
+	for s in ${SECRETS}; do
+		aws_cli secretsmanager delete-secret --secret-id "${s}" --force-delete-without-recovery 2>/dev/null || true
+	done
+fi
+
 echo "==> Allowed residual: state bucket ${STATE_BUCKET} (bootstrap, not in stack)"
 aws_cli s3api head-bucket --bucket "${STATE_BUCKET}" >/dev/null
 

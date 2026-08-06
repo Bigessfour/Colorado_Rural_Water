@@ -25,7 +25,7 @@ data "aws_region" "current" {}
 # ---------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "knowledge" {
-  bucket        = "${local.name_prefix}-knowledge-${data.aws_caller_identity.current.account_id}"
+  bucket = "${local.name_prefix}-knowledge-${data.aws_caller_identity.current.account_id}"
   # Allow terraform destroy when corpus objects / versions exist (Assessment teardown).
   force_destroy = true
 

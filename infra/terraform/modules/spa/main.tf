@@ -5,7 +5,7 @@ locals {
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "spa" {
-  bucket        = "${local.name_prefix}-spa-${data.aws_caller_identity.current.account_id}"
+  bucket = "${local.name_prefix}-spa-${data.aws_caller_identity.current.account_id}"
   # Allow terraform destroy when SPA assets / versions exist (Assessment teardown).
   force_destroy = true
 

@@ -8,19 +8,19 @@
 
 ## Live AWS project (click to open)
 
-> **Status 2026-08-06:** Stack **torn down** after destroy prove (**124** resources destroyed; residual scan PASS). Re-create with `terraform apply -var-file=environments/dev.tfvars` + `./scripts/deploy-spa.sh` when a live walk is needed. Evidence: [`../evidence/07-destroy.md`](../evidence/07-destroy.md).
+> **Status 2026-08-06 (re-applied):** Stack recreated after destroy prove. New CloudFront/API IDs below. Cognito pool recreated — ask Steve for demo credentials.
 
-| What | URL (pre-destroy / after re-apply) |
+| What | URL |
 | --- | --- |
-| **SPA (CloudFront HTTPS)** | https://duqk1pqvmrsuh.cloudfront.net |
-| **Kelly Review** | https://duqk1pqvmrsuh.cloudfront.net/review |
-| **API health** | https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com/health |
-| **API base** | https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com |
+| **SPA (CloudFront HTTPS)** | https://d1gokx5wxrd4x6.cloudfront.net |
+| **Kelly Review** | https://d1gokx5wxrd4x6.cloudfront.net/review |
+| **API health** | https://uqujnhmk31.execute-api.us-east-1.amazonaws.com/health |
+| **API base** | https://uqujnhmk31.execute-api.us-east-1.amazonaws.com |
 | **Destroy evidence** | [`evidence/07-destroy.md`](../evidence/07-destroy.md) |
 
-Account `388691194728` · `us-east-1` · tag `Assessment-iii`. Hardened teardown: `.github/workflows/destroy.yml` + `./scripts/terraform-destroy.sh`.
+Account `388691194728` · `us-east-1` · tag `Assessment-iii`. Hardened teardown: `.github/workflows/destroy.yml` + `./scripts/terraform-destroy.sh` (`recovery_window_in_days = 0` on AI secret stub).
 
-> **How to grade:** Prefer Compose for Assessment AI spine (`localhost:8080` / `:3000`). Live Cognito SPA is optional product proof after re-apply.
+> **How to grade:** Prefer Compose for Assessment AI spine (`localhost:8080` / `:3000`). Live Cognito SPA is optional product proof — deploy with `./scripts/deploy-spa.sh` from repo root after apply.
 
 Permalink base for this submission branch (update if branch renames):
 
