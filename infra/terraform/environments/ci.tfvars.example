@@ -9,3 +9,4 @@ enable_cognito = true
 enable_api     = true
 enable_storage = true
 enable_spa     = true
+enable_bedrock_kb = true

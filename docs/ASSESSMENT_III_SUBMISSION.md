@@ -1,19 +1,19 @@
 # Assessment III — Grading zap sheet (Water Saver)
 
-**Repo:** [Bigessfour/Colorado_Rural_Water](https://github.com/Bigessfour/Colorado_Rural_Water)  
-**AWS:** account `388691194728` · profile `codeplatoon` · region `us-east-1` · tag `Assessment-iii`  
-**Master matrix:** [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md)  
-**Demo talk-track:** [`ASSESSMENT_III_DEMO.md`](./ASSESSMENT_III_DEMO.md) · [`PRESENTATION_NOTES.md`](../PRESENTATION_NOTES.md)  
+**Repo:** [Bigessfour/Colorado_Rural_Water](https://github.com/Bigessfour/Colorado_Rural_Water)
+**AWS:** account `388691194728` · profile `codeplatoon` · region `us-east-1` · tag `Assessment-iii`
+**Master matrix:** [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md)
+**Demo talk-track:** [`ASSESSMENT_III_DEMO.md`](./ASSESSMENT_III_DEMO.md) · [`PRESENTATION_NOTES.md`](../PRESENTATION_NOTES.md)
 **Rubric dry-run:** [`evidence/013-kelly-ship-prove/assessment-iii-rubric-dryrun-2026-08-04.md`](../evidence/013-kelly-ship-prove/assessment-iii-rubric-dryrun-2026-08-04.md)
 
 ## Live AWS project (click to open)
 
-| What | URL |
-| --- | --- |
-| **SPA (CloudFront HTTPS)** | https://duqk1pqvmrsuh.cloudfront.net |
-| **Kelly Review** | https://duqk1pqvmrsuh.cloudfront.net/review |
-| **API health** | https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com/health |
-| **API base** | https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com |
+| What                       | URL                                                           |
+| -------------------------- | ------------------------------------------------------------- |
+| **SPA (CloudFront HTTPS)** | https://duqk1pqvmrsuh.cloudfront.net                          |
+| **Kelly Review**           | https://duqk1pqvmrsuh.cloudfront.net/review                   |
+| **API health**             | https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com/health |
+| **API base**               | https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com        |
 
 Account `388691194728` · `us-east-1` · resources tagged `Assessment-iii`. Sign-in uses Cognito (demo operator / Kelly review users — ask Steve if you need credentials for a live walk).
 

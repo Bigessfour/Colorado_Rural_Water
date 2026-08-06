@@ -1,7 +1,10 @@
 name: Destroy
 
-# Feature 006 — explicit teardown. Prefer dry_run=true for evidence without deleting the stack.
-# Account: 388691194728 · us-east-1 · tag Assessment-iii
+# Feature 006 — teardown Water Saver stack in account 388691194728 / us-east-1.
+# Default is dry_run=true (plan -destroy only). Real destroy requires:
+#   confirm=destroy AND dry_run=false
+# Does NOT delete remote state bucket water-saver-tf-state-388691194728.
+# Local equivalent: ./scripts/terraform-destroy.sh [--destroy] with CONFIRM=destroy
 
 on:
   workflow_dispatch:
@@ -22,23 +25,34 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     if: inputs.confirm == 'destroy'
+    timeout-minutes: 90
     permissions:
       contents: read
       id-token: write
     env:
       AWS_DEFAULT_REGION: us-east-1
+      AWS_REGION: us-east-1
       TF_IN_AUTOMATION: true
+      TF_VAR_FILE: environments/ci.tfvars.example
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_version: "~> 1.10"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+      - name: Guard account
+        run: |
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          echo "Caller account=${ACCOUNT}"
+          test "${ACCOUNT}" = "388691194728"
       - name: Bundle Lambdas
         run: |
           npm ci
@@ -47,25 +61,39 @@ jobs:
       - name: Terraform Init
         working-directory: infra/terraform
         run: terraform init -input=false
+      - name: Select workspace
+        working-directory: infra/terraform
+        run: terraform workspace select dev || terraform workspace new dev
+      - name: Empty managed S3 buckets
+        if: ${{ !inputs.dry_run }}
+        run: |
+          chmod +x scripts/empty-water-saver-buckets.sh
+          unset AWS_PROFILE || true
+          AWS_PROFILE= ./scripts/empty-water-saver-buckets.sh
       - name: Terraform plan -destroy (dry run)
         if: inputs.dry_run
         working-directory: infra/terraform
         run: |
-          terraform workspace select dev || terraform workspace new dev
           terraform plan -destroy \
-            -var-file=environments/ci.tfvars.example \
+            -var-file="${TF_VAR_FILE}" \
             -no-color -input=false
       - name: Terraform destroy (real)
         if: ${{ !inputs.dry_run }}
         working-directory: infra/terraform
         run: |
-          terraform workspace select dev || terraform workspace new dev
           terraform destroy \
-            -var-file=environments/ci.tfvars.example \
+            -var-file="${TF_VAR_FILE}" \
             -auto-approve -no-color -input=false
+      - name: Residual scan
+        if: ${{ !inputs.dry_run }}
+        run: |
+          chmod +x scripts/destroy-residual-scan.sh
+          unset AWS_PROFILE || true
+          AWS_PROFILE= ./scripts/destroy-residual-scan.sh
       - name: Evidence note
+        if: always()
         run: |
           mkdir -p evidence
           {
-            echo "- $(date -u +%Y-%m-%dT%H:%M:%SZ) run ${{ github.run_id }} dry_run=${{ inputs.dry_run }} actor=${{ github.actor }}"
+            echo "- $(date -u +%Y-%m-%dT%H:%M:%SZ) Actions run ${{ github.run_id }} dry_run=${{ inputs.dry_run }} actor=${{ github.actor }} hardened=true"
           } >> evidence/07-destroy.md
