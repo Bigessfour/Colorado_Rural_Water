@@ -4,7 +4,7 @@ Use this if Kelly or a grader asks what’s unfinished. Do **not** present these
 
 | Gap                           | Status                 | Notes                                                                                     |
 | ----------------------------- | ---------------------- | ----------------------------------------------------------------------------------------- |
-| Public HTTPS SPA (CloudFront) | **Live** (2026-08-04)  | `https://duqk1pqvmrsuh.cloudfront.net` — redeploy via `./scripts/deploy-spa.sh`           |
+| Public HTTPS SPA (CloudFront) | **Live** (2026-08-07)  | `https://d1gokx5wxrd4x6.cloudfront.net` — redeploy via `./scripts/deploy-spa.sh`          |
 | Reports hub downloads         | **Live** (2026-08-04)  | Terraform applied: `water-saver-dev-reports` + API routes                                 |
 | Account MFA live prove        | Partial / Pilot        | Template + Vitest; skip in F1 unless asked                                                |
 | Cognito JWT RAG (Feature 014) | **Live** (2026-08-05)  | Product: Bedrock KB + Dynamo tools + CONV#; Compose FAISS/stub tools = Assessment-only (`composeDemo: true`) |

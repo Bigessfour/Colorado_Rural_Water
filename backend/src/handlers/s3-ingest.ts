@@ -11,11 +11,13 @@ import {
   parseCustomerReadingsExcel,
 } from "../shared/excel-parse.js";
 import {
+  createLastIngestStoreFromEnv,
   createMeterStoreFromEnv,
   createSourceStoreFromEnv,
 } from "../shared/dynamo-store.js";
 import { commitCustomerIngest } from "../shared/ingest.js";
 import type { MeterStore } from "../shared/ingest.js";
+import { buildLastIngestRecord } from "../shared/last-ingest.js";
 import { parseSourceReadingsCsv } from "../shared/source-csv-parse.js";
 import { commitSourceIngest } from "../shared/source-ingest.js";
 import type { SourceStore } from "../shared/source-store.js";
@@ -211,6 +213,22 @@ export async function processS3UploadObject(input: {
   }
 
   const summary = await commitCustomerIngest(meterStore, tenantId, parsed);
+  try {
+    await createLastIngestStoreFromEnv().putLastIngest(
+      buildLastIngestRecord({
+        tenantId,
+        rowsAccepted: parsed.rowsAccepted,
+        rowsSkipped: parsed.rowsSkipped,
+        readingsWritten: summary.readingsWritten,
+        filename: key.split("/").pop() ?? key,
+      }),
+    );
+  } catch (metaErr) {
+    console.warn(
+      "last_ingest_persist_failed",
+      metaErr instanceof Error ? metaErr.message : String(metaErr),
+    );
+  }
   return {
     key,
     tenantId,

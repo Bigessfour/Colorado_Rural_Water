@@ -77,6 +77,19 @@
   </p-card>
 
   <p-card styleClass="upload-card">
+    <div class="upload-actions">
+      <p-button
+        label="Try practice CSV"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="busy || !auth.isLoggedIn()"
+        (onClick)="loadPracticeCsv()"
+        data-tour="upload-practice"
+      />
+      <span class="upload-actions-hint">
+        Loads a small sample so you can map → check → import without a local file.
+      </span>
+    </div>
     <p-fileupload
       #uploader
       mode="advanced"
@@ -85,16 +98,18 @@
       uploadLabel="Load for mapping"
       cancelLabel="Clear"
       [customUpload]="true"
-      [auto]="false"
+      [auto]="true"
+      [showUploadButton]="false"
       [multiple]="true"
       accept=".csv,.txt,.xlsx,.xls"
       [maxFileSize]="5000000"
       (uploadHandler)="onCustomUpload($event)"
+      (onClear)="onUploaderClear()"
     >
       <ng-template #empty>
         <div class="drop">
-          Drag Excel here (CSV also works). One file to map, or several for bulk history. Max 5 MB
-          each for this upload path.
+          Drop Excel or CSV here (or choose a file). Mapping starts automatically. Max 5 MB each —
+          several files run as bulk history import.
         </div>
       </ng-template>
     </p-fileupload>

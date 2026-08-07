@@ -12,6 +12,15 @@
 import type { MeterReading } from "./meter-location.js";
 import type { SourceReading } from "./source-reading.js";
 
+/** Production contribution for one named source in a period (dashboard breakdown). */
+export interface SourceProductionShare {
+  sourceId: string;
+  /** Optional display name when known at calculation time (handlers may enrich). */
+  sourceName?: string | null;
+  gallons: number;
+  readingCount: number;
+}
+
 export interface WaterBalancePeriod {
   /** YYYY-MM (UTC calendar month — pilot default; see file header). */
   period: string;
@@ -28,6 +37,8 @@ export interface WaterBalancePeriod {
   status: "loss" | "gain" | "ok" | "insufficient";
   sourceReadingCount: number;
   meterDeltaCount: number;
+  /** Per-source production for the period (empty when no In). */
+  productionBySource: SourceProductionShare[];
 }
 
 export interface WaterBalanceResult extends WaterBalancePeriod {
@@ -71,18 +82,17 @@ export function periodLabel(period: string): string {
  * Re-ingest of the same (sourceId, period) replaces rather than sums duplicates.
  * Cumulative-mode: deltas between successive cumulative readings (unchanged).
  */
-export function sumSourceProduction(
+/**
+ * Per-source production for a YYYY-MM period (period volumes + cumulative deltas).
+ * Same rules as {@link sumSourceProduction}, but keeps sourceId breakdown for the dashboard.
+ */
+export function sumSourceProductionBySource(
   readings: SourceReading[],
   period: string,
-): {
-  gallons: number;
-  count: number;
-} {
+): SourceProductionShare[] {
   const inPeriod = readings.filter(
     (r) => periodKeyFromIso(r.timestamp) === period,
   );
-  let gallons = 0;
-  let count = 0;
 
   const bySource = new Map<string, SourceReading[]>();
   for (const r of readings) {
@@ -90,6 +100,24 @@ export function sumSourceProduction(
     list.push(r);
     bySource.set(r.sourceId, list);
   }
+
+  const shares = new Map<string, SourceProductionShare>();
+
+  const add = (sourceId: string, gallons: number, readingCount: number) => {
+    if (gallons < 0 || readingCount <= 0) return;
+    const prev = shares.get(sourceId);
+    if (prev) {
+      prev.gallons += gallons;
+      prev.readingCount += readingCount;
+    } else {
+      shares.set(sourceId, {
+        sourceId,
+        sourceName: null,
+        gallons,
+        readingCount,
+      });
+    }
+  };
 
   // Period volumes: latest reading per source in this calendar month.
   const periodLatest = new Map<string, SourceReading>();
@@ -101,18 +129,15 @@ export function sumSourceProduction(
     }
   }
   for (const r of periodLatest.values()) {
-    gallons += r.value;
-    count += 1;
+    add(r.sourceId, r.value, 1);
   }
 
-  // Prefer period volumes when both modes exist for the same source in this month
-  // (avoids double-counting period CSV + cumulative logger for one well).
+  // Prefer period volumes when both modes exist for the same source in this month.
   const periodSourceIds = new Set(periodLatest.keys());
 
   for (const r of inPeriod) {
     if (r.volumeMode !== "cumulative") continue;
     if (periodSourceIds.has(r.sourceId)) continue;
-    // Cumulative: usage for this reading = delta from previous cumulative for same source.
     const series = (bySource.get(r.sourceId) ?? [])
       .filter((x) => x.volumeMode === "cumulative")
       .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
@@ -120,14 +145,31 @@ export function sumSourceProduction(
       (x) => x.timestamp === r.timestamp && x.value === r.value,
     );
     if (idx <= 0) continue;
-    const delta = series[idx].value - series[idx - 1].value;
+    const delta = series[idx]!.value - series[idx - 1]!.value;
     if (delta >= 0) {
-      gallons += delta;
-      count += 1;
+      add(r.sourceId, delta, 1);
     }
   }
 
-  return { gallons, count };
+  return [...shares.values()].sort((a, b) => b.gallons - a.gallons);
+}
+
+export function sumSourceProduction(
+  readings: SourceReading[],
+  period: string,
+): {
+  gallons: number;
+  count: number;
+  bySource: SourceProductionShare[];
+} {
+  const bySource = sumSourceProductionBySource(readings, period);
+  let gallons = 0;
+  let count = 0;
+  for (const s of bySource) {
+    gallons += s.gallons;
+    count += s.readingCount;
+  }
+  return { gallons, count, bySource };
 }
 
 /** Sum customer billed usage whose "to" reading falls in YYYY-MM. */
@@ -198,6 +240,7 @@ export function calculatePeriodBalance(
     producedGal: produced.gallons,
     billedGal: billed.gallons,
     unaccountedGal,
+    productionBySource: produced.bySource,
     unaccountedPct,
     status,
     sourceReadingCount: produced.count,

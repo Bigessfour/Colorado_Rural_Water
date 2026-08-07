@@ -1,8 +1,8 @@
 /**
  * Operator home — Kelly demo centerpiece.
- * Loads GET /alerts + GET /balance with the Cognito Bearer token only
+ * Loads GET /alerts + GET /balance + GET /meters with the Cognito Bearer token only
  * (no client tenant switch). Talk track: In/Out/Unaccounted, Data Confidence
- * (history depth, not leak %), Watch vs Actionable alert counts.
+ * (history depth, not leak %), Watch vs Actionable, calm Meter Health.
  */
 
 import { DecimalPipe } from '@angular/common';
@@ -24,19 +24,42 @@ import {
   computeHealthCounts,
   doughnutOptions,
   usageChartOptions,
+  type BalanceTrendPoint,
   type ChartData,
   type ConfidenceLevel,
 } from '../../shared/chart-builders';
+import {
+  DEFAULT_METER_AGE_YEARS,
+  buildMeterHealthSummary,
+  buildSourceProductionChart,
+  buildUnaccountedSparkline,
+  formatLastIngestLine,
+  isThinConfidence,
+  pickTopOutliers,
+  softBalanceKpiHint,
+  softBalanceStatusLabel,
+  sourceBarOptions,
+  unaccountedSparkOptions,
+  type LastIngestView,
+  type MeterHealthSummary,
+  type OutlierRow,
+} from '../../shared/dashboard-summary';
 import { parseIntakeSummary } from '../../shared/intake-summary';
+import { FormsModule } from '@angular/forms';
+import { SelectButton } from 'primeng/selectbutton';
 
 interface LiveAlert {
   id: string;
+  type?: string;
   mode: 'Watch' | 'Actionable';
   kind: 'meter' | 'balance';
   meterId?: string;
   serviceAddress?: string;
   summary: string;
   confidenceNote: string;
+  usageGal?: number;
+  usageRatio?: number;
+  diagnosticFlags?: string[];
 }
 
 interface BalanceView {
@@ -60,13 +83,32 @@ interface BalanceView {
     MessageModule,
     RouterLink,
     ButtonModule,
+    FormsModule,
+    SelectButton,
   ],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.scss',
 })
 export class DashboardPageComponent implements OnInit {
   readonly auth = inject(AuthService);
+  /** Install-age threshold for Meter Health (years). */
+  readonly meterAgeYears = DEFAULT_METER_AGE_YEARS;
+
   busy = signal(false);
+
+  /**
+   * Usage chart compare mode. Default `current` keeps the screen clean;
+   * `prior` overlays last year when 24 mo of trend is available.
+   */
+  usageCompareMode = signal<'current' | 'prior'>('current');
+  readonly usageCompareOptions: { label: string; value: 'current' | 'prior' }[] = [
+    { label: 'This period', value: 'current' },
+    { label: 'vs prior year', value: 'prior' },
+  ];
+  /** Raw balance trend (up to 24 mo) for rebuild on toggle. */
+  private usageTrendRaw: BalanceTrendPoint[] = [];
+  priorYearAvailable = signal(false);
+  priorYearSparse = signal(false);
 
   kpis = signal([
     { label: 'Meters monitored', value: '—', hint: 'After first upload' },
@@ -105,6 +147,16 @@ export class DashboardPageComponent implements OnInit {
   /** Path A–D from intake next to Confidence. */
   intakePathNote = signal('');
 
+  lastIngest = signal<LastIngestView | null>(null);
+  meterHealth = signal<MeterHealthSummary>({
+    stuckCount: 0,
+    diagnosticCount: 0,
+    olderCount: 0,
+    olderThresholdYears: DEFAULT_METER_AGE_YEARS,
+    withInstallDate: 0,
+  });
+  topOutliers = signal<OutlierRow[]>([]);
+
   balance = signal<BalanceView>({
     periodLabel: 'No period yet',
     producedGal: 0,
@@ -123,6 +175,13 @@ export class DashboardPageComponent implements OnInit {
   balanceBarData = signal<ChartData>({ labels: [], datasets: [] });
   balanceInsufficient = signal(true);
 
+  sourceProdChartData = signal<ChartData>({ labels: [], datasets: [] });
+  sourceProdEmpty = signal(true);
+
+  unaccountedSparkData = signal<ChartData>({ labels: [], datasets: [] });
+  unaccountedSparkEmpty = signal(true);
+  unaccountedInsufficientOnly = signal(false);
+
   confidenceChartData = signal<ChartData>(buildConfidenceChart('Thin'));
   healthChartData = signal<ChartData>(buildHealthDonut({ normal: 0, watch: 0, actionable: 0 }));
   showHealth = signal(false);
@@ -130,6 +189,8 @@ export class DashboardPageComponent implements OnInit {
   readonly usageChartOptions = usageChartOptions;
   readonly balanceBarOptions = balanceBarOptions;
   readonly doughnutOptions = doughnutOptions;
+  readonly sourceBarOptions = sourceBarOptions;
+  readonly unaccountedSparkOptions = unaccountedSparkOptions;
 
   ngOnInit(): void {
     void this.refreshLive();
@@ -138,6 +199,10 @@ export class DashboardPageComponent implements OnInit {
   balanceStatusSeverity(
     status: BalanceView['status'],
   ): 'secondary' | 'info' | 'success' | 'warn' | 'danger' {
+    // Thin Confidence: keep loss/gain calm (secondary), same spirit as Watch on statistical flags.
+    if (isThinConfidence(this.confidence().level) && status !== 'insufficient') {
+      return 'secondary';
+    }
     switch (status) {
       case 'insufficient':
         return 'secondary';
@@ -151,19 +216,27 @@ export class DashboardPageComponent implements OnInit {
   }
 
   balanceStatusLabel(status: BalanceView['status']): string {
-    switch (status) {
-      case 'insufficient':
-        return 'Need both sides';
-      case 'ok':
-        return 'Balanced';
-      case 'loss':
-        return 'Unaccounted loss';
-      case 'gain':
-        return 'Sold > pumped';
-    }
+    return softBalanceStatusLabel(status, this.confidence().level);
   }
 
-  /** Parallel live refresh — KPIs, confidence, balance bars, health donut. */
+  onUsageCompareChange(mode: 'current' | 'prior'): void {
+    this.usageCompareMode.set(mode);
+    this.applyUsageTrendChart();
+  }
+
+  private applyUsageTrendChart(): void {
+    const usage = buildUsageTrendChart(this.usageTrendRaw, {
+      comparePriorYear: this.usageCompareMode() === 'prior',
+      windowMonths: 12,
+    });
+    this.usageChartData.set(usage.data);
+    this.usageHasBand.set(usage.hasBand);
+    this.usageEmpty.set(usage.empty);
+    this.priorYearAvailable.set(usage.priorYearAvailable);
+    this.priorYearSparse.set(usage.priorYearSparse);
+  }
+
+  /** Parallel live refresh — KPIs, confidence, balance, health, outliers, last ingest. */
   async refreshLive(): Promise<void> {
     const token = this.auth.getBearerToken();
     if (!token) {
@@ -173,16 +246,13 @@ export class DashboardPageComponent implements OnInit {
     this.busy.set(true);
     try {
       // Tenant isolation: Authorization Bearer only — API resolves tenant_id from JWT.
-      const [alertsRes, balanceRes, onboardingRes] = await Promise.all([
-        fetch(`${environment.apiBaseUrl}/alerts`, {
-          headers: { authorization: `Bearer ${token}` },
-        }),
-        fetch(`${environment.apiBaseUrl}/balance`, {
-          headers: { authorization: `Bearer ${token}` },
-        }),
-        fetch(`${environment.apiBaseUrl}/onboarding`, {
-          headers: { authorization: `Bearer ${token}` },
-        }),
+      const headers = { authorization: `Bearer ${token}` };
+      const [alertsRes, balanceRes, onboardingRes, metersRes] = await Promise.all([
+        fetch(`${environment.apiBaseUrl}/alerts`, { headers }),
+        // 24 months so prior-year overlay can align calendar months when toggled.
+        fetch(`${environment.apiBaseUrl}/balance?trendMonths=24`, { headers }),
+        fetch(`${environment.apiBaseUrl}/onboarding`, { headers }),
+        fetch(`${environment.apiBaseUrl}/meters`, { headers }),
       ]);
 
       try {
@@ -198,9 +268,7 @@ export class DashboardPageComponent implements OnInit {
             this.intakeNudge.set('');
           }
           this.intakePathNote.set(
-            summary?.pathLabel
-              ? `From member intake: ${summary.pathLabel}.`
-              : '',
+            summary?.pathLabel ? `From member intake: ${summary.pathLabel}.` : '',
           );
         } else {
           this.intakeNudge.set('');
@@ -217,6 +285,8 @@ export class DashboardPageComponent implements OnInit {
         return;
       }
       this.loadError.set('');
+      this.lastIngest.set(formatLastIngestLine(alertsBody.lastIngest));
+
       const level = (alertsBody.confidence?.level ?? 'Thin') as ConfidenceLevel;
       const months = Number(alertsBody.confidence?.monthsOfHistory ?? 0);
       const meterCount = Number(alertsBody.confidence?.meterCount ?? 0);
@@ -230,21 +300,31 @@ export class DashboardPageComponent implements OnInit {
       const meterAlerts = (
         (alertsBody.alerts ?? []) as Array<{
           id: string;
+          type?: string;
           mode: 'Watch' | 'Actionable';
           meterId?: string;
           serviceAddress?: string;
           summary: string;
           confidenceNote: string;
+          usageGal?: number;
+          usageRatio?: number;
+          diagnosticFlags?: string[];
         }>
-      ).map((a): LiveAlert => ({
-        id: a.id,
-        mode: a.mode,
-        kind: 'meter',
-        meterId: a.meterId,
-        serviceAddress: a.serviceAddress,
-        summary: a.summary,
-        confidenceNote: a.confidenceNote,
-      }));
+      ).map(
+        (a): LiveAlert => ({
+          id: a.id,
+          type: a.type,
+          mode: a.mode,
+          kind: 'meter',
+          meterId: a.meterId,
+          serviceAddress: a.serviceAddress,
+          summary: a.summary,
+          confidenceNote: a.confidenceNote,
+          usageGal: a.usageGal,
+          usageRatio: a.usageRatio,
+          diagnosticFlags: a.diagnosticFlags,
+        }),
+      );
       const balanceAlerts = (
         (alertsBody.balanceAlerts ?? []) as Array<{
           id: string;
@@ -253,14 +333,16 @@ export class DashboardPageComponent implements OnInit {
           confidenceNote: string;
           periodLabel?: string;
         }>
-      ).map((a): LiveAlert => ({
-        id: a.id,
-        mode: a.mode ?? 'Watch',
-        kind: 'balance',
-        summary: a.summary,
-        confidenceNote: a.confidenceNote,
-        serviceAddress: a.periodLabel,
-      }));
+      ).map(
+        (a): LiveAlert => ({
+          id: a.id,
+          mode: a.mode ?? 'Watch',
+          kind: 'balance',
+          summary: a.summary,
+          confidenceNote: a.confidenceNote,
+          serviceAddress: a.periodLabel,
+        }),
+      );
       const alerts = [...balanceAlerts, ...meterAlerts];
       const watch = alerts.filter((a) => a.mode === 'Watch').length;
       const actionable = alerts.filter((a) => a.mode === 'Actionable').length;
@@ -269,6 +351,24 @@ export class DashboardPageComponent implements OnInit {
       this.healthChartData.set(buildHealthDonut(health));
       this.showHealth.set(meterCount > 0);
       this.confidenceChartData.set(buildConfidenceChart(level));
+      this.topOutliers.set(pickTopOutliers(meterAlerts, level, 5));
+
+      let metersList: Array<{ installDate?: string | null }> = [];
+      if (metersRes.ok) {
+        try {
+          const metersBody = await metersRes.json();
+          metersList = (metersBody.meters ?? []) as Array<{ installDate?: string | null }>;
+        } catch {
+          metersList = [];
+        }
+      }
+      this.meterHealth.set(
+        buildMeterHealthSummary({
+          alerts: meterAlerts,
+          meters: metersList,
+          thresholdYears: this.meterAgeYears,
+        }),
+      );
 
       let balanceHint = 'Upload customer + source readings for live In/Out.';
       let balanceKpi = '—';
@@ -283,6 +383,15 @@ export class DashboardPageComponent implements OnInit {
         const producedGal = Number(bal.producedGal ?? 0);
         const billedGal = Number(bal.billedGal ?? 0);
         const unaccountedGal = Number(bal.unaccountedGal ?? 0);
+        const thin = isThinConfidence(level);
+        let liveHint =
+          balanceStatus === 'insufficient'
+            ? 'Need source production and customer meter deltas in the same period — not a dig-now loss signal.'
+            : 'Live from GET /balance — In − Out = unaccounted.';
+        if (thin && balanceStatus !== 'insufficient') {
+          liveHint =
+            'Early balance figure — Thin Confidence keeps this as Watch context, not dig-now.';
+        }
         this.balance.set({
           periodLabel,
           producedGal,
@@ -291,20 +400,12 @@ export class DashboardPageComponent implements OnInit {
           unaccountedPct: pct == null ? null : Number(pct),
           status: balanceStatus,
           live: true,
-          hint:
-            balanceStatus === 'insufficient'
-              ? 'Need source production and customer meter deltas in the same period — not a dig-now loss signal.'
-              : 'Live from GET /balance — In − Out = unaccounted.',
+          hint: liveHint,
         });
-        balanceKpi = pct == null ? '—' : `${pct}%`;
-        balanceKpiHint =
-          balanceStatus === 'gain'
-            ? 'Sold > pumped'
-            : balanceStatus === 'loss'
-              ? 'Unaccounted loss'
-              : balanceStatus === 'ok'
-                ? 'Balanced'
-                : 'Insufficient data';
+        // Thin: do not surface raw unaccounted % as a dig-now KPI claim.
+        balanceKpi =
+          thin || pct == null ? (thin && balanceStatus !== 'insufficient' ? 'Early' : '—') : `${pct}%`;
+        balanceKpiHint = softBalanceKpiHint(balanceStatus, level);
         balanceHint = periodLabel;
 
         const bar = buildBalanceBarChart({
@@ -317,23 +418,46 @@ export class DashboardPageComponent implements OnInit {
         this.balanceBarData.set(bar.data);
         this.balanceInsufficient.set(bar.insufficient);
 
-        const trend = (bal.trend ?? []) as Array<{
-          periodLabel?: string;
-          period?: string;
-          producedGal?: number;
-          billedGal?: number;
-          unaccountedGal?: number;
-          status?: string;
-        }>;
-        const usage = buildUsageTrendChart(trend);
-        this.usageChartData.set(usage.data);
-        this.usageHasBand.set(usage.hasBand);
-        this.usageEmpty.set(usage.empty);
+        const trend = (bal.trend ?? []) as BalanceTrendPoint[];
+        this.usageTrendRaw = trend;
+        this.applyUsageTrendChart();
+
+        const srcRows = (
+          (bal.productionBySource ?? []) as Array<{
+            sourceId: string;
+            sourceName?: string | null;
+            gallons: number;
+          }>
+        ).map((r) => ({
+          sourceId: r.sourceId,
+          sourceName: r.sourceName,
+          gallons: Number(r.gallons ?? 0),
+        }));
+        const srcChart = buildSourceProductionChart(srcRows);
+        this.sourceProdChartData.set(srcChart.data);
+        this.sourceProdEmpty.set(srcChart.empty);
+
+        // Thin Confidence: suppress unaccounted % trend claims (Watch-level caution).
+        if (thin) {
+          this.unaccountedSparkData.set({ labels: [], datasets: [] });
+          this.unaccountedSparkEmpty.set(true);
+          this.unaccountedInsufficientOnly.set(false);
+        } else {
+          const spark = buildUnaccountedSparkline(trend, 12);
+          this.unaccountedSparkData.set(spark.data);
+          this.unaccountedSparkEmpty.set(spark.empty);
+          this.unaccountedInsufficientOnly.set(spark.insufficientOnly);
+        }
       } else {
         const balErr = await balanceRes.json().catch(() => ({}));
         balanceHint = balErr.error ?? `Balance unavailable (${balanceRes.status})`;
         this.usageEmpty.set(true);
         this.balanceInsufficient.set(true);
+        this.sourceProdEmpty.set(true);
+        this.unaccountedSparkEmpty.set(true);
+        this.usageTrendRaw = [];
+        this.priorYearAvailable.set(false);
+        this.priorYearSparse.set(false);
       }
 
       const balanceSignalLevel: ConfidenceLevel | '—' =
@@ -402,5 +526,10 @@ export class DashboardPageComponent implements OnInit {
       case 'Strong':
         return 'success';
     }
+  }
+
+  /** Template helper — Thin Confidence softens outlier / loss claims. */
+  isThin(): boolean {
+    return isThinConfidence(this.confidence().level);
   }
 }

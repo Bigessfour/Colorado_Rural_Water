@@ -94,8 +94,10 @@ export class AuthService {
     const s = this.session();
     return Boolean(s?.idToken && s.expiresAt > Date.now());
   });
+  /** Municipal System Admin — invite users for JWT tenant only (not CRWA association tools). */
   readonly isSystemAdmin = computed(() => this.roles().includes('system_admin'));
   readonly isCrwaAdmin = computed(() => this.roles().includes('crwa_admin'));
+  /** @deprecated Prefer isSystemAdmin() for Users nav; isCrwaAdmin() for /crwa. */
   readonly canManageUsers = computed(() => this.isSystemAdmin() || this.isCrwaAdmin());
   readonly mapCenter = computed(() => {
     const p = this.profile();

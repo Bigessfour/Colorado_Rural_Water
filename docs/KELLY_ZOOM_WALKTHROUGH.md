@@ -46,18 +46,25 @@ Show that a clerk can load messy meter data and quickly see trends, water balanc
 
 ---
 
-## 3. Dashboard first glance (about 2 minutes)
+## 3. Dashboard first glance (about 3 minutes)
 
 **On screen:** `/dashboard`
 
-| You point to                 | You say                                                                                                                                        |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| KPI / summary row            | “At a glance: meters, open alerts, balance %, Confidence.”                                                                                     |
-| **System usage** chart       | “Billed usage over time. The shaded band is a typical range from recent months — not a leak model. Points outside are worth a look.”           |
-| **Data Confidence** doughnut | “This is how much history we have — not a claim that we found a leak. Thin history means we stay cautious.”                                    |
-| **Meter health** doughnut    | “Normal vs Watch vs Actionable — portfolio feel for a small system.”                                                                           |
-| Alert feed                   | “Priority list. **Watch** means look when you can. **Actionable** is stronger — for example a stuck meter. History shows a usage sparkline.”   |
-| Water balance **bars**       | “Produced vs billed vs unaccounted as a picture for this period. If we’re missing one side, it says so plainly instead of inventing a number.” |
+| You point to                      | You say                                                                                                                                                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Last upload** line (if present) | “After a successful import we show when it landed and how many rows were good vs issues — calm status, not a stack trace.”                                                                              |
+| KPI / summary row                 | “At a glance: meters, open alerts, balance %, Confidence.”                                                                                                                                              |
+| **System usage** chart            | “Billed usage over time. The shaded band is a typical range from recent months — not a leak model. Points outside are worth a look.”                                                                    |
+| Usage toggle **This period**      | “Default stays simple. If you want seasonality vs last year, flip to **vs prior year** — dashed line is prior calendar months. Leave it off for the walkthrough unless he asks.”                         |
+| **Data Confidence** doughnut      | “This is how much history we have — not a claim that we found a leak. Thin history means we stay cautious.”                                                                                             |
+| **Meter health** counts + donut   | “Stuck or flat meters, handheld diagnostic flags, and older assets when install dates exist — portfolio feel for a small system. Still not a leak model.”                                               |
+| Water balance **bars**            | “Produced vs billed vs unaccounted as a picture for this period. If we’re missing one side, it says so plainly instead of inventing a number.”                                                          |
+| **Production by source**          | “When wells have period production, we break In down by source — North Well vs South Well style.”                                                                                                       |
+| **Unaccounted %** sparkline       | “Recent months with both sides of the balance. On **Thin** Confidence we soft-suppress this claim — same Watch caution as statistical flags.”                                                          |
+| **Top outliers** (if shown)       | “Only when Confidence is not Thin. Highest usage vs peers — links into Meters. We do **not** label these as leaks.”                                                                                     |
+| Alert feed                        | “Priority list. **Watch** means look when you can. **Actionable** is stronger — for example a stuck meter. History shows a usage sparkline.”                                                            |
+
+**Do not say:** “We found a leak” or dig-now on Thin history.
 
 **Pause:** “Any of that unclear before we load data?”
 
@@ -77,10 +84,12 @@ Show that a clerk can load messy meter data and quickly see trends, water balanc
 
 **Then:** Return to **Dashboard** (click **Dashboard** in nav).
 
-| You point to                | You say                              |
-| --------------------------- | ------------------------------------ |
-| Updated trends / KPIs       | “Same screens, now with their data.” |
-| Any Watch / Actionable rows | “We’ll open alerts next.”            |
+| You point to                         | You say                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| **Last upload** line                | “Import landed — good rows and issues counted.”                                                  |
+| Updated trends / KPIs / Meter health | “Same screens, now with their data.”                                                             |
+| Top outliers (if Confidence not Thin)| “Optional deep-dive later — peer usage only, not a leak label.”                                  |
+| Any Watch / Actionable rows          | “We’ll open alerts next.”                                                                        |
 
 ---
 
@@ -113,9 +122,10 @@ Show that a clerk can load messy meter data and quickly see trends, water balanc
 | Field **Name**: e.g. `North Well`                 | “Simple names operators already use.”                                            |
 | Save; add a second source if useful               | “Two or three is enough for a small system.”                                     |
 | Enter or upload a **source reading** for a period | “Production for the same kind of period as customer reads.”                      |
-| Return to **Dashboard**                           | “Balance needs both sides. When we have them, you see in, out, and unaccounted.” |
+| Return to **Dashboard**                           | “Balance needs both sides. When we have them, you see in, out, and unaccounted — plus production by source and the unaccounted % trend when Confidence allows.” |
 
-**Point to balance bars:** Produced | Billed | Unaccounted — or the calm empty / muted state if one side is missing.
+**Point to balance bars:** Produced | Billed | Unaccounted — or the calm empty / muted state if one side is missing.  
+**If Confidence is Thin:** note that unaccounted % and Top outliers stay soft / hidden so we never over-claim.
 
 ---
 

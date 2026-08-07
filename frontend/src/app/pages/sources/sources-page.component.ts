@@ -1,10 +1,10 @@
 /**
  * Named water sources (wells/springs) + production readings — Kelly demo steps 3–4.
- * Dashboard water balance needs both sides: these sources (In) + customer meters (Out).
+ * Map pins (lat/lng) mirror Meters so wells show on the Sources map.
  * Fixture: sample-data/messy-source-readings-july.csv.
  */
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -16,6 +16,12 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
+import { geocodeServiceAddress, type GeocodeBias } from '../../shared/geocode.service';
+import {
+  MeterMapComponent,
+  type MapLocationPick,
+  type MeterMapPoint,
+} from '../meters/meter-map.component';
 
 type SourceType = 'well' | 'spring' | 'purchase' | 'other';
 
@@ -25,6 +31,9 @@ interface WaterSourceRow {
   type: SourceType;
   unit: string;
   notes: string | null;
+  locationLabel: string | null;
+  latitude: number | null;
+  longitude: number | null;
   updatedAt: string;
 }
 
@@ -40,6 +49,7 @@ interface WaterSourceRow {
     TableModule,
     MessageModule,
     FileUploadModule,
+    MeterMapComponent,
   ],
   templateUrl: './sources-page.component.html',
   styleUrl: './sources-page.component.scss',
@@ -55,6 +65,9 @@ export class SourcesPageComponent implements OnInit {
   ];
 
   sources = signal<WaterSourceRow[]>([]);
+  selectedSourceId = signal<string | null>(null);
+  fineTune = signal(false);
+  geocodeHint = signal('');
   busy = signal(false);
   saving = signal(false);
   ingesting = signal(false);
@@ -64,6 +77,9 @@ export class SourcesPageComponent implements OnInit {
   name = '';
   type: SourceType = 'well';
   notes = '';
+  locationLabel = '';
+  latitude = '';
+  longitude = '';
   editingId: string | null = null;
 
   /** Manual period reading */
@@ -76,6 +92,17 @@ export class SourcesPageComponent implements OnInit {
   ingestHint =
     'Practice file: sample-data/messy-source-readings-july.csv (production volumes by period; “messy” = imperfect columns for a safe mapper demo).';
 
+  readonly mapPoints = computed<MeterMapPoint[]>(() =>
+    this.sources().map((s) => ({
+      meterId: s.sourceId,
+      serviceAddress: s.locationLabel?.trim()
+        ? `${s.name} — ${s.locationLabel}`
+        : s.name,
+      latitude: s.latitude,
+      longitude: s.longitude,
+    })),
+  );
+
   ngOnInit(): void {
     void this.refresh();
   }
@@ -84,7 +111,13 @@ export class SourcesPageComponent implements OnInit {
     this.name = '';
     this.type = 'well';
     this.notes = '';
+    this.locationLabel = '';
+    this.latitude = '';
+    this.longitude = '';
     this.editingId = null;
+    this.selectedSourceId.set(null);
+    this.fineTune.set(false);
+    this.geocodeHint.set('');
   }
 
   startEdit(row: WaterSourceRow): void {
@@ -92,6 +125,28 @@ export class SourcesPageComponent implements OnInit {
     this.name = row.name;
     this.type = row.type;
     this.notes = row.notes ?? '';
+    this.locationLabel = row.locationLabel ?? '';
+    this.latitude = row.latitude == null ? '' : String(row.latitude);
+    this.longitude = row.longitude == null ? '' : String(row.longitude);
+    this.selectedSourceId.set(row.sourceId);
+    this.fineTune.set(true);
+    this.geocodeHint.set('');
+  }
+
+  selectSource(sourceId: string): void {
+    this.selectedSourceId.set(sourceId);
+    const row = this.sources().find((s) => s.sourceId === sourceId);
+    if (row) this.startEdit(row);
+  }
+
+  toggleFineTune(): void {
+    const next = !this.fineTune();
+    this.fineTune.set(next);
+    this.status.set(
+      next
+        ? 'Fine-tune on — select a source, then drag the pin or click the map.'
+        : 'Fine-tune off.',
+    );
   }
 
   onSourceCsvUpload(event: FileUploadHandlerEvent): void {
@@ -103,6 +158,54 @@ export class SourcesPageComponent implements OnInit {
       this.status.set(`Loaded ${file.name} — ready to import source readings.`);
     };
     reader.readAsText(file);
+  }
+
+  geocodeBias(): GeocodeBias {
+    const center = this.auth.mapCenter();
+    const town = (center?.town ?? this.auth.placeName() ?? '').trim();
+    let zip = '';
+    if (/\bwiley\b/i.test(town)) zip = '81092';
+    return {
+      town: town || null,
+      zip: zip || null,
+      lat: center?.lat ?? null,
+      lng: center?.lng ?? null,
+      maxMiles: 35,
+    };
+  }
+
+  async suggestFromLabel(): Promise<void> {
+    const label = this.locationLabel.trim() || this.name.trim();
+    if (!label) {
+      this.error.set('Enter a place / road label (or name), then suggest a map pin.');
+      return;
+    }
+    this.geocodeHint.set('');
+    this.error.set('');
+    try {
+      const hit = await geocodeServiceAddress(label, this.geocodeBias());
+      if (!hit) {
+        this.geocodeHint.set('No nearby match — try a fuller place label or place the pin by hand.');
+        return;
+      }
+      this.latitude = String(hit.latitude);
+      this.longitude = String(hit.longitude);
+      this.geocodeHint.set(`Matched “${hit.label}”. ${hit.note}`);
+      if (this.editingId) {
+        await this.persistCoords(this.editingId, hit.latitude, hit.longitude);
+      }
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Geocode failed');
+    }
+  }
+
+  async onMapLocationPicked(pick: MapLocationPick): Promise<void> {
+    this.selectedSourceId.set(pick.meterId);
+    if (this.editingId === pick.meterId) {
+      this.latitude = String(pick.latitude);
+      this.longitude = String(pick.longitude);
+    }
+    await this.persistCoords(pick.meterId, pick.latitude, pick.longitude);
   }
 
   async refresh(): Promise<void> {
@@ -122,16 +225,42 @@ export class SourcesPageComponent implements OnInit {
         this.error.set(body.error ?? `Failed (${res.status})`);
         return;
       }
-      this.sources.set((body.sources ?? []) as WaterSourceRow[]);
+      const rows = ((body.sources ?? []) as WaterSourceRow[]).map((s) => ({
+        ...s,
+        locationLabel: s.locationLabel ?? null,
+        latitude: typeof s.latitude === 'number' ? s.latitude : null,
+        longitude: typeof s.longitude === 'number' ? s.longitude : null,
+      }));
+      this.sources.set(rows);
       this.status.set(`${body.count ?? 0} named source(s) for your system.`);
-      if (!this.readingSourceId && body.sources?.[0]?.sourceId) {
-        this.readingSourceId = body.sources[0].sourceId;
+      if (!this.readingSourceId && rows[0]?.sourceId) {
+        this.readingSourceId = rows[0].sourceId;
       }
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Network error');
     } finally {
       this.busy.set(false);
     }
+  }
+
+  private parseCoords():
+    | { ok: true; latitude: number | null; longitude: number | null }
+    | { ok: false; error: string } {
+    const lat = this.latitude.trim();
+    const lng = this.longitude.trim();
+    if (!lat && !lng) return { ok: true, latitude: null, longitude: null };
+    if (!lat || !lng) {
+      return { ok: false, error: 'Enter both latitude and longitude, or clear both.' };
+    }
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+      return { ok: false, error: 'Latitude must be between -90 and 90.' };
+    }
+    if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+      return { ok: false, error: 'Longitude must be between -180 and 180.' };
+    }
+    return { ok: true, latitude, longitude };
   }
 
   async save(): Promise<void> {
@@ -144,6 +273,11 @@ export class SourcesPageComponent implements OnInit {
       this.error.set('Give the source a clear name (e.g. Well 1 – North).');
       return;
     }
+    const coords = this.parseCoords();
+    if (!coords.ok) {
+      this.error.set(coords.error);
+      return;
+    }
 
     this.saving.set(true);
     this.error.set('');
@@ -152,7 +286,10 @@ export class SourcesPageComponent implements OnInit {
         name: this.name.trim(),
         type: this.type,
         notes: this.notes.trim() || null,
+        locationLabel: this.locationLabel.trim() || null,
         unit: 'gal',
+        latitude: coords.latitude,
+        longitude: coords.longitude,
       };
       const url = this.editingId
         ? `${environment.apiBaseUrl}/sources/${encodeURIComponent(this.editingId)}`
@@ -212,6 +349,63 @@ export class SourcesPageComponent implements OnInit {
       this.error.set(err instanceof Error ? err.message : 'Network error');
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  private async persistCoords(
+    sourceId: string,
+    latitude: number,
+    longitude: number,
+  ): Promise<void> {
+    const token = this.auth.getBearerToken();
+    if (!token) return;
+    const row = this.sources().find((s) => s.sourceId === sourceId);
+    if (!row) return;
+    this.error.set('');
+    try {
+      const res = await fetch(
+        `${environment.apiBaseUrl}/sources/${encodeURIComponent(sourceId)}`,
+        {
+          method: 'PUT',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: row.name,
+            type: row.type,
+            notes: row.notes,
+            locationLabel: row.locationLabel,
+            unit: row.unit,
+            latitude,
+            longitude,
+          }),
+        },
+      );
+      const body = await res.json();
+      if (!res.ok) {
+        this.error.set(body.error ?? `Could not save map pin (${res.status})`);
+        return;
+      }
+      this.sources.update((list) =>
+        list.map((s) =>
+          s.sourceId === sourceId
+            ? {
+                ...s,
+                latitude,
+                longitude,
+                locationLabel: body.source?.locationLabel ?? s.locationLabel,
+              }
+            : s,
+        ),
+      );
+      if (this.editingId === sourceId) {
+        this.latitude = String(latitude);
+        this.longitude = String(longitude);
+      }
+      this.status.set(`Saved map pin for ${row.name}.`);
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Network error');
     }
   }
 

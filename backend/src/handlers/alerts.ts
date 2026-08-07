@@ -23,6 +23,7 @@ import { parseAuthFromClaims, requireTenantId } from "../shared/auth.js";
 import {
   createAlertStatusStoreFromEnv,
   createBalanceThresholdStoreFromEnv,
+  createLastIngestStoreFromEnv,
   createMeterStoreFromEnv,
   createSourceStoreFromEnv,
 } from "../shared/dynamo-store.js";
@@ -200,14 +201,22 @@ export const handler: AuthedHandler = async (event) => {
     const sourceStore = createSourceStoreFromEnv();
     const statusStore = createAlertStatusStoreFromEnv();
     const thresholdStore = createBalanceThresholdStoreFromEnv();
-    const [locations, readings, sourceReadings, statuses, storedThresholds] =
-      await Promise.all([
-        meterStore.listLocations(tenantId),
-        meterStore.listReadings(tenantId),
-        sourceStore.listSourceReadings(tenantId),
-        statusStore.listAlertStatuses(tenantId),
-        thresholdStore.getBalanceThresholds(tenantId),
-      ]);
+    const lastIngestStore = createLastIngestStoreFromEnv();
+    const [
+      locations,
+      readings,
+      sourceReadings,
+      statuses,
+      storedThresholds,
+      lastIngest,
+    ] = await Promise.all([
+      meterStore.listLocations(tenantId),
+      meterStore.listReadings(tenantId),
+      sourceStore.listSourceReadings(tenantId),
+      statusStore.listAlertStatuses(tenantId),
+      thresholdStore.getBalanceThresholds(tenantId),
+      lastIngestStore.getLastIngest(tenantId),
+    ]);
     const { confidence, alerts } = evaluateAlerts(locations, readings);
     const balance = calculateWaterBalance(tenantId, sourceReadings, readings);
     const thresholds = mergeBalanceThresholds(storedThresholds);
@@ -270,6 +279,7 @@ export const handler: AuthedHandler = async (event) => {
         ...thresholds,
         source: storedThresholds ? "tenant" : "default",
       },
+      lastIngest,
       explanations,
     });
   } catch (err) {

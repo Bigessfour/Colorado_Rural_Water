@@ -13,9 +13,7 @@ describe('AdminPageComponent', () => {
       'fetch',
       vi
         .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify({ tenants: [], users: [] }), { status: 200 }),
-        ),
+        .mockResolvedValue(new Response(JSON.stringify({ users: [] }), { status: 200 })),
     );
 
     await TestBed.configureTestingModule({
@@ -29,22 +27,24 @@ describe('AdminPageComponent', () => {
             isLoggedIn: () => true,
             refreshProfile,
             canManageUsers: () => true,
-            isCrwaAdmin: () => true,
+            isCrwaAdmin: () => false,
             isSystemAdmin: () => true,
             tenantId: () => 'town-wiley',
-            email: () => 'admin@example.com',
-            roles: () => ['system_admin', 'crwa_admin'],
+            email: () => 'admin@town.gov',
+            placeName: () => 'Town of Wiley',
+            roles: () => ['system_admin'],
           },
         },
       ],
     }).compileComponents();
   });
 
-  it('loads admin data on init', async () => {
+  it('loads tenant users on init for System Admin', async () => {
     const fixture = TestBed.createComponent(AdminPageComponent);
     fixture.detectChanges();
     await fixture.whenStable();
     expect(fetch).toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toMatch(/Admin|tenant|provision/i);
+    expect(fixture.nativeElement.textContent).toMatch(/Users|Invite|Town of Wiley/i);
+    expect(fixture.nativeElement.textContent).not.toMatch(/Provision municipality/i);
   });
 });

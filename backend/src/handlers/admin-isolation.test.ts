@@ -199,6 +199,10 @@ class MemoryTenantStore implements TenantStore {
 class MockCognito implements CognitoAdminClient {
   created: Array<{ email: string; tenantId: string; role: string }> = [];
 
+  async getUserTenantId(_email: string): Promise<string | null> {
+    return null;
+  }
+  async ensureUserInRoleGroup(_email: string, _role: unknown): Promise<void> {}
   async createMunicipalUser(input: {
     email: string;
     tenantId: string;

@@ -89,6 +89,8 @@ export class ReportsPageComponent {
         return 'Download CSV';
       case 'work-order-xlsx':
         return 'Download Excel';
+      case 'work-order-html':
+        return 'Open / Print sheets';
       case 'summary-html':
         return 'Open / Print PDF';
       case 'alerts-flagged-csv':
@@ -105,6 +107,9 @@ export class ReportsPageComponent {
         break;
       case 'work-order-xlsx':
         await this.downloadWorkOrders('xlsx', row);
+        break;
+      case 'work-order-html':
+        await this.openWorkOrderSheets(row);
         break;
       case 'summary-html':
         await this.openSummaryReport(row);
@@ -168,6 +173,55 @@ export class ReportsPageComponent {
       const msg = err instanceof Error ? err.message : 'Network error';
       this.error.set(msg);
       this.logActivity(def, format.toUpperCase(), 'error', msg);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async openWorkOrderSheets(row?: ReportProcessDef): Promise<void> {
+    const def = row ?? this.catalog.find((r) => r.action === 'work-order-html')!;
+    const token = this.auth.getBearerToken();
+    if (!token) {
+      this.error.set('Sign in to open printable work-order sheets.');
+      return;
+    }
+    this.busy.set(true);
+    this.error.set('');
+    this.notice.set('');
+    try {
+      const res = await fetch(`${environment.apiBaseUrl}/reports/work-orders?format=html`, {
+        headers: this.authHeaders(),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg = body.error ?? `Report failed (${res.status})`;
+        this.error.set(msg);
+        this.logActivity(def, 'HTML', 'error', msg);
+        return;
+      }
+      const html = await res.text();
+      if (!html.trim()) {
+        const msg = 'Work-order sheets were empty. Refresh Alerts, then try again.';
+        this.error.set(msg);
+        this.logActivity(def, 'HTML', 'error', msg);
+        return;
+      }
+      const opened = openHtmlInNewTab(html);
+      if (!opened) {
+        const msg =
+          'Browser blocked the work-order window. Allow pop-ups for this site, then try again.';
+        this.error.set(msg);
+        this.logActivity(def, 'HTML', 'error', msg);
+        return;
+      }
+      const msg =
+        'Opened printable work-order sheets (Actionable only) — Browser Print → Save as PDF or print for the field.';
+      this.notice.set(msg);
+      this.logActivity(def, 'HTML', 'success', msg);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Network error';
+      this.error.set(msg);
+      this.logActivity(def, 'HTML', 'error', msg);
     } finally {
       this.busy.set(false);
     }

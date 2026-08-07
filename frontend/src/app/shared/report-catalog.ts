@@ -1,7 +1,11 @@
 /** Catalog of report processes shown on the Reports page (Feature 012 + legacy C4). */
 
 export type ReportAction =
-  'work-order-csv' | 'work-order-xlsx' | 'summary-html' | 'alerts-flagged-csv';
+  | 'work-order-csv'
+  | 'work-order-xlsx'
+  | 'work-order-html'
+  | 'summary-html'
+  | 'alerts-flagged-csv';
 
 export interface ReportProcessDef {
   id: string;
@@ -34,6 +38,17 @@ export const REPORT_CATALOG: ReportProcessDef[] = [
     category: 'field',
     apiPath: '/reports/work-orders?format=xlsx',
     action: 'work-order-xlsx',
+    requiresAuth: true,
+  },
+  {
+    id: 'work-order-html',
+    name: 'Printable field work-order sheets',
+    description:
+      'One page per Actionable alert: meter, address, coords, map link, Confidence note, recommended action, blank field notes. Opens HTML — Browser Print → Save as PDF (or print for the truck).',
+    formats: ['HTML', 'Print → PDF'],
+    category: 'field',
+    apiPath: '/reports/work-orders?format=html',
+    action: 'work-order-html',
     requiresAuth: true,
   },
   {

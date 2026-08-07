@@ -5,7 +5,7 @@
  * Tenant from JWT only. Large bulk drops use S3 ops path (mapping already saved).
  */
 
-import { Component, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
@@ -142,6 +142,24 @@ const ALIASES: Record<CanonicalField, string[]> = {
 /** Match backend MAX_EXCEL_BYTES — API JSON+base64 cannot carry 20MB workbooks. */
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
+/** Browser FileReader can hang on odd blobs; fail loudly instead of stuck “Reading…”. */
+const FILE_READ_TIMEOUT_MS = 20_000;
+
+/** Tiny fixture so operators can prove map → check → import without a local file. */
+const PRACTICE_CSV = `Meter ID,Read Date,Reading (gal),Account #,Customer,Service Address,Route,Diag
+1042,07/15/2026,128450,A-2201,A Rivera,112 N Main St Wiley CO,R3,
+1043,07/15/2026,98210,A-2202,M Lopez,45 County Rd 18 Wiley CO,R3,L
+1044,7/15/26,98210,A-2203,R Chen,8 Elm Ct Wiley CO,R3,
+1045,15-Jul-2026,0,A-2204,Empty Lot,210 Vacant Lot Rd Wiley CO,R4,NR
+1046,07/15/2026,445890,A-2205,Irrigation HOA,Park Loop Meter Pit Wiley CO,R1,
+1042,06/15/2026,125100,A-2201,J Smith,112 N Main St Wiley CO,R3,
+1043,06/15/2026,97100,A-2202,M Lopez,45 County Rd 18 Wiley CO,R3,
+1044,06/15/2026,96050,A-2203,R Chen,8 Elm Ct Wiley CO,R4,
+1045,06/15/2026,0,A-2204,Empty Lot,210 Vacant Lot Rd Wiley CO,R4,NR
+1046,06/15/2026,312000,A-2205,Irrigation HOA,Park Loop Meter Pit Wiley CO,R1,
+# Notes: address stays with meter; 1042 occupant changed J Smith -> A Rivera.
+`;
+
 interface SheetOption {
   label: string;
   value: string;
@@ -167,14 +185,17 @@ interface SheetOption {
 export class UploadPageComponent implements OnInit {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   /** Clears PrimeNG's "Pending" badge after customUpload (it never auto-clears). */
   @ViewChild('uploader') private uploader?: FileUpload;
+  /** Ignore onClear when we clear the widget after a successful load. */
+  private suppressClearReset = false;
 
   readonly fieldLabels = FIELD_LABELS;
   readonly fields = Object.keys(FIELD_LABELS) as CanonicalField[];
   readonly sampleHint =
-    'Try a practice Excel file from sample-data/ — start with Town_of_Steve_Meter_Export_MESSY.xlsx (messy-readings-july.csv also works). “Messy” means imperfect columns like a real billing export, so you can try the mapper safely.';
+    'Use Try practice CSV below for a quick messy sample, or choose your own Excel/CSV from QuickBooks, Caselle, or a handheld export. “Messy” columns are expected — we help map them in plain language.';
   /** Cap long skip/warning lists in the progress card. */
   readonly warningDisplayLimit = 8;
 
@@ -241,6 +262,46 @@ export class UploadPageComponent implements OnInit {
     void this.beginLoadFile(files[0]!);
   }
 
+  /** Clear must reset progress — otherwise “Reading… 5%” can stick after cancel. */
+  onUploaderClear(): void {
+    if (this.suppressClearReset || this.busy) return;
+    this.resetLoadState('Cleared. Choose a file or try the practice CSV.');
+  }
+
+  /** One-click sample — no file picker (helps when Choose/drop feels stuck on Pending). */
+  loadPracticeCsv(): void {
+    if (!this.auth.isLoggedIn()) {
+      this.statusMessage = 'Sign in to import readings.';
+      this.statusSeverity = 'warn';
+      return;
+    }
+    const file = new File([PRACTICE_CSV], 'messy-readings-july.csv', {
+      type: 'text/csv',
+    });
+    void this.beginLoadFile(file);
+  }
+
+  private resetLoadState(message: string): void {
+    this.fileName = '';
+    this.isExcel = false;
+    this.csvText = '';
+    this.excelBase64 = '';
+    this.workbook = null;
+    this.sheetOptions = [];
+    this.selectedSheet = null;
+    this.headers = [];
+    this.previewRows = [];
+    this.mapping = {};
+    this.mergeArchive = false;
+    this.ingestWarnings = [];
+    this.ingestPhase = 'idle';
+    this.statusMessage = message;
+    this.statusSeverity = 'info';
+    this.lastStatusFriendly = message;
+    this.setProgress(0, '');
+    this.cdr.detectChanges();
+  }
+
   private setProgress(
     value: number,
     label: string,
@@ -249,11 +310,19 @@ export class UploadPageComponent implements OnInit {
     this.progressValue = Math.max(0, Math.min(100, Math.round(value)));
     this.progressLabel = label;
     this.progressMode = mode;
+    this.cdr.markForCheck();
   }
 
   private finishCustomUploadUi(): void {
     // Removes the stuck Pending row from p-fileupload after custom handling.
-    this.uploader?.clear();
+    // clear() emits onClear — do not wipe the mapping we just loaded.
+    this.suppressClearReset = true;
+    try {
+      this.uploader?.clear();
+    } finally {
+      this.suppressClearReset = false;
+    }
+    this.cdr.detectChanges();
   }
 
   private beginLoadFile(file: File): Promise<boolean> {
@@ -283,6 +352,27 @@ export class UploadPageComponent implements OnInit {
     if (this.isExcel) {
       return new Promise((resolve) => {
         const reader = new FileReader();
+        let settled = false;
+        const finish = (ok: boolean) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          this.finishCustomUploadUi();
+          resolve(ok);
+        };
+        const timer = setTimeout(() => {
+          try {
+            reader.abort();
+          } catch {
+            /* ignore */
+          }
+          this.statusMessage =
+            'Timed out reading that Excel file. Try a smaller sheet, or use Try practice CSV.';
+          this.statusSeverity = 'error';
+          this.ingestPhase = 'failed';
+          this.setProgress(0, 'Load failed');
+          finish(false);
+        }, FILE_READ_TIMEOUT_MS);
         reader.onprogress = (ev) => {
           if (ev.lengthComputable && ev.total > 0) {
             this.setProgress((ev.loaded / ev.total) * 55, `Reading ${file.name}…`);
@@ -293,8 +383,7 @@ export class UploadPageComponent implements OnInit {
           this.statusSeverity = 'error';
           this.ingestPhase = 'failed';
           this.setProgress(0, 'Load failed');
-          this.finishCustomUploadUi();
-          resolve(false);
+          finish(false);
         };
         reader.onload = () => {
           const data = reader.result;
@@ -303,8 +392,7 @@ export class UploadPageComponent implements OnInit {
             this.statusSeverity = 'error';
             this.ingestPhase = 'failed';
             this.setProgress(0, 'Load failed');
-            this.finishCustomUploadUi();
-            resolve(false);
+            finish(false);
             return;
           }
           this.setProgress(70, 'Parsing workbook…');
@@ -342,8 +430,7 @@ export class UploadPageComponent implements OnInit {
             this.lastStatusFriendly = this.statusMessage;
             this.setProgress(0, 'Load failed');
           }
-          this.finishCustomUploadUi();
-          resolve(this.ingestPhase === 'mapped');
+          finish(this.ingestPhase === 'mapped');
         };
         reader.readAsArrayBuffer(file);
       });
@@ -355,6 +442,27 @@ export class UploadPageComponent implements OnInit {
     this.selectedSheet = null;
     return new Promise((resolve) => {
       const reader = new FileReader();
+      let settled = false;
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        this.finishCustomUploadUi();
+        resolve(ok);
+      };
+      const timer = setTimeout(() => {
+        try {
+          reader.abort();
+        } catch {
+          /* ignore */
+        }
+        this.statusMessage =
+          'Timed out reading that CSV. Try again, or use Try practice CSV.';
+        this.statusSeverity = 'error';
+        this.ingestPhase = 'failed';
+        this.setProgress(0, 'Load failed');
+        finish(false);
+      }, FILE_READ_TIMEOUT_MS);
       reader.onprogress = (ev) => {
         if (ev.lengthComputable && ev.total > 0) {
           this.setProgress((ev.loaded / ev.total) * 80, `Reading ${file.name}…`);
@@ -365,8 +473,7 @@ export class UploadPageComponent implements OnInit {
         this.statusSeverity = 'error';
         this.ingestPhase = 'failed';
         this.setProgress(0, 'Load failed');
-        this.finishCustomUploadUi();
-        resolve(false);
+        finish(false);
       };
       reader.onload = () => {
         this.csvText = String(reader.result ?? '');
@@ -376,8 +483,7 @@ export class UploadPageComponent implements OnInit {
         this.statusSeverity = 'info';
         this.lastStatusFriendly = this.statusMessage;
         this.setProgress(100, 'Ready to map / check');
-        this.finishCustomUploadUi();
-        resolve(true);
+        finish(true);
       };
       reader.readAsText(file);
     });
@@ -595,6 +701,8 @@ export class UploadPageComponent implements OnInit {
       dryRun ? 'Checking file…' : 'Importing readings…',
       'indeterminate',
     );
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 60_000);
     try {
       const body: Record<string, unknown> = {
         mapping: this.mapping,
@@ -615,6 +723,7 @@ export class UploadPageComponent implements OnInit {
           authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
       const payload = await res.json();
       if (!res.ok) {
@@ -655,12 +764,21 @@ export class UploadPageComponent implements OnInit {
         typeof payload.rowsSkipped === 'number' && payload.rowsSkipped > 0 ? 'warn' : 'success';
     } catch (err) {
       this.ingestPhase = 'failed';
-      this.statusMessage = err instanceof Error ? err.message : 'Network error';
+      const aborted =
+        (err instanceof DOMException && err.name === 'AbortError') ||
+        (err instanceof Error && err.name === 'AbortError');
+      this.statusMessage = aborted
+        ? 'Import timed out — check your connection and try again.'
+        : err instanceof Error
+          ? err.message
+          : 'Network error';
       this.lastStatusFriendly = this.statusMessage;
       this.statusSeverity = 'error';
       this.setProgress(0, 'Import failed');
     } finally {
+      clearTimeout(abortTimer);
       this.busy = false;
+      this.cdr.detectChanges();
     }
   }
 

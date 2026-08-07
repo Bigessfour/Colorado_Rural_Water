@@ -19,7 +19,8 @@
 }
 
 :host ::ng-deep .form-card,
-:host ::ng-deep .table-card {
+:host ::ng-deep .table-card,
+:host ::ng-deep .map-card {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(15, 61, 66, 0.08);
   box-shadow: none;
@@ -29,9 +30,25 @@
 .form {
   display: grid;
   gap: 0.85rem;
-  max-width: 28rem;
+  max-width: 32rem;
   font-family: 'Source Sans 3', system-ui, sans-serif;
   color: #0f3d42;
+}
+
+.coords-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.map-lede {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #4a6368;
+  margin: 0 0 0.75rem;
+}
+
+.map-actions {
+  margin-bottom: 0.75rem;
 }
 
 .form label {

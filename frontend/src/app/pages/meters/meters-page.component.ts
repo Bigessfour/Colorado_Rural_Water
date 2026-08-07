@@ -5,7 +5,7 @@
 
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
@@ -223,6 +223,7 @@ function metaPayload(
 export class MetersPageComponent implements OnInit {
   readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
 
   meters = signal<MeterRow[]>([]);
   busy = signal(false);
@@ -296,7 +297,13 @@ export class MetersPageComponent implements OnInit {
       this.autoPinAbort?.abort();
       if (this.addGeocodeTimer) clearTimeout(this.addGeocodeTimer);
     });
-    void this.refresh();
+    void this.refresh().then(() => {
+      const focus = this.route.snapshot.queryParamMap.get('meter')?.trim();
+      if (focus && this.meters().some((m) => m.meterId === focus)) {
+        this.selectedMeterId.set(focus);
+        this.listSearch.set(focus);
+      }
+    });
   }
 
   onViewModeChange(mode: MeterViewMode): void {

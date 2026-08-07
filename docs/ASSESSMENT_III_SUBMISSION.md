@@ -142,4 +142,4 @@ docker compose up --build
 | Cognito JWT / Bedrock KB Assistant (Pilot) | [014 evidence](https://github.com/Bigessfour/Colorado_Rural_Water/blob/assessment/iii-submission/evidence/014-cognito-rag-assistant.md) |
 | Meter map                                  | [011 evidence](https://github.com/Bigessfour/Colorado_Rural_Water/blob/assessment/iii-submission/evidence/011-meter-map.md)             |
 | Operator + CRWA user guides                | [docs/user-guide/](https://github.com/Bigessfour/Colorado_Rural_Water/tree/assessment/iii-submission/docs/user-guide) · SPA `/help`     |
-| Live Cognito SPA                           | https://duqk1pqvmrsuh.cloudfront.net                                                                                                    |
+| Live Cognito SPA                           | https://d1gokx5wxrd4x6.cloudfront.net                                                                                                   |

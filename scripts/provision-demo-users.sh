@@ -160,5 +160,69 @@ smoke_auth() {
 smoke_auth "${DEMO_EMAIL}" "${DEMO_PASS}" "demo.operator"
 smoke_auth "${KELLY_EMAIL}" "${KELLY_PASS}" "kelly.review"
 
+# Cognito alone is not enough for CRWA roll-up — registry lives in Dynamo META#profile.
+ensure_tenant_registry() {
+	local tenant_id="$1"
+	local display_name="$2"
+	local initial_email="$3"
+	local table
+	table="$(aws lambda get-function-configuration \
+		--function-name water-saver-dev-admin \
+		--query 'Environment.Variables.DATA_TABLE' --output text 2>/dev/null || true)"
+	if [[ -z ${table} || ${table} == None ]]; then
+		echo "==> Skip Dynamo registry (DATA_TABLE unknown)" >&2
+		return 0
+	fi
+	echo "==> Ensuring Dynamo tenant registry for ${tenant_id} in ${table}"
+	local now pilot
+	now="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+	pilot="$(python3 -c "from datetime import datetime,timedelta,timezone; print((datetime.now(timezone.utc)+timedelta(days=90)).strftime('%Y-%m-%dT%H:%M:%S.000Z'))")"
+	python3 - <<PY
+import json, subprocess, os
+table = "${table}"
+tenant = "${tenant_id}"
+fields = {
+  "tenantId": tenant,
+  "displayName": "${display_name}",
+  "createdAt": "${now}",
+  "createdByUserId": "provision-demo-users",
+  "createdByEmail": "${KELLY_EMAIL}",
+  "initialUserEmail": "${initial_email}",
+  "billingStatus": "pilot",
+  "billingMode": "pilot",
+  "planCode": "meters_301_750",
+  "meterCountEstimate": 305,
+  "paymentProvider": "none",
+  "pilotExpiresAt": "${pilot}",
+  "billingNotes": "Ensured by provision-demo-users.sh for CRWA roll-up.",
+  "mapTown": "Wiley",
+  "mapCenterLat": 38.1542,
+  "mapCenterLng": -102.7199,
+  "mapZoom": 13,
+}
+def dyn(v):
+  if v is None: return {"NULL": True}
+  if isinstance(v, bool): return {"BOOL": v}
+  if isinstance(v, int) and not isinstance(v, bool): return {"N": str(v)}
+  if isinstance(v, float): return {"N": str(v)}
+  return {"S": str(v)}
+prof = {k: dyn(v) for k, v in fields.items()}
+items = [
+  {"pk": {"S": f"TENANT#{tenant}"}, "sk": {"S": "META#profile"}, "entityType": {"S": "tenant_profile"}, **prof},
+  {"pk": {"S": "TENANT#_registry"}, "sk": {"S": f"TENANT#{tenant}"}, "entityType": {"S": "tenant_registry"}, **prof},
+]
+for item in items:
+  subprocess.check_call([
+    "aws", "dynamodb", "put-item",
+    "--table-name", table,
+    "--item", json.dumps(item),
+  ])
+print(f"    registry OK {tenant}")
+PY
+}
+
+ensure_tenant_registry "${DEMO_TENANT:-town-wiley}" "Town of Wiley" "${DEMO_EMAIL}"
+
 echo "==> Done. SPA ${SPA_URL}  API ${API_URL}"
 echo "    Deploy SPA if needed: ./scripts/deploy-spa.sh"
+echo "    CRWA roll-up needs Dynamo TENANT#_registry — Cognito users alone will not appear."

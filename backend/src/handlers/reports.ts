@@ -22,6 +22,7 @@ import { calculateWaterBalance } from "../shared/water-balance.js";
 import {
   buildWorkOrderMapLink,
   buildWorkOrdersCsv,
+  buildWorkOrdersPrintableHtml,
   buildWorkOrdersXlsxBuffer,
   recommendedActionForRow,
   type WorkOrderRow,
@@ -29,7 +30,7 @@ import {
 
 /**
  * Operator reports (feature 012) — work orders + printable ops summary.
- * GET /reports/work-orders?format=csv|xlsx — flagged meters with map links (field export).
+ * GET /reports/work-orders?format=csv|xlsx|html — flagged meters (HTML = printable single-meter sheets).
  * GET /reports/summary?format=html — printable KPI summary for print/PDF.
  */
 export const handler: AuthedHandler = async (event) => {
@@ -69,16 +70,18 @@ async function workOrdersReport(
   appBaseUrl: string,
 ) {
   const format = (event.queryStringParameters?.format ?? "csv").toLowerCase();
-  if (format !== "csv" && format !== "xlsx") {
-    return badRequest("format must be csv or xlsx");
+  if (format !== "csv" && format !== "xlsx" && format !== "html") {
+    return badRequest("format must be csv, xlsx, or html");
   }
 
   const meterStore = createMeterStoreFromEnv();
   const statusStore = createAlertStatusStoreFromEnv();
-  const [locations, readings, statuses] = await Promise.all([
+  const tenantStore = createTenantStoreFromEnv();
+  const [locations, readings, statuses, profile] = await Promise.all([
     meterStore.listLocations(tenantId),
     meterStore.listReadings(tenantId),
     statusStore.listAlertStatuses(tenantId),
+    tenantStore.getTenantProfile(tenantId),
   ]);
   const { alerts } = evaluateAlerts(locations, readings);
   const meterAlerts = applyAlertStatuses(alerts, statuses, {
@@ -108,6 +111,16 @@ async function workOrdersReport(
   });
 
   const stamp = new Date().toISOString().slice(0, 10);
+  if (format === "html") {
+    const html = buildWorkOrdersPrintableHtml({
+      tenantId,
+      displayName: profile?.displayName ?? tenantId,
+      generatedAt: new Date().toISOString(),
+      actionableOnly: true,
+      rows,
+    });
+    return htmlReport(html, `work-orders-${tenantId}-${stamp}.html`);
+  }
   if (format === "xlsx") {
     const buf = buildWorkOrdersXlsxBuffer(rows);
     return xlsx(buf, `work-orders-${tenantId}-${stamp}.xlsx`);

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildWorkOrderMapLink,
   buildWorkOrdersCsv,
+  buildWorkOrdersPrintableHtml,
   buildWorkOrdersXlsxBuffer,
   recommendedActionForRow,
 } from "./work-order-export.js";
@@ -47,5 +48,28 @@ describe("work-order-export", () => {
       summary: "Statistical outlier",
     });
     assert.match(action, /Watch/i);
+  });
+
+  it("printable HTML has one page per Actionable meter", () => {
+    const html = buildWorkOrdersPrintableHtml({
+      tenantId: "town-wiley",
+      displayName: "Town of Wiley",
+      generatedAt: "2026-08-06T12:00:00.000Z",
+      actionableOnly: true,
+      rows: [
+        row,
+        {
+          ...row,
+          meterId: "99",
+          mode: "Watch",
+          summary: "Thin history",
+        },
+      ],
+    });
+    assert.match(html, /Field work order/);
+    assert.match(html, /1042/);
+    assert.doesNotMatch(html, />99</);
+    assert.match(html, /Field notes/);
+    assert.match(html, /page-break-after/);
   });
 });

@@ -32,8 +32,9 @@ Tip: Ask the **Assistant** (“Ask Assistant to map”) after headers load if yo
 
 1. Go to **Sources**.
 2. Add named wells or plants (for example Well 1 – North).
-3. Enter or upload production readings for the same periods as customer readings when you can.
-4. Water balance on the Dashboard needs **both** produced and billed for a period.
+3. Optional map pin: enter a **place / road label**, use **Suggest pin from label**, or turn on **Fine-tune** and drag/click the map (same idea as Meters).
+4. Enter or upload production readings for the same periods as customer readings when you can.
+5. Water balance on the Dashboard needs **both** produced and billed for a period.
 
 ## Dashboard
 
@@ -52,13 +53,15 @@ Thin history stays **Watch** (look when you can). Hardware stuck / clear diagnos
 2. Switch **Table**, **Map**, or **Both**.
 3. Add, edit, or remove meters as needed. Map pins use coordinates when known; otherwise the map centers on your town.
 
-## Alerts
+## Alerts → field → Resolve (clerk workflow)
 
-1. Go to **Alerts** and refresh if needed.
-2. Read meter alerts and any water-balance Watch rows.
-3. Acknowledge, dispatch, or resolve with a short note when you take action.
-4. **Export flagged** downloads a CSV of flagged meters for the field.
-5. **Ask Assistant** on a row opens the Assistant grounded on that alert.
+Typical path from desk to truck and back:
+
+1. **Clerk** opens **Alerts** and reviews Watch vs Actionable rows.
+2. For dig / visit work, open **More → Reports** and run **Printable field work-order sheets** (one page per Actionable meter). Use Browser Print → PDF or print for the truck. CSV/Excel exports remain available for shared lists.
+3. Optionally **Dispatch** the alert in Alerts so the status shows in progress.
+4. **Field** uses the sheet (address, coords, map link, Confidence note, recommended action) and writes on the blank **Field notes** area.
+5. After the visit, clerk or operator opens **Alerts** → **Resolve** and enters a short note. That closes the loop on meter history.
 
 Remember: Watch means look when you can; Actionable may need a field check. The product does not claim “we found a leak.”
 
@@ -66,10 +69,10 @@ Remember: Watch means look when you can; Actionable may need a field check. The 
 
 1. Open **More → Reports**.
 2. **All report processes** — catalog of available exports.
-3. **Run reports** — download flagged work orders (CSV or Excel) or open the operations summary (HTML → Print → PDF).
+3. **Run reports** — download flagged work orders (CSV or Excel), open **printable field sheets** (HTML → Print → PDF), or open the operations summary.
 4. **Recent activity** — what you ran in this browser session.
 
-Work orders include address, Confidence note, recommended action, and a map link when coordinates exist.
+Work orders include address, Confidence note, recommended action, and a map link when coordinates exist. Printable sheets are Actionable-only, one meter per page.
 
 ## Assistant
 
@@ -92,8 +95,8 @@ Work orders include address, Confidence note, recommended action, and a map link
 ## Roles at a glance
 
 - **Operator** — day-to-day upload, meters, alerts, reports, Assistant
-- **System Admin** — everything Operators can do, plus **Admin → Invite user** for your system and membership billing view
-- Operators cannot provision other municipalities (that is CRWA)
+- **System Admin** — everything Operators can do, plus **Users → Invite** for *your* system only and membership billing view
+- Operators and System Admins cannot provision other municipalities (that is **CRWA** only)
 
 ## Need help?
 

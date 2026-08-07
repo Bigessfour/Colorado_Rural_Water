@@ -14,7 +14,8 @@
 }
 
 :host ::ng-deep .intro,
-:host ::ng-deep .table-card {
+:host ::ng-deep .table-card,
+:host ::ng-deep .block {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(15, 61, 66, 0.08);
   box-shadow: none;
@@ -33,4 +34,43 @@
   margin-top: 0.25rem;
   font-size: 0.85rem;
   color: #6b8287;
+}
+
+.hint {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.card-lede {
+  margin: 0 0 1rem;
+  color: var(--p-text-muted-color, #5c6b73);
+}
+
+.field-hint {
+  margin: -0.25rem 0 0.5rem;
+  color: var(--p-text-muted-color, #5c6b73);
+  font-size: 0.85rem;
+}
+
+.toolbar {
+  margin-bottom: 0.75rem;
+}
+
+.form,
+.form-wide {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 28rem;
+}
+
+.form-wide {
+  max-width: 36rem;
+}
+
+.form label,
+.form-wide label {
+  display: grid;
+  gap: 0.35rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: #0f3d42;
 }
