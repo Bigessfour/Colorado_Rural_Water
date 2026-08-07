@@ -42,8 +42,6 @@ AWS_PROFILE=codeplatoon terraform plan -destroy \
 
 See also [`evidence/07-destroy.md`](07-destroy.md).
 
-## Not claimed
+## Not claimed (superseded 2026-08-06)
 
-- Real `terraform destroy` / stack teardown
-- Apply on main (await merge)
-- Actions-hosted destroy dispatch (await merge of `destroy.yml` to `main`)
+~~Real `terraform destroy` / stack teardown~~ — **done** 2026-08-06 (`CONFIRM=destroy ./scripts/terraform-destroy.sh --destroy` → 124 destroyed; residual scan PASS). See [`evidence/07-destroy.md`](07-destroy.md).

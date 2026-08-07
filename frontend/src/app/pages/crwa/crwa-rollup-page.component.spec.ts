@@ -8,11 +8,15 @@ describe('CrwaRollupPageComponent', () => {
   beforeEach(async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ rows: [], generatedAt: '2026-08-04T00:00:00Z' }), {
-          status: 200,
-        }),
-      ),
+      vi.fn().mockImplementation(async (url: string) => {
+        if (String(url).includes('/admin/tenants')) {
+          return new Response(JSON.stringify({ tenants: [], count: 0 }), { status: 200 });
+        }
+        return new Response(
+          JSON.stringify({ systems: [], generatedAt: '2026-08-04T00:00:00Z' }),
+          { status: 200 },
+        );
+      }),
     );
 
     await TestBed.configureTestingModule({
@@ -25,17 +29,18 @@ describe('CrwaRollupPageComponent', () => {
             getBearerToken: () => 'jwt',
             isLoggedIn: () => true,
             isCrwaAdmin: () => true,
+            refreshProfile: async () => {},
           },
         },
       ],
     }).compileComponents();
   });
 
-  it('loads roll-up rows on init', async () => {
+  it('loads CRWA provision + roll-up for association admins', async () => {
     const fixture = TestBed.createComponent(CrwaRollupPageComponent);
     fixture.detectChanges();
     await fixture.whenStable();
     expect(fetch).toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toMatch(/Roll-up|CRWA|confidence/i);
+    expect(fixture.nativeElement.textContent).toMatch(/CRWA|Provision|roll-up|Confidence/i);
   });
 });

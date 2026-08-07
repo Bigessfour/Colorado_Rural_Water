@@ -23,20 +23,24 @@ aws sts get-caller-identity --profile codeplatoon
 
 ## Live stack (dev)
 
+> **Re-applied 2026-08-06** after destroy prove. Old CloudFront `duqk1pqvmrsuh` / API `tz6rqlus7b` are dead.
+
 | Resource     | Value                                                    |
 | ------------ | -------------------------------------------------------- |
-| Cognito pool | `us-east-1_oZlKJ1y39`                                    |
-| SPA client   | `3lbh20n9383nhraaioaa5is5an`                             |
+| Cognito pool | `us-east-1_eeMuYPlMK`                                    |
+| SPA client   | `1a4ao09ljbohofa0377sm82alu`                             |
 | Groups       | `operators`, `system_admins`, `crwa_admins`              |
 | MFA          | per Cognito pool config                                  |
-| HTTP API     | `https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com` |
-| SPA (CDN)    | `https://duqk1pqvmrsuh.cloudfront.net`                   |
+| HTTP API     | `https://uqujnhmk31.execute-api.us-east-1.amazonaws.com` |
+| SPA (CDN)    | `https://d1gokx5wxrd4x6.cloudfront.net`                  |
+| CF dist ID   | `E3QK223UFP4LZE`                                         |
 | Health       | `GET …/health` (public)                                  |
 | Me           | `GET …/me` (JWT)                                         |
 | Uploads      | `water-saver-dev-uploads-388691194728`                   |
 | SPA bucket   | `water-saver-dev-spa-388691194728`                       |
 | Data table   | `water-saver-dev-data`                                   |
 | AI secret    | `water-saver-dev-ai-runtime`                             |
+| Review SES   | `REVIEW_NOTIFY_TO` / `REVIEW_FROM_EMAIL` → Steve Gmail (sandbox-verified) |
 
 ## MCP / CLI
 

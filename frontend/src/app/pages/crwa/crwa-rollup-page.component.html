@@ -1,68 +1,342 @@
 <section class="page">
-  <h1>CRWA roll-up</h1>
+  <h1>CRWA</h1>
   <p class="lede">
-    Live summary across member systems — water balance and Data Confidence only. No customer names
-    or service addresses.
+    Association tools only — provision member systems, membership billing actions, and sanitized
+    roll-up. Municipal System Admins invite users for their own town under
+    <a routerLink="/admin">Users</a>.
   </p>
 
-  <p-card header="Why Confidence appears here" styleClass="intro">
-    <p>
-      Confidence is how much comparable history and coverage a system has — not leak-detector
-      accuracy. Use it to coach newer Thin systems differently from Strong archives so operators are
-      not pushed into false digs.
-    </p>
-    @if (generatedAt()) {
-      <p class="muted">Generated {{ generatedAt() }}</p>
-    }
-  </p-card>
+  @if (!auth.isLoggedIn()) {
+    <p-message severity="warn" styleClass="hint">
+      <a routerLink="/login">Sign in</a> as a CRWA Admin.
+    </p-message>
+  } @else if (!auth.isCrwaAdmin()) {
+    <p-message severity="info" styleClass="hint">
+      CRWA Admin role required. If you manage one town, use <a routerLink="/admin">Users</a> instead.
+    </p-message>
+  }
 
   @if (error()) {
     <p-message severity="error" styleClass="hint">{{ error() }}</p-message>
   }
+  @if (status()) {
+    <p-message severity="success" styleClass="hint">{{ status() }}</p-message>
+  }
+  @if (tempPassword()) {
+    <p-message severity="warn" styleClass="hint">
+      Temporary password (shown once): <code>{{ tempPassword() }}</code>
+    </p-message>
+  }
 
-  <div class="toolbar">
-    <p-button label="Refresh roll-up" [loading]="busy()" (onClick)="refresh()" />
-  </div>
+  @if (auth.isCrwaAdmin()) {
+    <p-card header="Provision municipality" styleClass="block">
+      <p class="card-lede">
+        Creates the municipality, membership profile (pilot or paid), and one initial user (default:
+        System Admin). No payment processor yet — offline / pilot only.
+      </p>
+      <form class="form form-wide" (ngSubmit)="provisionTenant()">
+        <label>
+          System id (slug)
+          <input
+            pInputText
+            name="tenantId"
+            [(ngModel)]="tenantId"
+            placeholder="town-wiley"
+            required
+          />
+        </label>
+        <label>
+          Display name
+          <input
+            pInputText
+            name="displayName"
+            [(ngModel)]="displayName"
+            placeholder="Town of Wiley"
+            required
+          />
+        </label>
+        <label>
+          Map town (Colorado)
+          <input
+            pInputText
+            name="mapTown"
+            [(ngModel)]="mapTown"
+            placeholder="Wiley, CO (defaults to display name)"
+          />
+        </label>
+        <p class="field-hint">
+          Used to center the meters map for this system. On create we look up the town and save the
+          map center. Fine-tune meter pins later under Meters.
+        </p>
+        <label>
+          Initial user email
+          <input
+            pInputText
+            type="email"
+            name="initialUserEmail"
+            [(ngModel)]="initialUserEmail"
+            placeholder="clerk@town.gov"
+            required
+          />
+        </label>
+        <label>
+          Initial role
+          <p-select
+            [options]="roleOptions"
+            [(ngModel)]="initialUserRole"
+            name="initialUserRole"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        <label>
+          Pilot or paid
+          <p-select
+            [options]="pilotOrPaidOptions"
+            [(ngModel)]="pilotOrPaid"
+            name="pilotOrPaid"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        <label>
+          Plan band
+          <p-select
+            [options]="planOptions"
+            [(ngModel)]="planCode"
+            name="planCode"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        <label>
+          Meter estimate (optional)
+          <input
+            pInputText
+            type="number"
+            name="meterCountEstimate"
+            [(ngModel)]="meterCountEstimate"
+            placeholder="150"
+            min="0"
+          />
+        </label>
+        <label>
+          Billing contact email (optional)
+          <input
+            pInputText
+            type="email"
+            name="billingContactEmail"
+            [(ngModel)]="billingContactEmail"
+            placeholder="finance@town.gov"
+          />
+        </label>
+        @if (pilotOrPaid === 'pilot') {
+          <label>
+            Pilot expiry (optional)
+            <input pInputText type="date" name="pilotExpiresAt" [(ngModel)]="pilotExpiresAt" />
+          </label>
+        }
+        <label>
+          Internal notes (optional)
+          <textarea
+            pTextarea
+            name="billingNotes"
+            [(ngModel)]="billingNotes"
+            rows="2"
+            class="w-full"
+          ></textarea>
+        </label>
+        <p-button type="submit" label="Provision system" [loading]="busy()" [disabled]="busy()" />
+      </form>
+    </p-card>
 
-  <p-card styleClass="table-card">
-    <p-table [value]="rows()" [tableStyle]="{ 'min-width': '52rem' }">
-      <ng-template #header>
-        <tr>
-          <th>System</th>
-          <th>Meters</th>
-          <th>Unaccounted</th>
-          <th>Period</th>
-          <th>Confidence</th>
-          <th>Months</th>
-          <th>Billing</th>
-          <th>CRWA note</th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-row>
-        <tr>
-          <td>{{ row.system }}</td>
-          <td>{{ row.meterCount }}</td>
-          <td>{{ unaccountedLabel(row) }}</td>
-          <td>{{ row.periodLabel }}</td>
-          <td>
-            <p-tag [severity]="confidenceSeverity(row.confidence)" [value]="row.confidence" />
-          </td>
-          <td>{{ row.monthsOfHistory }}</td>
-          <td>{{ row.billingStatus }}</td>
-          <td>{{ row.note }}</td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="8">
-            @if (busy()) {
-              Loading…
-            } @else {
-              No municipalities yet — provision a system from Admin.
-            }
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
-  </p-card>
+    <p-card header="Municipalities" styleClass="block">
+      <p-table [value]="tenants()" [loading]="busy()" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Billing</th>
+            <th>Plan</th>
+            <th>Meters</th>
+            <th>Initial user</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td>{{ row.tenantId }}</td>
+            <td>{{ row.displayName }}</td>
+            <td>
+              <p-tag [value]="billingLabel(row)" [severity]="billingSeverity(row.billingStatus)" />
+            </td>
+            <td>{{ planLabelFor(row) }}</td>
+            <td>{{ row.meterCountEstimate ?? '—' }}</td>
+            <td>{{ row.initialUserEmail }}</td>
+            <td>{{ row.createdAt | date: 'mediumDate' }}</td>
+            <td>
+              <p-button
+                type="button"
+                label="Select"
+                [text]="true"
+                size="small"
+                (onClick)="selectTenantForAction(row.tenantId)"
+              />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="8">No systems provisioned yet.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+    <p-card header="Membership billing actions" styleClass="block">
+      <p class="card-lede">
+        Record offline payments, extend pilots, or change status. Each change is logged for that
+        municipality — no payment processor yet.
+      </p>
+      <form class="form form-wide" (ngSubmit)="runBillingAction()">
+        <label>
+          Municipality
+          <p-select
+            [options]="tenantSelectOptions()"
+            [(ngModel)]="actionTenantId"
+            name="actionTenantId"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select system"
+            styleClass="w-full"
+          />
+        </label>
+        <label>
+          Action
+          <p-select
+            [options]="actionOptions"
+            [(ngModel)]="action"
+            name="action"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
+        </label>
+        @if (action === 'record-payment') {
+          <label>
+            Amount (USD, optional)
+            <input
+              pInputText
+              type="number"
+              name="actionAmountDollars"
+              [(ngModel)]="actionAmountDollars"
+              placeholder="150.00"
+              min="0"
+              step="0.01"
+            />
+          </label>
+          <label>
+            Method
+            <p-select
+              [options]="paymentMethodOptions"
+              [(ngModel)]="actionMethod"
+              name="actionMethod"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+            />
+          </label>
+        }
+        @if (action === 'extend-pilot') {
+          <label>
+            New pilot expiry
+            <input
+              pInputText
+              type="date"
+              name="actionPilotExpiresAt"
+              [(ngModel)]="actionPilotExpiresAt"
+              required
+            />
+          </label>
+        }
+        <label>
+          Note (optional)
+          <textarea
+            pTextarea
+            name="actionNote"
+            [(ngModel)]="actionNote"
+            rows="2"
+            class="w-full"
+          ></textarea>
+        </label>
+        <p-button
+          type="submit"
+          label="Apply billing action"
+          [loading]="busy()"
+          [disabled]="busy()"
+        />
+      </form>
+    </p-card>
+
+    <p-card header="Why Confidence appears in roll-up" styleClass="intro">
+      <p>
+        Confidence is how much comparable history and coverage a system has — not leak-detector
+        accuracy. Use it to coach newer Thin systems differently from Strong archives so operators
+        are not pushed into false digs.
+      </p>
+      @if (generatedAt()) {
+        <p class="muted">Generated {{ generatedAt() }}</p>
+      }
+    </p-card>
+
+    <div class="toolbar">
+      <p-button label="Refresh roll-up" [loading]="busy()" (onClick)="refresh()" />
+    </div>
+
+    <p-card header="Enterprise roll-up" styleClass="table-card">
+      <p-table [value]="rows()" [tableStyle]="{ 'min-width': '52rem' }">
+        <ng-template #header>
+          <tr>
+            <th>System</th>
+            <th>Meters</th>
+            <th>Unaccounted</th>
+            <th>Period</th>
+            <th>Confidence</th>
+            <th>Months</th>
+            <th>Billing</th>
+            <th>CRWA note</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td>{{ row.system }}</td>
+            <td>{{ row.meterCount }}</td>
+            <td>{{ unaccountedLabel(row) }}</td>
+            <td>{{ row.periodLabel }}</td>
+            <td>
+              <p-tag [severity]="confidenceSeverity(row.confidence)" [value]="row.confidence" />
+            </td>
+            <td>{{ row.monthsOfHistory }}</td>
+            <td>{{ row.billingStatus }}</td>
+            <td>{{ row.note }}</td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="8">
+              @if (busy()) {
+                Loading…
+              } @else {
+                No municipalities yet — provision a system above.
+              }
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  }
 </section>

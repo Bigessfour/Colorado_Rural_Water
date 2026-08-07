@@ -56,7 +56,7 @@ export const REVIEW_STEPS: ReviewStepDef[] = [
   {
     id: 'crwa_admin',
     title: 'CRWA Admin',
-    lookAt: 'Provision, roll-up (CRWA nav), and billing status — the association view.',
+    lookAt: 'Provision, roll-up, and billing status — the association view on CRWA.',
     route: '/crwa',
   },
   {

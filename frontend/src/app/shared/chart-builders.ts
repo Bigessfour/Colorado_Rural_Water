@@ -24,12 +24,14 @@ export interface BalanceTrendPoint {
   producedGal?: number;
   billedGal?: number;
   unaccountedGal?: number;
+  unaccountedPct?: number | null;
   status?: string;
 }
 
 export interface ChartDataset {
   label: string;
-  data: number[];
+  /** null/NaN = gap (prior-year months without data). */
+  data: Array<number | null>;
   borderColor?: string;
   backgroundColor?: string | string[];
   tension?: number;
@@ -39,6 +41,7 @@ export interface ChartDataset {
   pointHoverRadius?: number;
   borderWidth?: number;
   order?: number;
+  spanGaps?: boolean;
 }
 
 export interface ChartData {
@@ -105,50 +108,167 @@ export function computeTypicalBand(billedMgal: number[]): { low: number[]; high:
   };
 }
 
+/** Shift a YYYY-MM period by whole months (negative = earlier). */
+export function shiftPeriodKey(period: string, deltaMonths: number): string {
+  const m = period.match(/^(\d{4})-(\d{2})$/);
+  if (!m) return '';
+  let y = Number(m[1]);
+  let mo = Number(m[2]) + deltaMonths;
+  while (mo < 1) {
+    mo += 12;
+    y -= 1;
+  }
+  while (mo > 12) {
+    mo -= 12;
+    y += 1;
+  }
+  return `${y}-${String(mo).padStart(2, '0')}`;
+}
+
+/** Axis label with year so prior-year overlay stays readable across seasons. */
+export function periodAxisLabel(period: string, periodLabel?: string): string {
+  const mon = shortPeriodLabel(periodLabel ?? period);
+  const m = period.match(/^(\d{4})-(\d{2})$/);
+  if (!m) return mon;
+  return `${mon} '${m[1]!.slice(2)}`;
+}
+
 /**
  * System billed usage over months + translucent typical band.
  * Band omitted when &lt;3 points — caller should show calm hint.
+ *
+ * Optional `comparePriorYear`: last `windowMonths` (default 12) vs same months one year earlier.
+ * Default remains current window only so the dashboard stays clean.
  */
-export function buildUsageTrendChart(trend: BalanceTrendPoint[]): {
+export function buildUsageTrendChart(
+  trend: BalanceTrendPoint[],
+  options?: { comparePriorYear?: boolean; windowMonths?: number },
+): {
   data: ChartData;
   hasBand: boolean;
   empty: boolean;
+  /** At least one prior-year month had billed usage (toggle is useful). */
+  priorYearAvailable: boolean;
+  /** True when toggle is on but prior series is empty/sparse. */
+  priorYearSparse: boolean;
 } {
   if (!trend.length) {
-    return { data: { labels: [], datasets: [] }, hasBand: false, empty: true };
+    return {
+      data: { labels: [], datasets: [] },
+      hasBand: false,
+      empty: true,
+      priorYearAvailable: false,
+      priorYearSparse: false,
+    };
   }
 
-  const labels = trend.map((t) => shortPeriodLabel(t.periodLabel ?? t.period ?? ''));
-  const billed = trend.map((t) => Number(t.billedGal ?? 0) / 1_000_000);
-  const band = computeTypicalBand(billed);
+  const byPeriod = new Map<string, BalanceTrendPoint>();
+  for (const t of trend) {
+    const key = (t.period ?? '').trim();
+    if (/^\d{4}-\d{2}$/.test(key)) byPeriod.set(key, t);
+  }
+
+  const sortedKeys = [...byPeriod.keys()].sort();
+  if (!sortedKeys.length) {
+    // Fall back to label-only series (legacy fixtures without period keys).
+    const labels = trend.map((t) => shortPeriodLabel(t.periodLabel ?? t.period ?? ''));
+    const billed = trend.map((t) => Number(t.billedGal ?? 0) / 1_000_000);
+    return {
+      empty: false,
+      hasBand: !!computeTypicalBand(billed),
+      priorYearAvailable: false,
+      priorYearSparse: false,
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Billed usage',
+            data: billed,
+            borderColor: CHART_COLORS.teal,
+            backgroundColor: CHART_COLORS.tealFill,
+            tension: 0.35,
+            fill: false,
+            pointRadius: 3,
+            borderWidth: 2,
+            order: 1,
+          },
+        ],
+      },
+    };
+  }
+
+  const windowMonths = Math.min(24, Math.max(3, options?.windowMonths ?? 12));
+  const endKey = sortedKeys[sortedKeys.length - 1]!;
+
+  // Prior-year availability: same calendar month one year earlier for any recent point.
+  const recentForProbe = sortedKeys.slice(-windowMonths);
+  let priorHits = 0;
+  for (const k of recentForProbe) {
+    const prior = shiftPeriodKey(k, -12);
+    if (prior && byPeriod.has(prior)) priorHits += 1;
+  }
+  const priorYearAvailable = priorHits > 0;
+  const wantCompare = Boolean(options?.comparePriorYear);
+  const compare = wantCompare && priorYearAvailable;
+
+  // Default: only months that exist (keeps sparse history clean).
+  // Prior-year mode: full calendar window so this year vs last year align by month.
+  let windowKeys: string[];
+  if (compare) {
+    windowKeys = [];
+    for (let i = windowMonths - 1; i >= 0; i -= 1) {
+      const k = shiftPeriodKey(endKey, -i);
+      if (k) windowKeys.push(k);
+    }
+  } else {
+    windowKeys = sortedKeys.slice(-windowMonths);
+  }
+
+  const labels = windowKeys.map((k) => {
+    const t = byPeriod.get(k);
+    return periodAxisLabel(k, t?.periodLabel);
+  });
+  // Use null gaps for missing months (never invent zero billed).
+  const billed: Array<number | null> = windowKeys.map((k) => {
+    const t = byPeriod.get(k);
+    if (!t) return null;
+    return Number(t.billedGal ?? 0) / 1_000_000;
+  });
 
   const datasets: ChartDataset[] = [];
-  if (band) {
-    datasets.push({
-      label: 'Typical high',
-      data: band.high,
-      borderColor: CHART_COLORS.bandBorder,
-      backgroundColor: CHART_COLORS.bandFill,
-      pointRadius: 0,
-      borderWidth: 0,
-      fill: '+1',
-      order: 2,
-      tension: 0.25,
-    });
-    datasets.push({
-      label: 'Typical low',
-      data: band.low,
-      borderColor: CHART_COLORS.bandBorder,
-      backgroundColor: CHART_COLORS.bandFill,
-      pointRadius: 0,
-      borderWidth: 0,
-      fill: false,
-      order: 2,
-      tension: 0.25,
-    });
+
+  // Typical band only on the clean single-series view (keeps prior-year overlay readable).
+  if (!compare) {
+    const numericBilled = billed.map((v) => (v == null ? 0 : v));
+    const band = computeTypicalBand(numericBilled);
+    if (band) {
+      datasets.push({
+        label: 'Typical high',
+        data: band.high,
+        borderColor: CHART_COLORS.bandBorder,
+        backgroundColor: CHART_COLORS.bandFill,
+        pointRadius: 0,
+        borderWidth: 0,
+        fill: '+1',
+        order: 2,
+        tension: 0.25,
+      });
+      datasets.push({
+        label: 'Typical low',
+        data: band.low,
+        borderColor: CHART_COLORS.bandBorder,
+        backgroundColor: CHART_COLORS.bandFill,
+        pointRadius: 0,
+        borderWidth: 0,
+        fill: false,
+        order: 2,
+        tension: 0.25,
+      });
+    }
   }
+
   datasets.push({
-    label: 'Billed usage',
+    label: compare ? 'This year' : 'Billed usage',
     data: billed,
     borderColor: CHART_COLORS.teal,
     backgroundColor: CHART_COLORS.tealFill,
@@ -157,9 +277,38 @@ export function buildUsageTrendChart(trend: BalanceTrendPoint[]): {
     pointRadius: 3,
     borderWidth: 2,
     order: 1,
+    spanGaps: false,
   });
 
-  return { data: { labels, datasets }, hasBand: !!band, empty: false };
+  if (compare) {
+    const priorBilled: Array<number | null> = windowKeys.map((k) => {
+      const prior = shiftPeriodKey(k, -12);
+      const t = prior ? byPeriod.get(prior) : undefined;
+      if (!t) return null;
+      return Number(t.billedGal ?? 0) / 1_000_000;
+    });
+    datasets.push({
+      label: 'Prior year',
+      data: priorBilled,
+      borderColor: CHART_COLORS.slate,
+      backgroundColor: 'transparent',
+      borderDash: [6, 4],
+      tension: 0.35,
+      fill: false,
+      pointRadius: 2,
+      borderWidth: 2,
+      order: 1,
+      spanGaps: false,
+    });
+  }
+
+  return {
+    data: { labels, datasets },
+    hasBand: !compare && datasets.some((d) => d.label === 'Typical high'),
+    empty: false,
+    priorYearAvailable,
+    priorYearSparse: wantCompare && !priorYearAvailable,
+  };
 }
 
 /** Current-period grouped bars: Produced | Billed | Unaccounted (Mgal). */

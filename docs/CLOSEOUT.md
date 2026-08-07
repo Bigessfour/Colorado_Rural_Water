@@ -1,6 +1,6 @@
 # Water Saver — Engineering Closeout (2026-08-03)
 
-**Verdict:** **Code Done** for Kelly gate + finishable Pilot. **Ops remaining:** Steve sends the invite ([KELLY_INVITE.md](KELLY_INVITE.md)). Demo data polished 2026-08-05 (intake Path D, map pins, source dedupe, calmer nav). Payment Epic I3+ stays externally blocked.
+**Verdict:** **Code Done** — Spec Kit features **001–014** closed 2026-08-06. **Kelly invite sent 2026-08-06** ([KELLY_INVITE.md](KELLY_INVITE.md)); CloudFront/review URLs live. Demo data polished 2026-08-05. External/Pilot only: H8 (Kelly’s real review submit), payment Epic I3+, live MFA enrollment, Phase F gated writes.
 
 ## Shipped on `main`
 
@@ -23,12 +23,12 @@
 
 ## Not code (ops / external)
 
-1. **Send Kelly invite** — CloudFront URL ready in [KELLY_INVITE.md](KELLY_INVITE.md); **Steve sends** when scheduling (creds in `~/.cursor/secrets/watersaver-kelly-review-cognito.txt`)
+1. ~~**Send Kelly invite**~~ — **done** 2026-08-06 ([KELLY_INVITE.md](KELLY_INVITE.md)); SPA `https://duqk1pqvmrsuh.cloudfront.net` + `/review` HTTP 200 / CloudFront Deployed (re-check same day)
 2. ~~**Kelly F2 smoke**~~ — **done** Steve dry-run 2026-08-04 ([SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) all boxes; [DEMO_KNOWN_GAPS.md](DEMO_KNOWN_GAPS.md))
 3. **H8** — blocked until Kelly submits **her** real review feedback (Steve dry-run submit already exercised SES)
 4. **I3–I8 payment** — blocked on CRWA processor discovery
-5. **E2/E3 agent polish** — Pilot todo (thin inventory stub exists)
-6. ~~**Public HTTPS SPA**~~ — **done** CloudFront `duqk1pqvmrsuh.cloudfront.net` (2026-08-04)
+5. **E2/E3 agent polish** — Pilot (form + Assistant Path A–D wired; deeper interview polish optional)
+6. ~~**Public HTTPS SPA**~~ — **done** CloudFront `duqk1pqvmrsuh.cloudfront.net` (2026-08-04; re-verified 2026-08-06)
 
 ## Demo-prep fixes (2026-08-04)
 
@@ -45,4 +45,4 @@ Closed as delivered in code (see issue comments). Left open only where work is g
 
 ## Done Detector
 
-This is **Done** for engineering scope. Core criteria met; shipping more Pilot polish before Kelly invite risks delay. Smallest next step: **send the Kelly invite**.
+This is **Done** for engineering + Spec Kit portfolio (001–014). Kelly invite sent. Remaining work is external or explicit Pilot/vNext (H8 feedback, payment, live MFA, gated writes) — not open Spec Kit checkboxes.

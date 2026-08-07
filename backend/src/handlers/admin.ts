@@ -68,6 +68,7 @@ import {
  *
  * Tenant for invite/list-users/billing-read always from JWT — never from client body.
  * Path tenantId for CRWA billing actions is validated as a slug only; auth is crwa_admin role.
+ * Municipal System Admins never receive provision / registry / roll-up APIs.
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
@@ -195,22 +196,45 @@ async function provisionTenant(
   }
 
   const now = new Date().toISOString();
-  const temporaryPassword = generateTemporaryPassword();
+	const temporaryPassword = generateTemporaryPassword();
+	let reusedExistingCognitoUser = false;
 
-  try {
-    await cognito.createMunicipalUser({
-      email: email.email,
-      tenantId: id.tenantId,
-      role,
-      temporaryPassword,
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Cognito create failed";
-    if (/UsernameExistsException|already exists/i.test(msg)) {
-      return badRequest(`User ${email.email} already exists in Cognito`);
-    }
-    throw err;
-  }
+	try {
+		await cognito.createMunicipalUser({
+			email: email.email,
+			tenantId: id.tenantId,
+			role,
+			temporaryPassword,
+		});
+	} catch (err) {
+		const msg = err instanceof Error ? err.message : "Cognito create failed";
+		// After destroy/re-apply, Cognito users may already exist from scripts while
+		// Dynamo META#profile / registry rows were wiped — still allow registry restore.
+		if (/UsernameExistsException|already exists/i.test(msg)) {
+			if (body.reuseExistingUser === true || body.reuseExistingUser === "true") {
+				// Never attach a Cognito identity whose JWT tenant differs from this provision.
+				const existingTenantId = await cognito.getUserTenantId(email.email);
+				if (!existingTenantId) {
+					return badRequest(
+						`User ${email.email} exists in Cognito but has no custom:tenant_id. Fix the Cognito attribute or use a new email.`,
+					);
+				}
+				if (existingTenantId !== id.tenantId) {
+					return badRequest(
+						`User ${email.email} already belongs to tenant "${existingTenantId}". Cannot reuse for "${id.tenantId}". Use a new email.`,
+					);
+				}
+				await cognito.ensureUserInRoleGroup(email.email, role);
+				reusedExistingCognitoUser = true;
+			} else {
+				return badRequest(
+					`User ${email.email} already exists in Cognito. Re-run with reuseExistingUser=true to restore the municipality registry for roll-up, or use a new email.`,
+				);
+			}
+		} else {
+			throw err;
+		}
+	}
 
   const profile: TenantProfile = {
     tenantId: id.tenantId,
@@ -256,15 +280,17 @@ async function provisionTenant(
     throw err;
   }
 
-  return json(201, {
-    tenant: sanitizeCrwaTenant(profile),
-    initialUser: {
-      email: email.email,
-      role,
-      temporaryPassword,
-      note: "Share this temporary password out-of-band. User must change it on first sign-in.",
-    },
-  });
+	return json(201, {
+		tenant: sanitizeCrwaTenant(profile),
+		initialUser: {
+			email: email.email,
+			role,
+			temporaryPassword: reusedExistingCognitoUser ? undefined : temporaryPassword,
+			note: reusedExistingCognitoUser
+				? "Cognito user already existed — municipality registry restored for CRWA roll-up. Password unchanged."
+				: "Share this temporary password out-of-band. User must change it on first sign-in.",
+		},
+	});
 }
 
 async function getCrwaRollup(auth: AuthContext, store: TenantStore) {
@@ -637,7 +663,8 @@ async function inviteUser(
 
 async function listUsers(auth: AuthContext, store: TenantStore) {
   try {
-    requireAnyRole(auth, ["system_admin", "crwa_admin"]);
+    // Municipal System Admin only — CRWA association tools do not list town users here.
+    requireAnyRole(auth, ["system_admin"]);
   } catch (err) {
     return forbidden(err instanceof Error ? err.message : "Forbidden");
   }

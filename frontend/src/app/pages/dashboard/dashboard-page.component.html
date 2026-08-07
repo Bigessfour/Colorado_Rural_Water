@@ -6,6 +6,9 @@
         Hi {{ auth.firstName() }} — trends, water balance, and prioritized alerts for
         {{ auth.placeName() }}. Built for rural operators, not enterprise noise.
       </p>
+      @if (lastIngest(); as ingest) {
+        <p class="last-ingest" data-testid="last-ingest">{{ ingest.label }}</p>
+      }
     </div>
     @if (auth.isLoggedIn()) {
       <p-button
@@ -28,7 +31,7 @@
     <p-message severity="error" styleClass="hint">{{ loadError() }}</p-message>
   }
   @if (intakeNudge()) {
-    <p-message severity="info" styleClass="hint" data-tour="intake-nudge">
+    <p-message severity="info" styleClass="hint" data-testid="intake-nudge">
       {{ intakeNudge() }}
       <a routerLink="/onboarding">Continue intake</a>
       ·
@@ -36,7 +39,7 @@
     </p-message>
   }
 
-  <div class="kpi-grid" data-tour="dashboard-kpis">
+  <div class="kpi-grid" data-testid="dashboard-kpis">
     @for (kpi of kpis(); track kpi.label) {
       <p-card styleClass="kpi-card">
         <div class="kpi-label">{{ kpi.label }}</div>
@@ -46,17 +49,40 @@
     }
   </div>
 
-  <p-card header="System usage — billed over time" styleClass="usage" data-tour="usage-trend">
+  <p-card header="System usage — billed over time" styleClass="usage" data-testid="usage-trend">
     @if (usageEmpty()) {
       <p class="muted">
         No billed-usage trend yet. Upload customer readings (and a second month when you can) so
         spikes can show against a typical range.
       </p>
     } @else {
+      <div class="usage-toolbar">
+        <p-selectbutton
+          [options]="usageCompareOptions"
+          [ngModel]="usageCompareMode()"
+          (ngModelChange)="onUsageCompareChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          ariaLabelledBy="usage-compare-label"
+          data-testid="usage-compare-toggle"
+        />
+        <span id="usage-compare-label" class="sr-only">Usage chart period comparison</span>
+      </div>
       <div class="chart-wrap chart-wrap--hero">
         <p-chart type="line" [data]="usageChartData()" [options]="usageChartOptions" />
       </div>
-      @if (usageHasBand()) {
+      @if (usageCompareMode() === 'prior') {
+        @if (priorYearSparse()) {
+          <p class="muted chart-note">
+            Prior-year months are not on file yet for this window. Keep “This period” until more
+            history is loaded.
+          </p>
+        } @else {
+          <p class="muted chart-note">
+            Dashed line = same calendar months last year. Context only — not a leak model.
+          </p>
+        }
+      } @else if (usageHasBand()) {
         <p class="muted chart-note">
           Shaded band = typical range from recent months (not a leak model). Points outside are
           worth a look.
@@ -67,11 +93,16 @@
           line as early context only.
         </p>
       }
+      @if (priorYearAvailable() && usageCompareMode() === 'current') {
+        <p class="muted chart-note chart-note--soft">
+          Optional: switch to <strong>vs prior year</strong> when you want last year’s overlay.
+        </p>
+      }
     }
   </p-card>
 
   <div class="instrument-row">
-    <p-card header="Data Confidence" styleClass="confidence" data-tour="data-confidence">
+    <p-card header="Data Confidence" styleClass="confidence" data-testid="data-confidence">
       <div class="confidence-head">
         <div>
           <div class="kpi-label">System overall</div>
@@ -85,7 +116,7 @@
           <p class="confidence-meaning">{{ confidence().meaning }}</p>
           <p class="confidence-guidance">{{ confidence().guidance }}</p>
           @if (intakePathNote()) {
-            <p class="muted improve-hint" data-tour="intake-path">{{ intakePathNote() }}</p>
+            <p class="muted improve-hint" data-testid="intake-path">{{ intakePathNote() }}</p>
           }
           @if (confidence().improveHint) {
             <p class="muted improve-hint">What would help: {{ confidence().improveHint }}</p>
@@ -105,13 +136,36 @@
     </p-card>
 
     @if (showHealth()) {
-      <p-card header="Meter health" styleClass="health" data-tour="meter-health">
+      <p-card header="Meter health" styleClass="health" data-testid="meter-health">
         <div class="health-head">
           <div class="health-copy">
             <p class="health-lede">
-              A quick look at all {{ meterCount() }} meters in {{ auth.placeName() }} — how many
-              look fine vs how many have an open flag.
+              A calm snapshot of {{ meterCount() }} meters in {{ auth.placeName() }} — what looks
+              fine vs what needs a field look. Not a leak model.
             </p>
+            <ul class="health-counts" data-testid="meter-health-counts">
+              <li>
+                <strong>{{ meterHealth().stuckCount }}</strong>
+                <span>Stuck or flat (needs a check)</span>
+              </li>
+              <li>
+                <strong>{{ meterHealth().diagnosticCount }}</strong>
+                <span>Diagnostic flags (battery, tamper, reverse flow)</span>
+              </li>
+              <li>
+                <strong>{{ meterHealth().olderCount }}</strong>
+                <span
+                  >Older than {{ meterHealth().olderThresholdYears }} years
+                  @if (meterHealth().withInstallDate === 0) {
+                    <em class="health-sub">· install dates not on file yet</em>
+                  } @else {
+                    <em class="health-sub"
+                      >· of {{ meterHealth().withInstallDate }} with known install date</em
+                    >
+                  }
+                </span>
+              </li>
+            </ul>
             <ul class="health-legend">
               <li>
                 <span class="swatch swatch--normal" aria-hidden="true"></span>
@@ -179,11 +233,13 @@
         <div class="kpi-label">Unaccounted</div>
         <div
           class="balance-stat"
-          [class.loss]="balance().status === 'loss'"
-          [class.gain]="balance().status === 'gain'"
+          [class.loss]="!isThin() && balance().status === 'loss'"
+          [class.gain]="!isThin() && balance().status === 'gain'"
         >
           @if (balance().status === 'insufficient') {
             —
+          } @else if (isThin()) {
+            <span data-testid="unaccounted-thin-value">Early figure</span>
           } @else {
             {{ balance().unaccountedGal | number }} gal
             @if (balance().unaccountedPct != null) {
@@ -191,17 +247,102 @@
             }
           }
         </div>
-        <div class="kpi-hint">Positive = loss; negative = sold more than pumped</div>
+        <div class="kpi-hint">
+          @if (isThin()) {
+            Thin Confidence — Watch-level context only, not dig-now
+          } @else {
+            Positive = loss; negative = sold more than pumped
+          }
+        </div>
       </div>
     </div>
     <div class="chart-wrap" [class.chart-wrap--muted]="balanceInsufficient()">
       <p-chart type="bar" [data]="balanceBarData()" [options]="balanceBarOptions" />
     </div>
+
+    <div class="balance-extras" data-testid="balance-extras">
+      <div class="balance-extra">
+        <h3 class="balance-extra-title">Production by source</h3>
+        @if (sourceProdEmpty()) {
+          <p class="muted">
+            No production by well yet for this period. Add
+            <a routerLink="/sources">named sources</a> and period readings when you can.
+          </p>
+        } @else {
+          <div class="chart-wrap chart-wrap--source">
+            <p-chart type="bar" [data]="sourceProdChartData()" [options]="sourceBarOptions" />
+          </div>
+        }
+      </div>
+      <div class="balance-extra">
+        <h3 class="balance-extra-title">Unaccounted water % (recent months)</h3>
+        @if (isThin()) {
+          <p class="muted" data-testid="unaccounted-thin-soft">
+            Data Confidence is <strong>Thin</strong> — we keep unaccounted % off this panel for now
+            (same caution as Watch on statistical flags). Stuck/diagnostic checks still show under
+            Meter health.
+          </p>
+        } @else if (unaccountedSparkEmpty()) {
+          <p class="muted">
+            @if (unaccountedInsufficientOnly()) {
+              Need both produced (In) and billed (Out) in the same months before a trend can show.
+              One-sided history stays calm — not a dig-now signal.
+            } @else {
+              Upload source and customer readings for several months to see unaccounted %.
+            }
+          </p>
+        } @else {
+          <div class="chart-wrap chart-wrap--spark">
+            <p-chart
+              type="line"
+              [data]="unaccountedSparkData()"
+              [options]="unaccountedSparkOptions"
+            />
+          </div>
+          <p class="muted chart-note">
+            Only months with both sides of the balance. Positive % = more produced than billed.
+          </p>
+        }
+      </div>
+    </div>
+
     <p class="muted">
       {{ balance().hint }}
       Configure <a routerLink="/sources">named sources</a> and upload readings to refresh.
     </p>
   </p-card>
+
+  @if (topOutliers().length) {
+    <p-card header="Top outliers" styleClass="outliers" data-testid="top-outliers">
+      <p class="outliers-lede muted">
+        Highest usage vs peers this cycle — worth a look when you can. Not labeled as a leak;
+        field check or a misread can both explain a spike.
+      </p>
+      <ul class="outlier-list">
+        @for (row of topOutliers(); track row.meterId) {
+          <li class="outlier-row">
+            <div>
+              <a [routerLink]="['/meters']" [queryParams]="{ meter: row.meterId }"
+                >Meter {{ row.meterId }}</a
+              >
+              @if (row.serviceAddress) {
+                <span class="muted"> · {{ row.serviceAddress }}</span>
+              }
+              <div class="muted outlier-summary">{{ row.summary }}</div>
+            </div>
+            <div class="outlier-meta">
+              @if (row.usageRatio != null) {
+                <p-tag severity="secondary" [value]="row.usageRatio + '× typical'" />
+              }
+              @if (row.usageGal != null) {
+                <span class="muted">{{ row.usageGal | number }} gal</span>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    </p-card>
+  }
 
   <p-card header="Priority alert feed" styleClass="feed">
     @if (liveAlerts().length === 0) {

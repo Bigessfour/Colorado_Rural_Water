@@ -39,15 +39,15 @@ State bucket is **bootstrap-only** (outside this root module). Re-create steps: 
 
 ## Live dev outputs (codeplatoon)
 
-| Resource   | Name / URL                                                         |
-| ---------- | ------------------------------------------------------------------ |
-| API        | `https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com`           |
-| SPA        | `https://duqk1pqvmrsuh.cloudfront.net` (`./scripts/deploy-spa.sh`) |
-| Uploads    | `water-saver-dev-uploads-388691194728`                             |
-| Data table | `water-saver-dev-data`                                             |
-| Cognito    | `us-east-1_oZlKJ1y39` / client `3lbh20n9383nhraaioaa5is5an`        |
-| AI secret  | `water-saver-dev-ai-runtime` (stub; put values via CLI)            |
-| Tag        | `Assessment-iii=true`                                              |
+| Resource   | Name / URL                                                              |
+| ---------- | ----------------------------------------------------------------------- |
+| API        | `https://uqujnhmk31.execute-api.us-east-1.amazonaws.com`                |
+| SPA        | `https://d1gokx5wxrd4x6.cloudfront.net` (`./scripts/deploy-spa.sh`)     |
+| Uploads    | `water-saver-dev-uploads-388691194728`                                  |
+| Data table | `water-saver-dev-data`                                                  |
+| Cognito    | `us-east-1_eeMuYPlMK` / client `1a4ao09ljbohofa0377sm82alu`             |
+| AI secret  | `water-saver-dev-ai-runtime` (stub; put values via CLI)                 |
+| Tag        | `Assessment-iii=true`                                                   |
 
 ## Apply flow
 

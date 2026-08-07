@@ -8,11 +8,12 @@ describe('report-catalog', () => {
     expect(categoryLabel('legacy')).toBe('Legacy export');
   });
 
-  it('REPORT_CATALOG lists four report processes', () => {
-    expect(REPORT_CATALOG).toHaveLength(4);
+  it('REPORT_CATALOG lists field, operations, and legacy processes', () => {
+    expect(REPORT_CATALOG).toHaveLength(5);
     expect(REPORT_CATALOG.map((r) => r.id)).toEqual([
       'work-order-csv',
       'work-order-xlsx',
+      'work-order-html',
       'ops-summary',
       'alerts-csv',
     ]);

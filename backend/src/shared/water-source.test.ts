@@ -42,6 +42,9 @@ describe('normalizeWaterSourceInput', () => {
       type: 'well',
       unit: 'gal',
       notes: null,
+      locationLabel: null,
+      latitude: null,
+      longitude: null,
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
     };
@@ -58,6 +61,21 @@ describe('normalizeWaterSourceInput', () => {
     assert.equal(res.source.createdAt, existing.createdAt);
   });
 
+  it('accepts optional map coordinates and locationLabel', () => {
+    const res = normalizeWaterSourceInput('demo-town', {
+      name: 'Well 1 – North',
+      type: 'well',
+      locationLabel: 'N of town shop, Wiley CO',
+      latitude: 38.154,
+      longitude: -102.72,
+    });
+    assert.equal(res.ok, true);
+    if (!res.ok) return;
+    assert.equal(res.source.locationLabel, 'N of town shop, Wiley CO');
+    assert.equal(res.source.latitude, 38.154);
+    assert.equal(res.source.longitude, -102.72);
+  });
+
   it('never trusts a different tenantId on update path', () => {
     const existing: WaterSource = {
       tenantId: 'tenant-a',
@@ -66,6 +84,9 @@ describe('normalizeWaterSourceInput', () => {
       type: 'well',
       unit: 'gal',
       notes: null,
+      locationLabel: null,
+      latitude: null,
+      longitude: null,
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
     };

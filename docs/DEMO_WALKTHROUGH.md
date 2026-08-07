@@ -19,22 +19,28 @@
 2. **Upload customer readings** — Upload the messy **Excel** export (CSV also works). Use the visual mapper if columns look odd; note Mapped vs Not used. Confirm ingest success (partial skips OK).
 3. **Name sources** — Go to **Sources**. Create 2–3 named wells (e.g. Well 1 – North, Well 2 – South). Calm copy only.
 4. **Ingest source readings** — On Sources (or via `kind: source` upload), load `messy-source-readings-july.csv` (or enter one manual period reading).
-5. **Dashboard water balance** — Return to dashboard. Point out:
-   - **In / Out / Unaccounted** for the period (or calm **Need both sides** if one-sided)
-   - Trend chart: Produced, Billed, Unaccounted
-6. **Data Confidence** — Show level + display score. Emphasize: _not leak accuracy_. Read the “What would help” line. Note Watch vs Actionable per signal.
-7. **Alert feed** — Show meter alerts + any **Water balance** Watch rows. Say out loud: _Watch means look when you can; Actionable stuck/diag may need a field check._
-8. **Alerts page** — Open Alerts → Refresh. Confirm balance + meter rows. Optionally Acknowledge one (session-only is fine for Kelly).
-9. **Isolation one-liner** — “Every API call uses the JWT `tenant_id`; the browser cannot switch municipalities.”
+5. **Dashboard (full first glance)** — Return to dashboard. Point out top to bottom:
+   - **Last upload** status line (date · good rows · issues) when an ingest has succeeded
+   - KPI row: meters, open alerts (Watch · Actionable), balance %, Confidence
+   - **System usage** chart: billed over time + typical band; optional **vs prior year** toggle (default stays “This period” so the screen stays clean)
+   - **Data Confidence** doughnut + plain-language score — _not leak accuracy_
+   - **Meter health** compact counts: stuck/flat, diagnostic flags (battery/tamper/reverse), older-than-15y (when install dates exist)
+   - **Water balance**: In / Out / Unaccounted for the period (or calm **Need both sides** if one-sided)
+   - Under balance: **Production by source** bars + **Unaccounted %** sparkline (sparkline softens/hides when Confidence is **Thin**)
+   - **Top outliers** mini-list only when Confidence is **not Thin** — links to meter detail; never call it a leak
+6. **Alert feed (on Dashboard)** — Show meter alerts + any **Water balance** Watch rows. Say out loud: _Watch means look when you can; Actionable stuck/diag may need a field check._
+7. **Alerts page** — Open Alerts → Refresh. Confirm balance + meter rows. Optionally Acknowledge one (session-only is fine for Kelly).
+8. **Isolation one-liner** — “Every API call uses the JWT `tenant_id`; the browser cannot switch municipalities.”
 
 ---
 
 ## Talking points (do use)
 
 - Rural operators, not enterprise dashboards
-- Thin history → statistical / balance flags stay **Watch**
+- Thin history → statistical outliers and loss **claims** stay **Watch** / softened (no Top outliers; no dig-now unaccounted %)
 - Hardware stuck / diagnostic bits can be **Actionable** with a clear why
 - Water balance needs both sides of the same period
+- Prior-year usage is optional context — leave the toggle off unless Kelly asks
 
 ## Avoid in this demo
 

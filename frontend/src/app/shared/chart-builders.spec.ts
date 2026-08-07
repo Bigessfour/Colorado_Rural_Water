@@ -42,6 +42,7 @@ describe('chart-builders', () => {
     expect(result.empty).toBe(false);
     expect(result.hasBand).toBe(false);
     expect(result.data.datasets.some((d) => d.label === 'Billed usage')).toBe(true);
+    expect(result.priorYearAvailable).toBe(false);
   });
 
   it('buildUsageTrendChart adds band with 3+ months', () => {
@@ -53,6 +54,28 @@ describe('chart-builders', () => {
     expect(result.hasBand).toBe(true);
     expect(result.data.datasets.some((d) => d.label === 'Typical high')).toBe(true);
     expect(result.data.datasets.some((d) => d.label === 'Typical low')).toBe(true);
+  });
+
+  it('buildUsageTrendChart can overlay prior year when history exists', () => {
+    const trend = [];
+    for (let y of [2025, 2026]) {
+      for (let m = 1; m <= 7; m++) {
+        trend.push({
+          period: `${y}-${String(m).padStart(2, '0')}`,
+          billedGal: y === 2026 ? 200_000 + m * 1000 : 100_000 + m * 1000,
+        });
+      }
+    }
+    const off = buildUsageTrendChart(trend, { comparePriorYear: false, windowMonths: 7 });
+    expect(off.priorYearAvailable).toBe(true);
+    expect(off.data.datasets.some((d) => d.label === 'Prior year')).toBe(false);
+
+    const on = buildUsageTrendChart(trend, { comparePriorYear: true, windowMonths: 7 });
+    expect(on.hasBand).toBe(false);
+    expect(on.data.datasets.some((d) => d.label === 'This year')).toBe(true);
+    expect(on.data.datasets.some((d) => d.label === 'Prior year')).toBe(true);
+    const prior = on.data.datasets.find((d) => d.label === 'Prior year')!;
+    expect(prior.data.filter((v) => v != null).length).toBe(7);
   });
 
   it('buildBalanceBarChart marks insufficient and zeros unaccounted', () => {

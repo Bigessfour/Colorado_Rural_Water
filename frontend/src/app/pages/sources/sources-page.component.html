@@ -1,9 +1,9 @@
 <section class="page">
   <h1>Named sources</h1>
   <p class="lede">
-    Name each well, spring, or purchased supply for {{ auth.placeName() }}, then enter or upload
-    period production. Dashboard water balance compares production (in) to billed customer usage
-    (out).
+    Name each well, spring, or purchased supply for {{ auth.placeName() }}, pin it on the map, then
+    enter or upload period production. Dashboard water balance compares production (in) to billed
+    customer usage (out).
   </p>
 
   @if (!auth.isLoggedIn()) {
@@ -16,6 +16,9 @@
   }
   @if (status()) {
     <p-message severity="info" styleClass="hint">{{ status() }}</p-message>
+  }
+  @if (geocodeHint()) {
+    <p-message severity="secondary" styleClass="hint">{{ geocodeHint() }}</p-message>
   }
 
   <p-card header="Add or edit a source" styleClass="form-card">
@@ -36,6 +39,50 @@
           styleClass="type-select"
         />
       </label>
+      <label>
+        Place / road label (for map pin)
+        <input
+          pInputText
+          name="locationLabel"
+          [(ngModel)]="locationLabel"
+          fluid
+          placeholder="e.g. N of town shop, County Rd 12"
+          aria-label="Source place label"
+        />
+      </label>
+      <div class="coords-row">
+        <label>
+          Latitude
+          <input
+            pInputText
+            name="latitude"
+            [(ngModel)]="latitude"
+            fluid
+            placeholder="38.154"
+            aria-label="Source latitude"
+          />
+        </label>
+        <label>
+          Longitude
+          <input
+            pInputText
+            name="longitude"
+            [(ngModel)]="longitude"
+            fluid
+            placeholder="-102.72"
+            aria-label="Source longitude"
+          />
+        </label>
+      </div>
+      <div class="form-actions">
+        <p-button
+          type="button"
+          label="Suggest pin from label"
+          severity="secondary"
+          [disabled]="!auth.isLoggedIn()"
+          (onClick)="suggestFromLabel()"
+        />
+      </div>
       <label>
         Notes (optional)
         <input pInputText name="notes" [(ngModel)]="notes" fluid aria-label="Source notes" />
@@ -66,14 +113,39 @@
     </form>
   </p-card>
 
+  <p-card header="Source map" styleClass="map-card">
+    <p class="map-lede">
+      Pins use saved coordinates. Turn on fine-tune, select a source (Edit or map click), then drag
+      the pin or click the map to place it.
+    </p>
+    <div class="form-actions map-actions">
+      <p-button
+        type="button"
+        [label]="fineTune() ? 'Fine-tune on' : 'Fine-tune off'"
+        [severity]="fineTune() ? 'warn' : 'secondary'"
+        [disabled]="!auth.isLoggedIn()"
+        (onClick)="toggleFineTune()"
+      />
+    </div>
+    <app-meter-map
+      [meters]="mapPoints()"
+      [selectedMeterId]="selectedSourceId()"
+      [fineTune]="fineTune()"
+      [defaultCenter]="auth.mapCenter()"
+      (markerSelect)="selectSource($event)"
+      (locationPicked)="onMapLocationPicked($event)"
+    />
+  </p-card>
+
   <p-card styleClass="table-card">
-    <p-table [value]="sources()" [tableStyle]="{ 'min-width': '36rem' }">
+    <p-table [value]="sources()" [tableStyle]="{ 'min-width': '42rem' }">
       <ng-template #header>
         <tr>
           <th>Name</th>
           <th>Type</th>
+          <th>Place</th>
+          <th>Coords</th>
           <th>Id</th>
-          <th>Notes</th>
           <th></th>
         </tr>
       </ng-template>
@@ -81,8 +153,15 @@
         <tr>
           <td>{{ row.name }}</td>
           <td>{{ row.type }}</td>
+          <td>{{ row.locationLabel || '—' }}</td>
+          <td class="mono">
+            @if (row.latitude != null && row.longitude != null) {
+              {{ row.latitude }}, {{ row.longitude }}
+            } @else {
+              —
+            }
+          </td>
           <td class="mono">{{ row.sourceId }}</td>
-          <td>{{ row.notes || '—' }}</td>
           <td class="row-actions">
             <p-button label="Edit" size="small" severity="secondary" (onClick)="startEdit(row)" />
             <p-button label="Remove" size="small" severity="danger" (onClick)="remove(row)" />
@@ -91,7 +170,7 @@
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="5">No named sources yet — add Well 1 / Well 2, or upload a source CSV.</td>
+          <td colspan="6">No named sources yet — add Well 1 / Well 2, or upload a source CSV.</td>
         </tr>
       </ng-template>
     </p-table>

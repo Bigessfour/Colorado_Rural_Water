@@ -2,7 +2,7 @@
   <h1>Settings</h1>
   <p class="lede">
     Hi {{ auth.firstName() }} — display preferences stay on this device. Password and authenticator
-    setup live under Account; CRWA Admin handles system provisioning.
+    setup live under Account; CRWA Admin handles system provisioning on the CRWA page.
   </p>
 
   @if (error()) {
@@ -20,6 +20,30 @@
       ariaLabelledBy="settings-theme"
     />
   </p-card>
+
+  @if (auth.isLoggedIn()) {
+    <p-card header="Help &amp; guides" styleClass="block" data-help-guides>
+      <p class="card-lede">
+        How to use every main screen — for municipal operators and for CRWA staff (provision towns on
+        CRWA, invite users on Users).
+      </p>
+      <div class="guide-actions">
+        <p-button
+          label="Operator guide"
+          icon="pi pi-book"
+          [outlined]="true"
+          (onClick)="openGuide('/help/tenant')"
+        />
+        <p-button
+          label="CRWA admin guide"
+          icon="pi pi-users"
+          [outlined]="true"
+          (onClick)="openGuide('/help/crwa')"
+        />
+        <p-button label="All guides" icon="pi pi-list" [text]="true" (onClick)="openGuide('/help')" />
+      </div>
+    </p-card>
+  }
 
   @if (auth.isLoggedIn()) {
     <p-card header="Product tour" styleClass="block" data-tour="settings-tour">
@@ -61,6 +85,7 @@
         <a routerLink="/account">Account &amp; MFA</a>
         <a routerLink="/onboarding">Member intake</a>
         <a routerLink="/reports">Reports</a>
+        <a routerLink="/help">Help &amp; guides</a>
       </div>
     </p-card>
   } @else {

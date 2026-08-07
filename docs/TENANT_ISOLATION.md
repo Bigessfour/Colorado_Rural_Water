@@ -22,7 +22,7 @@ Role enforcement (Pilot D1–D3):
 | `POST /admin/tenants`                             | `crwa_admin` only — creates `META#profile` + Cognito initial user                                                                                   |
 | `GET /admin/tenants`                              | `crwa_admin` — registry under `TENANT#_registry` / `TENANT#{id}` (includes `billingStatus`, plan, meter estimate)                                   |
 | `POST /admin/users/invite`                        | `system_admin` — tenant from JWT only; client `tenantId` override → 403                                                                             |
-| `GET /admin/users`                                | `system_admin` (or `crwa_admin` with tenant claim)                                                                                                  |
+| `GET /admin/users`                                | `system_admin` only — JWT tenant                                                                                                                    |
 | `GET /admin/tenants/{tenantId}/billing`           | `crwa_admin` — billing profile + `BILL#EVENT` ledger                                                                                                |
 | `POST /admin/tenants/{tenantId}/billing/{action}` | `crwa_admin` — `record-payment` \| `extend-pilot` \| `mark-past-due` \| `suspend` \| `reactivate`; path slug validated; never trust body `tenantId` |
 | `GET /billing`                                    | `system_admin` — JWT tenant only; public membership status + ledger (no internal notes)                                                             |

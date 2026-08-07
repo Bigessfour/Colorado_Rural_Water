@@ -45,6 +45,10 @@ import type { ConversationMessage, ConversationStore } from "./conversation.js";
 import { conversationSk } from "./conversation.js";
 import type { OnboardingIntake, OnboardingStore } from "./onboarding-intake.js";
 import type {
+  LastIngestRecord,
+  LastIngestStore,
+} from "./last-ingest.js";
+import type {
   TenantProfile,
   TenantStore,
   TenantUserRecord,
@@ -88,6 +92,7 @@ function alertStatusSk(alertId: string): string {
 const BALANCE_THRESHOLDS_SK = "CFG#balance_thresholds";
 const META_PROFILE_SK = "META#profile";
 const META_ONBOARDING_SK = "META#onboarding";
+const META_LAST_INGEST_SK = "META#last_ingest";
 /** Synthetic tenant partition for CRWA tenant registry (stays under TENANT#* IAM). */
 const REGISTRY_TENANT_ID = "_registry";
 
@@ -134,7 +139,8 @@ export class DynamoMeterStore
     BalanceThresholdStore,
     TenantStore,
     OnboardingStore,
-    ConversationStore
+    ConversationStore,
+    LastIngestStore
 {
   constructor(private readonly tableName: string) {}
 
@@ -359,6 +365,9 @@ export class DynamoMeterStore
           type: source.type,
           unit: source.unit,
           notes: source.notes,
+          locationLabel: source.locationLabel,
+          latitude: source.latitude,
+          longitude: source.longitude,
           createdAt: source.createdAt,
           updatedAt: source.updatedAt,
         },
@@ -736,6 +745,36 @@ export class DynamoMeterStore
     );
   }
 
+  async getLastIngest(tenantId: string): Promise<LastIngestRecord | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: META_LAST_INGEST_SK },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToLastIngest(res.Item);
+  }
+
+  async putLastIngest(record: LastIngestRecord): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(record.tenantId),
+          sk: META_LAST_INGEST_SK,
+          entityType: "last_ingest",
+          tenantId: record.tenantId,
+          at: record.at,
+          goodRows: record.goodRows,
+          badRows: record.badRows,
+          readingsWritten: record.readingsWritten,
+          filename: record.filename ?? null,
+        },
+      }),
+    );
+  }
+
   async listTenantProfiles(): Promise<TenantProfile[]> {
     const res = await client.send(
       new QueryCommand({
@@ -950,6 +989,9 @@ function itemToSource(item: Record<string, unknown>): WaterSource | null {
     type: type as SourceType,
     unit: String(item.unit ?? "gal"),
     notes: (item.notes as string | null) ?? null,
+    locationLabel: (item.locationLabel as string | null) ?? null,
+    latitude: coerceStoredCoordinate(item.latitude),
+    longitude: coerceStoredCoordinate(item.longitude),
     createdAt: String(item.createdAt ?? new Date().toISOString()),
     updatedAt: String(item.updatedAt ?? new Date().toISOString()),
   };
@@ -1351,10 +1393,34 @@ export function createOnboardingStoreFromEnv(): OnboardingStore {
   return new DynamoMeterStore(table);
 }
 
+export function createLastIngestStoreFromEnv(): LastIngestStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error("DATA_TABLE env is not configured");
+  }
+  return new DynamoMeterStore(table);
+}
+
 export function createConversationStoreFromEnv(): ConversationStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
     throw new Error("DATA_TABLE env is not configured");
   }
   return new DynamoMeterStore(table);
+}
+
+function itemToLastIngest(
+  item: Record<string, unknown>,
+): LastIngestRecord | null {
+  const tenantId = item.tenantId;
+  const at = item.at;
+  if (typeof tenantId !== "string" || typeof at !== "string") return null;
+  return {
+    tenantId,
+    at,
+    goodRows: Number(item.goodRows ?? 0),
+    badRows: Number(item.badRows ?? 0),
+    readingsWritten: Number(item.readingsWritten ?? 0),
+    filename: typeof item.filename === "string" ? item.filename : null,
+  };
 }

@@ -46,4 +46,11 @@ describe('SafeMarkdownPipe', () => {
     expect(html).toContain('<li>first</li>');
     expect(html).toContain('<li>second</li>');
   });
+
+  it('renders numbered steps and safe relative links', () => {
+    const out = pipe.transform('1. Open [Admin](/admin)\n2. Invite');
+    const html = String(out);
+    expect(html).toContain('<li>Open <a href="/admin" class="md-a">Admin</a></li>');
+    expect(html).toContain('<li>Invite</li>');
+  });
 });

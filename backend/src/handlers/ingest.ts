@@ -14,8 +14,12 @@ import {
   looksLikeExcelBuffer,
   parseCustomerReadingsExcel,
 } from "../shared/excel-parse.js";
-import { createMeterStoreFromEnv } from "../shared/dynamo-store.js";
+import {
+  createLastIngestStoreFromEnv,
+  createMeterStoreFromEnv,
+} from "../shared/dynamo-store.js";
 import { commitCustomerIngest } from "../shared/ingest.js";
+import { buildLastIngestRecord } from "../shared/last-ingest.js";
 import { badRequest, forbidden, ok, unauthorized } from "../shared/http.js";
 
 /** Stay under API Gateway HTTP API ~10 MiB payload; leave headroom for JSON wrappers. */
@@ -205,6 +209,20 @@ export const handler: AuthedHandler = async (event) => {
   try {
     const store = createMeterStoreFromEnv();
     const summary = await commitCustomerIngest(store, tenantId, result);
+    const lastIngest = buildLastIngestRecord({
+      tenantId,
+      rowsAccepted: rowCounts.rowsAccepted,
+      rowsSkipped: rowCounts.rowsSkipped,
+      readingsWritten: summary.readingsWritten,
+    });
+    try {
+      await createLastIngestStoreFromEnv().putLastIngest(lastIngest);
+    } catch (metaErr) {
+      console.warn(
+        "last_ingest_persist_failed",
+        metaErr instanceof Error ? metaErr.message : String(metaErr),
+      );
+    }
     const locations = await store.listLocations(tenantId);
     const conflictCount = summary.addressConflicts?.length ?? 0;
     const friendlyParts = [
@@ -225,6 +243,7 @@ export const handler: AuthedHandler = async (event) => {
       ...summary,
       ...rowCounts,
       metersTracked: locations.length,
+      lastIngest,
       sheets: "sheets" in result ? result.sheets : undefined,
       selectedSheet:
         "selectedSheet" in result ? result.selectedSheet : undefined,

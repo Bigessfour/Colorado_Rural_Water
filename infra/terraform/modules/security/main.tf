@@ -20,6 +20,8 @@ resource "aws_secretsmanager_secret" "ai_runtime" {
 
   name        = "${var.project_name}-${var.environment}-ai-runtime"
   description = "Water Saver AI runtime secrets (Mem0, LangSmith). Put values via CLI/Console — never commit."
+  # Allow immediate recreate after terraform destroy (default 30-day recovery blocks re-apply).
+  recovery_window_in_days = 0
 
   tags = {
     Project     = var.project_name

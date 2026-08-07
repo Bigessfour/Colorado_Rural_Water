@@ -1,5 +1,7 @@
 # Plan — Feature 010: Docs & Ops Bonuses
 
+**Status:** CLOSED (verified — RUBRIC_COVERAGE.md matrix done)
+
 ## Context
 
 Assessment III full-credit track layered on Water Saver. AWS account `388691194728` / `codeplatoon` / `us-east-1` (Assessment-iii tag required).

@@ -16,7 +16,7 @@
 }
 
 .page-head .lede {
-  margin-bottom: 0;
+  margin-bottom: 0.35rem;
 }
 
 .lede {
@@ -24,6 +24,13 @@
   color: #4a6368;
   max-width: 40rem;
   margin: 0 0 1.5rem;
+}
+
+.last-ingest {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-size: 0.88rem;
+  color: #6b8287;
+  margin: 0 0 0.25rem;
 }
 
 :host ::ng-deep .hint {
@@ -65,7 +72,8 @@
 :host ::ng-deep .balance,
 :host ::ng-deep .confidence,
 :host ::ng-deep .usage,
-:host ::ng-deep .health {
+:host ::ng-deep .health,
+:host ::ng-deep .outliers {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(15, 61, 66, 0.08);
   box-shadow: none;
@@ -230,6 +238,98 @@
   font-size: 0.95rem;
 }
 
+.health-counts {
+  list-style: none;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.health-counts li {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.9rem;
+  color: #4a6368;
+}
+
+.health-counts strong {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.25rem;
+  color: #0f3d42;
+}
+
+.health-sub {
+  font-style: normal;
+  color: #6b8287;
+  font-size: 0.8rem;
+}
+
+.balance-extras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 0.75rem;
+}
+
+.balance-extra-title {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f3d42;
+  margin: 0 0 0.5rem;
+}
+
+.chart-wrap--source {
+  height: 160px;
+}
+
+.chart-wrap--spark {
+  height: 140px;
+}
+
+.outliers-lede {
+  margin: 0 0 0.75rem;
+}
+
+.outlier-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.outlier-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  padding: 0.55rem 0;
+}
+
+.outlier-row + .outlier-row {
+  border-top: 1px solid rgba(15, 61, 66, 0.08);
+}
+
+.outlier-row a {
+  color: #1a6b73;
+  font-weight: 600;
+}
+
+.outlier-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.outlier-summary {
+  margin-top: 0.2rem;
+}
+
 .health-legend {
   list-style: none;
   margin: 0;
@@ -284,6 +384,31 @@
 
 .chart-note {
   margin: 0;
+}
+
+.chart-note--soft {
+  margin-top: 0.35rem;
+}
+
+.usage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .alert-row {

@@ -12,6 +12,8 @@ locals {
 
 resource "aws_s3_bucket" "uploads" {
   bucket = "${local.name_prefix}-uploads-${data.aws_caller_identity.current.account_id}"
+  # Allow terraform destroy when objects / versions exist (Assessment teardown).
+  force_destroy = true
 
   tags = {
     Name = "${local.name_prefix}-uploads"

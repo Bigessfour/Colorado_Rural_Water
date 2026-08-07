@@ -24,6 +24,21 @@
   box-shadow: none;
 }
 
+.upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.upload-actions-hint {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-size: 0.9rem;
+  color: #4a6368;
+  max-width: 28rem;
+}
+
 .drop {
   padding: 2rem 1rem;
   text-align: center;

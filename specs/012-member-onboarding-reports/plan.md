@@ -1,6 +1,6 @@
 # Plan — Feature 012: Member Onboarding Intake & Reports
 
-**Status:** verified (MVP shipped 2026-08-04).
+**Status:** CLOSED (verified 2026-08-04 MVP; T012-19 Reports prove closed 2026-08-06 via evidence/016).
 
 ## Approach
 

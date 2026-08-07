@@ -13,6 +13,7 @@ import { AccountPageComponent } from './pages/account/account-page.component';
 import { AgentPageComponent } from './pages/agent/agent-page.component';
 import { ReviewHowtoPageComponent } from './pages/review/review-howto-page.component';
 import { SettingsPageComponent } from './pages/settings/settings-page.component';
+import { HelpPageComponent } from './pages/help/help-page.component';
 import { OnboardingPageComponent } from './pages/onboarding/onboarding-page.component';
 import { ReportsPageComponent } from './pages/reports/reports-page.component';
 
@@ -39,6 +40,8 @@ export const routes: Routes = [
       { path: 'onboarding', component: OnboardingPageComponent },
       { path: 'reports', component: ReportsPageComponent },
       { path: 'settings', component: SettingsPageComponent },
+      { path: 'help', component: HelpPageComponent },
+      { path: 'help/:guideId', component: HelpPageComponent },
       { path: 'review', component: ReviewHowtoPageComponent },
       // --- Pilot / Assessment extras ---
       { path: 'assistant', component: AgentPageComponent },

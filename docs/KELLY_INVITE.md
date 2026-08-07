@@ -1,11 +1,11 @@
-# Kelly invite — ready to send (ops)
+# Kelly invite — sent (ops)
 
-**Status:** Engineering complete · **Your action:** send this to Kelly Stone.
+**Status:** Invite sent **2026-08-06** · CloudFront / review URLs re-verified live the same day.
 
-**Live SPA (CloudFront):** `https://duqk1pqvmrsuh.cloudfront.net`
-**Guided review:** `https://duqk1pqvmrsuh.cloudfront.net/review`
+**Live SPA (CloudFront):** `https://d1gokx5wxrd4x6.cloudfront.net`
+**Guided review:** `https://d1gokx5wxrd4x6.cloudfront.net/review`
 
-## What to send
+## What was sent
 
 **Subject:** Water Saver — guided review (20–30 min)
 
@@ -15,7 +15,7 @@
 >
 > The Water Saver guided review is ready. It walks the live app section by section and emails me a structured summary when you finish.
 >
-> **Start here:** https://duqk1pqvmrsuh.cloudfront.net/review
+> **Start here:** https://d1gokx5wxrd4x6.cloudfront.net/review
 >
 > **Sign-in:** use the review operator account Steve shared separately (not in email).
 >
@@ -33,11 +33,11 @@
 
 ## Pre-send checklist
 
-- [x] CloudFront SPA live — `https://duqk1pqvmrsuh.cloudfront.net` (2026-08-04 deploy; Cognito login + `/review` proved)
-- [x] API Gateway / review Lambda healthy — `GET /health` 200; review submit SES path proved 2026-08-04 Steve dry-run
-- [x] Kelly can sign in with review credentials — recreated in **us-east-1** SPA pool (`us-east-1_oZlKJ1y39`); password file updated
+- [x] CloudFront SPA live — `https://d1gokx5wxrd4x6.cloudfront.net` (re-applied + Cognito users re-provisioned 2026-08-06 after destroy prove)
+- [x] API Gateway / review Lambda healthy — `GET /health` 200 on `https://uqujnhmk31.execute-api.us-east-1.amazonaws.com`
+- [x] Kelly can sign in with review credentials — pool `us-east-1_eeMuYPlMK`; password file updated (`./scripts/provision-demo-users.sh`)
 - [x] `./scripts/smoke.sh` or [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md) F2 boxes reviewed — all F2 boxes checked 2026-08-04
-- [ ] **Steve:** Send invite email / message with CloudFront URL + credential delivery out-of-band
+- [x] **Steve:** Send invite email / message with CloudFront URL + credential delivery out-of-band — **sent 2026-08-06**
 
 ## Redeploy SPA after UI changes
 

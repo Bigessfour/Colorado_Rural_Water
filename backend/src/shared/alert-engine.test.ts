@@ -135,5 +135,20 @@ describe("evaluateAlerts", () => {
     const diag = alerts.find((a) => a.type === "diagnostic_flag");
     assert.ok(diag);
     assert.equal(diag.mode, "Actionable");
+    assert.deepEqual(diag.diagnosticFlags, ["LEAK"]);
+  });
+
+  it("flags LOW_BATTERY / TAMPER / REVERSE_FLOW as diagnostic Actionable", () => {
+    const locations = [loc({ meterId: "m2" })];
+    const readings = [
+      rdg("m2", "2026-06-15T00:00:00.000Z", 100),
+      rdg("m2", "2026-07-15T00:00:00.000Z", 200, ["LOW_BATTERY", "tamper"]),
+    ];
+    const { alerts } = evaluateAlerts(locations, readings);
+    const diag = alerts.find((a) => a.type === "diagnostic_flag");
+    assert.ok(diag);
+    assert.equal(diag.mode, "Actionable");
+    assert.ok(diag.diagnosticFlags?.includes("LOW_BATTERY"));
+    assert.ok(diag.diagnosticFlags?.includes("TAMPER"));
   });
 });

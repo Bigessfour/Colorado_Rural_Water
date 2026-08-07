@@ -30,6 +30,12 @@ export interface TenantAlert {
   confidenceNote: string;
   /** Lifecycle status before C3 merge — engine always emits open. */
   status: "open" | "acknowledged" | "resolved";
+  /** Latest period usage (gal) for high-usage ranking on the dashboard. */
+  usageGal?: number;
+  /** Ratio vs peer median when available (e.g. 2.5). */
+  usageRatio?: number;
+  /** Normalized diagnostic flag codes (LOW_BATTERY, TAMPER, …). */
+  diagnosticFlags?: string[];
 }
 
 export interface ConfidenceSnapshot {
@@ -221,6 +227,54 @@ function stuckAlerts(
   ];
 }
 
+/** Hardware / handheld diagnostic codes operators care about on Meter Health. */
+const ACTIONABLE_DIAG_CODES = [
+  "LOW_BATTERY",
+  "TAMPER",
+  "REVERSE_FLOW",
+  "LEAK",
+] as const;
+
+/**
+ * Normalize raw handheld / CSV diagnostic tokens into stable codes.
+ * Keeps short codes (L, T, B) and verbose strings (low battery, reverse flow).
+ */
+export function normalizeDiagnosticFlags(flags: string[]): string[] {
+  const out = new Set<string>();
+  for (const raw of flags) {
+    const f = raw.trim();
+    if (!f) continue;
+    const upper = f.toUpperCase().replace(/\s+/g, "_");
+    if (
+      upper === "LOW_BATTERY" ||
+      upper === "BATTERY" ||
+      /^b$/i.test(f) ||
+      /low[_\s-]?batt/i.test(f)
+    ) {
+      out.add("LOW_BATTERY");
+      continue;
+    }
+    if (upper === "TAMPER" || /^t$/i.test(f) || /tamper/i.test(f)) {
+      out.add("TAMPER");
+      continue;
+    }
+    if (
+      upper === "REVERSE_FLOW" ||
+      upper === "REVERSE" ||
+      /^r$/i.test(f) ||
+      /reverse/i.test(f)
+    ) {
+      out.add("REVERSE_FLOW");
+      continue;
+    }
+    if (upper === "LEAK" || /^l$/i.test(f) || /leak/i.test(f)) {
+      out.add("LEAK");
+      continue;
+    }
+  }
+  return [...out];
+}
+
 function diagnosticAlerts(
   series: MeterSeries,
   _confidence: ConfidenceSnapshot,
@@ -228,10 +282,10 @@ function diagnosticAlerts(
   const { location, readings } = series;
   const latest = readings[readings.length - 1];
   if (!latest) return [];
-  const leakish = latest.diagnosticFlags.filter(
-    (f) => /^l$/i.test(f) || /leak/i.test(f),
+  const codes = normalizeDiagnosticFlags(latest.diagnosticFlags).filter((c) =>
+    (ACTIONABLE_DIAG_CODES as readonly string[]).includes(c),
   );
-  if (!leakish.length) return [];
+  if (!codes.length) return [];
 
   return [
     {
@@ -243,10 +297,11 @@ function diagnosticAlerts(
       meterId: location.meterId,
       serviceAddress: location.serviceAddress,
       occupantName: location.occupantName,
-      summary: `Handheld diagnostic flag on meter ${location.meterId} at ${location.serviceAddress}: ${leakish.join(", ")}.`,
+      summary: `Handheld diagnostic on meter ${location.meterId} at ${location.serviceAddress}: ${codes.join(", ")}. Worth a field look — not a leak certainty.`,
       confidenceNote:
         "Hardware diagnostic bit — Actionable even with thin history (not a leak model)",
       status: "open",
+      diagnosticFlags: codes,
     },
   ];
 }
@@ -319,9 +374,11 @@ function highUsagePeerAlerts(
         meterId: location.meterId,
         serviceAddress: location.serviceAddress,
         occupantName: location.occupantName,
-        summary: `Meter ${location.meterId} at ${location.serviceAddress} used ~${ratio}× typical for this route (${p.usage.toLocaleString()} gal). Possible leak or irrigation change.`,
+        summary: `Meter ${location.meterId} at ${location.serviceAddress} used ~${ratio}× typical for this route (${p.usage.toLocaleString()} gal). Unusual for the route — check irrigation, occupancy, or a misread.`,
         confidenceNote: `${confidence.level} (~${confidence.monthsOfHistory} mo) — ${confidence.statisticalMode}`,
         status: "open",
+        usageGal: p.usage,
+        usageRatio: Number(ratio),
       });
     }
   }

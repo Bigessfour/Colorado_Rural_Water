@@ -1,6 +1,7 @@
 import {
   AdminAddUserToGroupCommand,
   AdminCreateUserCommand,
+  AdminGetUserCommand,
   CognitoIdentityProviderClient,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { COGNITO_GROUP_BY_ROLE, type AssignableTenantRole } from './auth.js';
@@ -12,6 +13,13 @@ export interface CognitoAdminClient {
     role: AssignableTenantRole;
     temporaryPassword: string;
   }): Promise<void>;
+  /**
+   * Read custom:tenant_id for an existing user (reuse / registry restore).
+   * Returns null if the attribute is missing.
+   */
+  getUserTenantId(email: string): Promise<string | null>;
+  /** Ensure the user is in the Cognito group for the municipal role. */
+  ensureUserInRoleGroup(email: string, role: AssignableTenantRole): Promise<void>;
 }
 
 export class AwsCognitoAdminClient implements CognitoAdminClient {
@@ -39,11 +47,30 @@ export class AwsCognitoAdminClient implements CognitoAdminClient {
         ],
       }),
     );
+    await this.ensureUserInRoleGroup(input.email, input.role);
+  }
+
+  async getUserTenantId(email: string): Promise<string | null> {
+    const res = await this.client.send(
+      new AdminGetUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+      }),
+    );
+    const attr = (res.UserAttributes ?? []).find((a) => a.Name === 'custom:tenant_id');
+    const v = attr?.Value?.trim();
+    return v || null;
+  }
+
+  async ensureUserInRoleGroup(
+    email: string,
+    role: AssignableTenantRole,
+  ): Promise<void> {
     await this.client.send(
       new AdminAddUserToGroupCommand({
         UserPoolId: this.userPoolId,
-        Username: input.email,
-        GroupName: COGNITO_GROUP_BY_ROLE[input.role],
+        Username: email,
+        GroupName: COGNITO_GROUP_BY_ROLE[role],
       }),
     );
   }

@@ -89,6 +89,15 @@ export const handler: AuthedHandler = async (event) => {
   }
 
   const periodParam = event.queryStringParameters?.period?.trim();
+  // Dashboard prior-year overlay needs up to 24 months; default stays 12 for lighter clients.
+  const trendRaw = event.queryStringParameters?.trendMonths?.trim();
+  let trendMonths = 12;
+  if (trendRaw) {
+    const n = Number(trendRaw);
+    if (Number.isFinite(n)) {
+      trendMonths = Math.min(24, Math.max(6, Math.floor(n)));
+    }
+  }
 
   try {
     const meterStore = createMeterStoreFromEnv();
@@ -108,13 +117,27 @@ export const handler: AuthedHandler = async (event) => {
       meterReadings,
       {
         period: periodParam,
-        trendMonths: 12,
+        trendMonths,
       },
     );
     const thresholds = mergeBalanceThresholds(storedThresholds);
+    const nameById = new Map(sources.map((s) => [s.sourceId, s.name]));
+    const productionBySource = (balance.productionBySource ?? []).map((row) => ({
+      ...row,
+      sourceName: nameById.get(row.sourceId) ?? row.sourceName ?? row.sourceId,
+    }));
+    const trend = balance.trend.map((t) => ({
+      ...t,
+      productionBySource: (t.productionBySource ?? []).map((row) => ({
+        ...row,
+        sourceName: nameById.get(row.sourceId) ?? row.sourceName ?? row.sourceId,
+      })),
+    }));
 
     return ok({
       ...balance,
+      productionBySource,
+      trend,
       sourcesConfigured: sources.length,
       live: true,
       balanceThresholds: {

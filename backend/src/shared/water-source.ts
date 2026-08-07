@@ -1,5 +1,7 @@
 /** Named production / source meters (wells, springs, etc.) — Spec §7a / ticket G1. */
 
+import { parseOptionalCoordinates } from './meter-location.js';
+
 export const SOURCE_TYPES = ['well', 'spring', 'purchase', 'other'] as const;
 export type SourceType = (typeof SOURCE_TYPES)[number];
 
@@ -10,6 +12,10 @@ export interface WaterSource {
   type: SourceType;
   unit: string;
   notes: string | null;
+  /** Optional place / road label for geocoding map pins. */
+  locationLabel: string | null;
+  latitude: number | null;
+  longitude: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +26,9 @@ export interface WaterSourceInput {
   unit?: unknown;
   notes?: unknown;
   sourceId?: unknown;
+  locationLabel?: unknown;
+  latitude?: unknown;
+  longitude?: unknown;
 }
 
 export function isSourceType(value: unknown): value is SourceType {
@@ -63,6 +72,24 @@ export function normalizeWaterSourceInput(
     else return { ok: false, error: 'notes must be a string' };
   }
 
+  let locationLabel: string | null = existing?.locationLabel ?? null;
+  if (raw.locationLabel !== undefined) {
+    if (raw.locationLabel === null || raw.locationLabel === '') locationLabel = null;
+    else if (typeof raw.locationLabel === 'string') {
+      locationLabel = raw.locationLabel.trim().slice(0, 200) || null;
+    } else {
+      return { ok: false, error: 'locationLabel must be a string' };
+    }
+  }
+
+  const coords = parseOptionalCoordinates(raw as Record<string, unknown>);
+  if (!coords.ok) return coords;
+
+  let latitude: number | null = existing?.latitude ?? null;
+  let longitude: number | null = existing?.longitude ?? null;
+  if (coords.latitude !== undefined) latitude = coords.latitude;
+  if (coords.longitude !== undefined) longitude = coords.longitude;
+
   const now = new Date().toISOString();
   const sourceId =
     existing?.sourceId ??
@@ -83,6 +110,9 @@ export function normalizeWaterSourceInput(
       type: typeRaw,
       unit,
       notes,
+      locationLabel,
+      latitude,
+      longitude,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     },

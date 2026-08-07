@@ -59,6 +59,11 @@ describe('water balance calculator', () => {
     assert.equal(july.unaccountedGal, 1_015_000);
     assert.equal(july.unaccountedPct, 98.5);
     assert.equal(july.status, 'loss');
+    assert.equal(july.productionBySource.length, 2);
+    assert.equal(july.productionBySource[0]!.sourceId, 'w1');
+    assert.equal(july.productionBySource[0]!.gallons, 620_000);
+    assert.equal(july.productionBySource[1]!.sourceId, 'w2');
+    assert.equal(july.productionBySource[1]!.gallons, 410_000);
   });
 
   it('flags sold > pumped as gain (negative unaccounted)', () => {
