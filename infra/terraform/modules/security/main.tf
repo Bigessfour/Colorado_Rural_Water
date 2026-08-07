@@ -18,8 +18,8 @@ variable "create_ai_secret_stub" {
 resource "aws_secretsmanager_secret" "ai_runtime" {
   count = var.create_ai_secret_stub ? 1 : 0
 
-  name                    = "${var.project_name}-${var.environment}-ai-runtime"
-  description             = "Water Saver AI runtime secrets (Mem0, LangSmith). Put values via CLI/Console — never commit."
+  name        = "${var.project_name}-${var.environment}-ai-runtime"
+  description = "Water Saver AI runtime secrets (Mem0, LangSmith). Put values via CLI/Console — never commit."
   # Allow immediate recreate after terraform destroy (default 30-day recovery blocks re-apply).
   recovery_window_in_days = 0
 

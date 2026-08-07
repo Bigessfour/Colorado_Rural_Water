@@ -10,13 +10,13 @@
 
 > **Status 2026-08-06 (re-applied):** Stack recreated after destroy prove. New CloudFront/API IDs below. Cognito pool recreated — ask Steve for demo credentials.
 
-| What | URL |
-| --- | --- |
-| **SPA (CloudFront HTTPS)** | https://d1gokx5wxrd4x6.cloudfront.net |
-| **Kelly Review** | https://d1gokx5wxrd4x6.cloudfront.net/review |
-| **API health** | https://uqujnhmk31.execute-api.us-east-1.amazonaws.com/health |
-| **API base** | https://uqujnhmk31.execute-api.us-east-1.amazonaws.com |
-| **Destroy evidence** | [`evidence/07-destroy.md`](../evidence/07-destroy.md) |
+| What                       | URL                                                           |
+| -------------------------- | ------------------------------------------------------------- |
+| **SPA (CloudFront HTTPS)** | https://d1gokx5wxrd4x6.cloudfront.net                         |
+| **Kelly Review**           | https://d1gokx5wxrd4x6.cloudfront.net/review                  |
+| **API health**             | https://uqujnhmk31.execute-api.us-east-1.amazonaws.com/health |
+| **API base**               | https://uqujnhmk31.execute-api.us-east-1.amazonaws.com        |
+| **Destroy evidence**       | [`evidence/07-destroy.md`](../evidence/07-destroy.md)         |
 
 Account `388691194728` · `us-east-1` · tag `Assessment-iii`. Hardened teardown: `.github/workflows/destroy.yml` + `./scripts/terraform-destroy.sh` (`recovery_window_in_days = 0` on AI secret stub).
 
