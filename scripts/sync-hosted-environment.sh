@@ -6,7 +6,10 @@ set -euo pipefail
 ROOT="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TF_DIR="${ROOT}/infra/terraform"
 OUT="${ROOT}/frontend/src/environments/environment.hosted.generated.ts"
-PROFILE="${AWS_PROFILE:-codeplatoon}"
+PROFILE="${AWS_PROFILE:-}"
+if [[ -z ${PROFILE} && -z ${GITHUB_ACTIONS:-} && -z ${AWS_ACCESS_KEY_ID:-} ]]; then
+	PROFILE="codeplatoon"
+fi
 
 aws_tf() {
 	if [[ -n ${PROFILE} ]]; then

@@ -7,7 +7,10 @@
 set -euo pipefail
 
 ROOT="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROFILE="${AWS_PROFILE:-codeplatoon}"
+PROFILE="${AWS_PROFILE:-}"
+if [[ -z ${PROFILE} && -z ${GITHUB_ACTIONS:-} && -z ${AWS_ACCESS_KEY_ID:-} ]]; then
+	PROFILE="codeplatoon"
+fi
 REGION="${AWS_REGION:-us-east-1}"
 SECRETS_DIR="${HOME}/.cursor/secrets"
 DEMO_SECRET="${WATERSAVER_DEMO_SECRET:-${SECRETS_DIR}/watersaver-demo-operator-cognito.txt}"

@@ -3,7 +3,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROFILE="${AWS_PROFILE:-codeplatoon}"
+PROFILE="${AWS_PROFILE:-}"
+# CI / GH Actions use configure-aws-credentials env vars; local default is codeplatoon.
+if [[ -z ${PROFILE} && -z ${GITHUB_ACTIONS:-} && -z ${AWS_ACCESS_KEY_ID:-} ]]; then
+	PROFILE="codeplatoon"
+fi
 REGION="${AWS_REGION:-us-east-1}"
 DIST_DIR="${ROOT}/frontend/dist/frontend/browser"
 
@@ -58,8 +62,7 @@ if [[ -n ${PRIMENG_LICENSE:-} ]]; then
 		>src/environments/primeng-license.local.ts
 fi
 if [[ ! -f src/environments/primeng-license.local.ts ]]; then
-	echo "Missing frontend/src/environments/primeng-license.local.ts (gitignored). Set PRIMENG_LICENSE in CI or copy from primeng-license.local.example.ts" >&2
-	exit 1
+	cp src/environments/primeng-license.ts src/environments/primeng-license.local.ts
 fi
 if [[ ! -f src/environments/environment.hosted.generated.ts ]]; then
 	echo "Missing environment.hosted.generated.ts — sync-hosted-environment.sh failed?" >&2

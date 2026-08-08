@@ -57,7 +57,7 @@
 | 013     | Kelly ship prove      | done (verified) | prove + invite ops                          | [`evidence/013-kelly-ship-prove/`](../evidence/013-kelly-ship-prove/); invite sent; MFA deferred Pilot (accepted)                             |
 | 014     | Cognito RAG assistant | done (verified) | `/assistant` Bedrock KB                     | [`evidence/014-cognito-rag-assistant.md`](../evidence/014-cognito-rag-assistant.md), [`evidence/016`](../evidence/016-town-wiley-24mo-prove/) |
 
-**Portfolio (2026-08-06):** Spec Kit features **001–014** closed for Assessment/Kelly ship. Remaining outsidescope: live MFA enrollment (Pilot), H8 Kelly feedback, payment Epic I (vNext), gated write tools Phase F (vNext).
+**Portfolio (2026-08-06):** Spec Kit features **001–014** closed for Assessment/Kelly ship. **Post-Assessment (2026-08-08):** surface prove register complete; pilot/prod queue → [PILOT_TRACK.md](./PILOT_TRACK.md). Remaining out-of-scope: live MFA enrollment (Pilot), H8 Kelly feedback, payment Epic I (vNext), gated write tools Phase F (vNext).
 
 Rubric matrix: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md). Browser matrix: [`PROVE_FEATURES.md`](./PROVE_FEATURES.md).
 
