@@ -56,6 +56,7 @@ fi
 
 echo "==> Building frontend (hosted → terraform-synced API/Cognito + PrimeNG license)"
 cd "${ROOT}/frontend"
+npm ci --no-audit --no-fund
 if [[ -n ${PRIMENG_LICENSE:-} ]]; then
 	printf '/** CI secret — do not commit. */\nexport const primeNgLicense = %s;\n' \
 		"$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<<"${PRIMENG_LICENSE}")" \
