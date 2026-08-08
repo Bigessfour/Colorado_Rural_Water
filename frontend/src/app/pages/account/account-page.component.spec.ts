@@ -25,6 +25,8 @@ describe('AccountPageComponent', () => {
             isLoggedIn: () => true,
             email: () => 'operator@example.com',
             tenantId: () => 'town-wiley',
+            firstName: () => 'Demo',
+            placeName: () => 'Town of Wiley',
             getMfaStatus,
           },
         },

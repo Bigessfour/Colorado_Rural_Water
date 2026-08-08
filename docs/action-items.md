@@ -12,7 +12,7 @@
 
 **Surfaces mode (2026-08-08):** Inventory tracks a curated **correctness queue** only (`.function-inventory.json` → `tracking_mode: "surfaces"` + explicit `surfaces` allowlist). Empty allowlist matched **0** rows because default path hints are Town-of-Wiley CMS paths — Water Saver must keep an explicit list. Do not switch back to `tracking_mode: "all"` for day-to-day work.
 
-**Surface audit (2026-08-08):** Pass register [`correctness-surface-passes.md`](./correctness-surface-passes.md). Added co-located handler auth/dryRun tests; cleared Cognito `ragPath` misconfig. Backend `npm test` → 213 pass.
+**Surface audit (2026-08-08 gap closure):** Pass register [`correctness-surface-passes.md`](./correctness-surface-passes.md) — **42 surfaces, 42 with proof**, one row per surface. Added `ingest-jobs`/`ingest-worker` tests; admin role gate before store; live mutation proves (ingest commit, alert Accept, sources seed). Backend `npm test` → **229** pass; hosted CloudFront subset smoke pass.
 
 **Scanner diagnosis → fix (2026-08-03):**
 

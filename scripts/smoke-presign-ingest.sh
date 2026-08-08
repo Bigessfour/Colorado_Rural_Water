@@ -7,8 +7,8 @@
 #   DEMO_USER='...' DEMO_PASS='...' ./scripts/smoke-presign-ingest.sh [path-to-csv-or-xlsx]
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CLIENT="${COGNITO_CLIENT_ID:-3lbh20n9383nhraaioaa5is5an}"
-API="${API_BASE:-https://uqujnhmk31.execute-api.us-east-1.amazonaws.com}"
+CLIENT="${COGNITO_CLIENT_ID:-6l2345lb7npfku66v80j0r6qek}"
+API="${API_BASE:-https://f5z7yqud5c.execute-api.us-east-1.amazonaws.com}"
 PROFILE="${AWS_PROFILE:-codeplatoon}"
 REGION="${AWS_REGION:-us-east-1}"
 FILE="${1:-${ROOT}/sample-data/messy-readings-july.csv}"

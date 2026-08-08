@@ -20,6 +20,9 @@ describe('SourcesPageComponent', () => {
           useValue: {
             getBearerToken: () => 'jwt',
             isLoggedIn: () => true,
+            firstName: () => 'Demo',
+            placeName: () => 'Town of Wiley',
+            mapCenter: () => ({ lat: 38.15, lng: -102.72 }),
           },
         },
       ],

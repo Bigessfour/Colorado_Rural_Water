@@ -54,6 +54,22 @@ describe('GET /me', () => {
     const body = JSON.parse(res.body);
     assert.equal(body.email, 'kelly.review@example.com');
     assert.equal(body.tenantId, 'town-wiley');
+    assert.deepEqual(body.roles, ['operator']);
+    assert.equal(body.userId, 'user-1');
+  });
+
+  it('returns identity with null tenant when claim missing (SPA still loads)', async () => {
+    const ev = event({ method: 'GET', path: '/me' });
+    ev.requestContext.authorizer!.jwt!.claims = {
+      sub: 'user-1',
+      email: 'x@y.z',
+      'cognito:groups': ['operators'],
+    };
+    const res = await handler(ev, {} as never, (() => {}) as never);
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.equal(body.tenantId, null);
+    assert.deepEqual(body.roles, ['operator']);
   });
 });
 

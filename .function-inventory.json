@@ -26,6 +26,8 @@
     "frontend/src/app/review/review.service.ts",
     "backend/src/handlers/me.ts",
     "backend/src/handlers/ingest.ts",
+    "backend/src/handlers/ingest-jobs.ts",
+    "backend/src/handlers/ingest-worker.ts",
     "backend/src/handlers/alerts.ts",
     "backend/src/handlers/review.ts",
     "frontend/src/app/review/review-panel.component.ts",

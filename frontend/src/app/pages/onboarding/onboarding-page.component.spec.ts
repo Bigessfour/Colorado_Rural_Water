@@ -52,6 +52,8 @@ describe('OnboardingPageComponent', () => {
           useValue: {
             getBearerToken: () => 'jwt',
             isLoggedIn: () => true,
+            firstName: () => 'Demo',
+            placeName: () => 'Town of Wiley',
           },
         },
       ],

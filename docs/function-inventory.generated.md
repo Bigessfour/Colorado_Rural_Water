@@ -2,13 +2,13 @@
 <!-- Do NOT edit manually. Lightweight correctness-surface tracker. -->
 
 # Function Inventory — Colorado Rural Water
-Generated: 2026-08-08T13:25:42.716456+00:00
+Generated: 2026-08-08T17:16:40.315434+00:00
 **Stack:** TypeScript/Angular
 **Tracking mode:** `surfaces`
 **Scan roots:** `frontend/src`, `backend/src`
-**Configured surfaces:** 40 (from `.function-inventory.json` `surfaces` allowlist)
+**Configured surfaces:** 42 (from `.function-inventory.json` `surfaces` allowlist)
 
-**Summary:** 40 correctness surfaces | 40 with proof | 0 without proof
+**Summary:** 42 correctness surfaces | 42 with proof | 0 without proof
 This list is the **correctness queue** — resident/clerk-critical pages, services, and handlers only. Tiny helpers, Angular route paths, and demoted UI shells are omitted.
 
 Ship gate remains project acceptance / smoke checklists — inventory count alone is not “done.”
@@ -29,11 +29,11 @@ Ship gate remains project acceptance / smoke checklists — inventory count alon
 - @aws-sdk/client-bedrock-runtime (^3.1101.0)
 - @aws-sdk/client-cognito-identity-provider (^3.1101.0)
 - @aws-sdk/client-dynamodb (^3.1101.0)
+- @aws-sdk/client-lambda (^3.1101.0)
 - @aws-sdk/client-s3 (^3.1101.0)
 - @aws-sdk/client-ses (^3.1101.0)
 - @aws-sdk/client-ssm (^3.1103.0)
 - @aws-sdk/lib-dynamodb (^3.1101.0)
-- @aws-sdk/s3-request-presigner (^3.1101.0)
 
 ## Correctness surfaces
 
@@ -41,14 +41,16 @@ Ship gate remains project acceptance / smoke checklists — inventory count alon
 |------|----------|---------|----------|-------------------|---------------------|
 | P1 | Core Service | AuthService.AuthService | frontend/src/app/core/auth.service.ts:83 | frontend/src/app/core/auth.service.spec.ts, backend/src/shar... | has logic |
 | P1 | Angular Page / Component | LoginPageComponent.LoginPageComponent | frontend/src/app/pages/login/login-page.component.ts:19 | frontend/src/app/pages/login/login-page.component.spec.ts | has logic |
-| P1 | Angular Page / Component | UploadPageComponent.UploadPageComponent | frontend/src/app/pages/upload/upload-page.component.ts:169 | frontend/src/app/pages/upload/upload-page.component.spec.ts | has logic |
-| P1 | Angular Page / Component | DashboardPageComponent.DashboardPageComponent | frontend/src/app/pages/dashboard/dashboard-page.component.ts:76 | frontend/src/app/pages/dashboard/dashboard-page.component.sp... | has logic |
+| P1 | Angular Page / Component | UploadPageComponent.UploadPageComponent | frontend/src/app/pages/upload/upload-page.component.ts:172 | frontend/src/app/pages/upload/upload-page.component.spec.ts | has logic |
+| P1 | Angular Page / Component | DashboardPageComponent.DashboardPageComponent | frontend/src/app/pages/dashboard/dashboard-page.component.ts:77 | frontend/src/app/pages/dashboard/dashboard-page.component.sp... | has logic |
 | P1 | Angular Page / Component | AlertsPageComponent.AlertsPageComponent | frontend/src/app/pages/alerts/alerts-page.component.ts:95 | frontend/src/app/pages/alerts/alerts-page.component.spec.ts | has logic |
 | P1 | Core Service | ReviewService.ReviewService | frontend/src/app/review/review.service.ts:28 | frontend/src/app/review/review.service.spec.ts, backend/src/... | has logic |
-| P1 | API Endpoint | me.handler | backend/src/handlers/me.ts:16 | backend/src/handlers/me.test.ts | has logic |
-| P1 | API Endpoint | ingest.handler | backend/src/handlers/ingest.ts:39 | backend/src/handlers/ingest.test.ts, backend/src/shared/exce... | has logic |
-| P1 | API Endpoint | alerts.handler | backend/src/handlers/alerts.ts:50 | backend/src/handlers/alerts.test.ts | has logic |
-| P1 | API Endpoint | review.handler | backend/src/handlers/review.ts:116 | backend/src/handlers/review.test.ts | has logic |
+| P1 | API Endpoint | me.handler | backend/src/handlers/me.ts:19 | backend/src/handlers/me.test.ts | has logic |
+| P1 | API Endpoint | ingest.handler | backend/src/handlers/ingest.ts:30 | backend/src/handlers/ingest.test.ts, backend/src/shared/exce... | has logic |
+| P1 | API Endpoint | ingest-jobs.handler | backend/src/handlers/ingest-jobs.ts:40 | backend/src/handlers/ingest-jobs.test.ts | has logic |
+| P1 | API Endpoint | ingest-worker.handler | backend/src/handlers/ingest-worker.ts:12 | backend/src/handlers/ingest-worker.test.ts | has logic |
+| P2 | API Endpoint | alerts.handler | backend/src/handlers/alerts.ts:50 | backend/src/handlers/alerts.test.ts | has logic |
+| P2 | API Endpoint | review.handler | backend/src/handlers/review.ts:116 | backend/src/handlers/review.test.ts | has logic |
 | P2 | Angular Page / Component | ReviewPanelComponent.ReviewPanelComponent | frontend/src/app/review/review-panel.component.ts:10 | frontend/src/app/review/review-panel.component.spec.ts | has logic |
 | P2 | Angular Page / Component | ReviewHowtoPageComponent.ReviewHowtoPageComponent | frontend/src/app/pages/review/review-howto-page.component.ts:10 | frontend/src/app/pages/review/review-howto-page.component.sp... | has logic |
 | P2 | API Endpoint | upload-url.handler | backend/src/handlers/upload-url.ts:19 | backend/src/handlers/upload-url.test.ts | has logic |
@@ -73,11 +75,11 @@ Ship gate remains project acceptance / smoke checklists — inventory count alon
 | P2 | API Endpoint | sources.handler | backend/src/handlers/sources.ts:17 | backend/src/handlers/sources.test.ts | has logic |
 | P2 | API Endpoint | ingest-sources.handler | backend/src/handlers/ingest-sources.ts:21 | backend/src/handlers/ingest-sources.test.ts | has logic |
 | P2 | AI Tool / Orchestrator | agent.handler | backend/src/handlers/agent.ts:73 | backend/src/handlers/agent.test.ts | has logic |
-| P2 | API Endpoint | admin.handler | backend/src/handlers/admin.ts:73 | backend/src/handlers/admin.test.ts | has logic |
+| P2 | API Endpoint | admin.handler | backend/src/handlers/admin.ts:155 | backend/src/handlers/admin.test.ts | has logic |
 | P2 | API Endpoint | reports.handler | backend/src/handlers/reports.ts:36 | backend/src/handlers/reports.test.ts | has logic |
 | P2 | API Endpoint | onboarding.handler | backend/src/handlers/onboarding.ts:25 | backend/src/handlers/onboarding.test.ts | has logic |
 | P2 | API Endpoint | health.handler | backend/src/handlers/health.ts:3 | backend/src/handlers/health.test.ts | small body |
-| P2 | Core Service | DynamoMeterStore.DynamoMeterStore | backend/src/shared/dynamo-store.ts:133 | backend/src/shared/dynamo-store-env.test.ts | has logic |
+| P2 | Core Service | DynamoMeterStore.DynamoMeterStore | backend/src/shared/dynamo-store.ts:148 | backend/src/shared/dynamo-store-env.test.ts | has logic |
 | P2 | Other Public | kb-retrieve.kb-retrieve | backend/src/shared/kb-retrieve.ts:1 | backend/src/shared/kb-retrieve.test.ts | has logic |
 
 ## Philosophy (solo superpower)

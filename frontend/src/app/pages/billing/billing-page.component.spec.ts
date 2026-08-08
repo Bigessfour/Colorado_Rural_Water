@@ -41,6 +41,8 @@ describe('BillingPageComponent', () => {
             isLoggedIn: () => true,
             refreshProfile,
             isSystemAdmin: () => true,
+            firstName: () => 'Demo',
+            placeName: () => 'Town of Wiley',
           },
         },
       ],

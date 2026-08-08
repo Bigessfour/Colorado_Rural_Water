@@ -70,6 +70,89 @@ import {
  * Path tenantId for CRWA billing actions is validated as a slug only; auth is crwa_admin role.
  * Municipal System Admins never receive provision / registry / roll-up APIs.
  */
+
+/** Role gate before DATA_TABLE store construction (unit-testable 403 without env). */
+export function gateAdminRoute(
+  auth: AuthContext,
+  method: string,
+  path: string,
+): ReturnType<typeof forbidden> | null {
+  const deny = (err: unknown) =>
+    forbidden(err instanceof Error ? err.message : "Forbidden");
+
+  if (
+    method === "GET" &&
+    (path === "/billing" || path.endsWith("/billing")) &&
+    !path.includes("/admin/")
+  ) {
+    try {
+      requireAnyRole(auth, ["system_admin"]);
+      return null;
+    } catch (err) {
+      return deny(err);
+    }
+  }
+
+  if (
+    method === "GET" &&
+    (path === "/admin/rollup" || path.endsWith("/admin/rollup"))
+  ) {
+    try {
+      requireAnyRole(auth, ["crwa_admin"]);
+      return null;
+    } catch (err) {
+      return deny(err);
+    }
+  }
+
+  if (/^\/admin\/tenants\/[^/]+\/billing/.test(path)) {
+    try {
+      requireAnyRole(auth, ["crwa_admin"]);
+      return null;
+    } catch (err) {
+      return deny(err);
+    }
+  }
+
+  if (method === "POST" && path.endsWith("/admin/tenants")) {
+    try {
+      requireAnyRole(auth, ["crwa_admin"]);
+      return null;
+    } catch (err) {
+      return deny(err);
+    }
+  }
+
+  if (method === "GET" && path.endsWith("/admin/tenants")) {
+    try {
+      requireAnyRole(auth, ["crwa_admin"]);
+      return null;
+    } catch (err) {
+      return deny(err);
+    }
+  }
+
+  if (method === "POST" && path.endsWith("/admin/users/invite")) {
+    try {
+      requireAnyRole(auth, ["system_admin"]);
+      return null;
+    } catch (err) {
+      return deny(err);
+    }
+  }
+
+  if (method === "GET" && path.endsWith("/admin/users")) {
+    try {
+      requireAnyRole(auth, ["system_admin"]);
+      return null;
+    } catch (err) {
+      return deny(err);
+    }
+  }
+
+  return null;
+}
+
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
   if (!claims || typeof claims !== "object") {
@@ -81,6 +164,11 @@ export const handler: AuthedHandler = async (event) => {
   const path = event.rawPath ?? event.requestContext.http.path ?? "";
 
   try {
+    const roleGate = gateAdminRoute(auth, method, path);
+    if (roleGate) {
+      return roleGate;
+    }
+
     const store = createTenantStoreFromEnv();
     const cognito = createCognitoAdminFromEnv();
 
