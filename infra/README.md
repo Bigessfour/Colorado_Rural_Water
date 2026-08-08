@@ -88,3 +88,4 @@ Guards: `allowed_account_ids` + `check "expected_account"` + `Assessment-iii` de
 
 - Never commit `*.tfvars` with secrets (gitignored). Use `*.tfvars.example` only.
 - AI keys: Secrets Manager stub `water-saver-dev-ai-runtime` + GH secrets (`scripts/gh-secrets-example.sh`).
+# Re-apply after destroy 2026-08-08
