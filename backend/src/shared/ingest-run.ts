@@ -3,6 +3,7 @@ import {
   createLastIngestStoreFromEnv,
   createMeterStoreFromEnv,
 } from "./dynamo-store.js";
+import { refreshTenantConfidence } from "./confidence-refresh.js";
 import { commitCustomerIngest, type IngestCommitSummary } from "./ingest.js";
 import { buildLastIngestRecord, type LastIngestRecord } from "./last-ingest.js";
 
@@ -77,6 +78,14 @@ export async function runIngestCommit(
     console.warn(
       "last_ingest_persist_failed",
       metaErr instanceof Error ? metaErr.message : String(metaErr),
+    );
+  }
+  try {
+    await refreshTenantConfidence(input.tenantId);
+  } catch (confErr) {
+    console.warn(
+      "confidence_refresh_failed",
+      confErr instanceof Error ? confErr.message : String(confErr),
     );
   }
   return buildIngestCommitResponse({

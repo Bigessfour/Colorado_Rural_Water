@@ -2,17 +2,17 @@
 
 Ordered for a vertical slice first (messy file → dashboard + alerts), then multi-tenant hardening and AI polish.
 
-Statuses: `todo` | `in_progress` | `done` | `blocked`
+Statuses: `todo` | `in_progress` | `done` | `blocked` | `deferred`
 
 **Scope authority:** [docs/SPEC.md](SPEC.md) **§0** (Kelly vs Pilot vs vNext). Prefer §0 over older “everything is MVP” wording.
 
-**Engineering closeout (2026-08-03):** [CLOSEOUT.md](CLOSEOUT.md) — shippable Kelly + finishable Pilot on `main`. Remaining open work is **ops** (Kelly invite / F2 smoke), **H8** (blocked on Kelly submit), **E2/E3** polish, and **I3+** payment (external).
+**Engineering closeout (2026-08-08):** [CLOSEOUT.md](CLOSEOUT.md) · [PILOT_DONE.md](PILOT_DONE.md) — **Pilot closed** with accepted deferrals (D5 live MFA ops, H8 Kelly feedback, Epic I vNext).
 
 ---
 
 ## Kelly critical path (closed)
 
-**Kelly path closed** (`e0bfd92` on main). Remaining work is **Pilot hardening** (Spec §0).
+**Kelly path closed** (2026-08-06). **Pilot hardening closed** (2026-08-08) — see [PILOT_DONE.md](PILOT_DONE.md).
 
 | Focus               | Tickets                   | Notes                                                                   |
 | ------------------- | ------------------------- | ----------------------------------------------------------------------- |
@@ -65,13 +65,13 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 
 ## Epic D — Auth, roles & CRWA roll-up
 
-| ID  | Title                                       | Priority | Status | Layer       | Notes                                                                       |
-| --- | ------------------------------------------- | -------- | ------ | ----------- | --------------------------------------------------------------------------- |
-| D1  | Roles: Operator / System Admin / CRWA Admin | P0       | done   | Pilot       | Cognito groups → AuthContext; `/me` roles; Admin nav gated                  |
-| D2  | System Admin: invite users within tenant    | P1       | done   | Pilot       | `POST /admin/users/invite`; JWT tenant only; temp password once             |
-| D3  | CRWA Admin: provision tenant + initial user | P0       | done   | Pilot       | `POST /admin/tenants`; META#profile + Cognito AdminCreateUser               |
-| D4  | CRWA enterprise roll-up (sanitized)         | P1       | done   | Pilot       | Live `GET /admin/rollup` — balance % + Confidence; no customer PII          |
-| D5  | Self-service password + MFA UX              | P1       | done   | Kelly/Pilot | Password change + TOTP; disable MFA requires password step-up (post-review) |
+| ID  | Title                                       | Priority | Status | Layer       | Notes                                                                         |
+| --- | ------------------------------------------- | -------- | ------ | ----------- | ----------------------------------------------------------------------------- |
+| D1  | Roles: Operator / System Admin / CRWA Admin | P0       | done   | Pilot       | Cognito groups → AuthContext; `/me` roles; Admin nav gated                    |
+| D2  | System Admin: invite users within tenant    | P1       | done   | Pilot       | `POST /admin/users/invite`; JWT tenant only; temp password once               |
+| D3  | CRWA Admin: provision tenant + initial user | P0       | done   | Pilot       | `POST /admin/tenants`; META#profile + Cognito AdminCreateUser                 |
+| D4  | CRWA enterprise roll-up (sanitized)         | P1       | done   | Pilot       | Live `GET /admin/rollup` — balance % + Confidence; no customer PII            |
+| D5  | Self-service password + MFA UX              | P1       | done   | Kelly/Pilot | Password change + TOTP UI; live enroll = accepted ops deferral at Pilot close |
 
 ## Epic G — Water balance (production in vs billed out)
 
@@ -89,15 +89,15 @@ Named source/well meters vs aggregated customer usage — Spec §7a. Goal: surfa
 
 ## Epic E — Conversational AI
 
-| ID  | Title                                              | Priority | Status | Layer | Notes                                                            |
-| --- | -------------------------------------------------- | -------- | ------ | ----- | ---------------------------------------------------------------- |
-| E1  | Agent shell + conversation history (tenant-scoped) | P1       | done   | Pilot | `GET/POST /agent`; Dynamo `CONV#`; SPA `/assistant`              |
+| ID  | Title                                              | Priority | Status | Layer | Notes                                                                                      |
+| --- | -------------------------------------------------- | -------- | ------ | ----- | ------------------------------------------------------------------------------------------ |
+| E1  | Agent shell + conversation history (tenant-scoped) | P1       | done   | Pilot | `GET/POST /agent`; Dynamo `CONV#`; SPA `/assistant`                                        |
 | E2  | Onboarding interview flow                          | P1       | done   | Pilot | Form is primary (Feature 012); Assistant helper + Path A–D wired to Dashboard/Upload/agent |
-| E3  | Mapping assistance + config help                   | P1       | done   | Pilot | Feature 014 live `suggest_column_map` + Upload “Ask Assistant to map” |
-| E4  | Cost-transparency + confirmation guardrails        | P0       | done   | Pilot | Cost note + CONFIRM DELETE/CHANGE; cheapest-first                |
-| E5  | Tenant isolation tests for AI context              | P0       | done   | Pilot | `agent-isolation.test.ts` + assertNoCrossTenantContext           |
-| E6  | Confidence coaching copy in agent                  | P1       | done   | Pilot | Watch vs Actionable; never-overclaim; with H7                    |
-| E7  | Cognito JWT RAG + Bedrock KB (Feature 014)         | P0       | wip    | Pilot | KB Retrieve filter + Converse; colorado-ops; live tools          |
+| E3  | Mapping assistance + config help                   | P1       | done   | Pilot | Feature 014 live `suggest_column_map` + Upload “Ask Assistant to map”                      |
+| E4  | Cost-transparency + confirmation guardrails        | P0       | done   | Pilot | Cost note + CONFIRM DELETE/CHANGE; cheapest-first                                          |
+| E5  | Tenant isolation tests for AI context              | P0       | done   | Pilot | `agent-isolation.test.ts` + assertNoCrossTenantContext                                     |
+| E6  | Confidence coaching copy in agent                  | P1       | done   | Pilot | Watch vs Actionable; never-overclaim; with H7                                              |
+| E7  | Cognito JWT RAG + Bedrock KB (Feature 014)         | P0       | done   | Pilot | KB Retrieve + Converse live; incremental tool UX polish accepted deferral                  |
 
 ## Epic F — Polish for Kelly Stone demo
 
@@ -206,16 +206,16 @@ JSON attachment or inline block optional for archive.
 
 Work with any amount of history (none → years); never treat thin-data flags as dig-now alarms. Spec §5 paths + §7b. Heuristics only (no custom ML). Tracking: [GH #10](https://github.com/Bigessfour/Colorado_Rural_Water/issues/10).
 
-| ID  | Title                                                           | Priority | Status  | Layer       | Notes                                                                           |
-| --- | --------------------------------------------------------------- | -------- | ------- | ----------- | ------------------------------------------------------------------------------- |
-| H1  | Onboarding data-inventory interview                             | P0       | done    | Pilot       | Thin stub: Assistant onboarding inventory (paths A–D); full E2 interview later  |
-| H2  | Historical bulk ingest UX                                       | P0       | done    | Pilot       | Multi-file upload queue + “what we loaded” summary (5 MB/file)                  |
-| H3  | Confidence calculator (tenant + per-signal; optional per-meter) | P0       | done    | Kelly/Pilot | Heuristic §7b freeze (months + coverage + seasonality); store/per-meter = Pilot |
-| H4  | Operator dashboard Confidence card                              | P0       | done    | Kelly       | Level + display score + improve hint + per-signal Watch/Actionable              |
-| H5  | CRWA roll-up Confidence column / card                           | P1       | done    | Pilot       | Live with D4 / G6                                                               |
-| H6  | Alert UX gating: Watch vs Actionable by Confidence              | P0       | done    | Kelly       | Statistical Watch until Solid; stuck/diag Actionable; balance Watch (§7a)       |
-| H7  | Agent Confidence copy + never-overclaim guardrails              | P1       | done    | Pilot       | Shipped with E6                                                                 |
-| H8  | Kelly review: Confidence threshold defaults                     | P1       | blocked | Pilot       | **Blocked** on F5 submit — apply Kelly feedback to Spec §7b freeze              |
+| ID  | Title                                                           | Priority | Status   | Layer       | Notes                                                                           |
+| --- | --------------------------------------------------------------- | -------- | -------- | ----------- | ------------------------------------------------------------------------------- |
+| H1  | Onboarding data-inventory interview                             | P0       | done     | Pilot       | Thin stub: Assistant onboarding inventory (paths A–D); full E2 interview later  |
+| H2  | Historical bulk ingest UX                                       | P0       | done     | Pilot       | Multi-file upload queue + “what we loaded” summary (5 MB/file)                  |
+| H3  | Confidence calculator (tenant + per-signal; optional per-meter) | P0       | done     | Kelly/Pilot | Heuristic §7b freeze (months + coverage + seasonality); store/per-meter = Pilot |
+| H4  | Operator dashboard Confidence card                              | P0       | done     | Kelly       | Level + display score + improve hint + per-signal Watch/Actionable              |
+| H5  | CRWA roll-up Confidence column / card                           | P1       | done     | Pilot       | Live with D4 / G6                                                               |
+| H6  | Alert UX gating: Watch vs Actionable by Confidence              | P0       | done     | Kelly       | Statistical Watch until Solid; stuck/diag Actionable; balance Watch (§7a)       |
+| H7  | Agent Confidence copy + never-overclaim guardrails              | P1       | done     | Pilot       | Shipped with E6                                                                 |
+| H8  | Kelly review: Confidence threshold defaults                     | P1       | deferred | Pilot       | Accepted deferral — §7b freeze until Kelly real `/review` submit                |
 
 ## Epic I — CRWA membership billing (processor-agnostic)
 

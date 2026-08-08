@@ -77,7 +77,7 @@ Legend: **R** = required core | **B** = brief-listed bonus | Status: `planned` |
 - [x] GitHub Actions: PR path + main path; destroy workflow exists
 - [x] ≥2 diagrams + reproducible README — `docs/diagrams/*.mmd`, [README.md](../README.md), [GETTING_STARTED_ASSESSMENT.md](../GETTING_STARTED_ASSESSMENT.md)
 - [x] This matrix shows every required line and claimed bonus with evidence links
-- [x] 1-on-1 demo script walks rubric then Water Saver product value — [ASSESSMENT_III_DEMO.md](../docs/ASSESSMENT_III_DEMO.md), [KELLY_ZOOM_WALKTHROUGH.md](../docs/KELLY_ZOOM_WALKTHROUGH.md)
+- [x] 1-on-1 demo script walks rubric then Water Saver product value — [ASSESSMENT_III_DEMO.md](../docs/ASSESSMENT_III_DEMO.md), [archive/KELLY_ZOOM_WALKTHROUGH.md](../docs/archive/KELLY_ZOOM_WALKTHROUGH.md)
 
 ---
 

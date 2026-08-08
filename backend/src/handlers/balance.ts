@@ -4,10 +4,15 @@ import {
   mergeBalanceThresholds,
   parseThresholdPatch,
 } from "../shared/balance-thresholds.js";
+import {
+  mergeReadingCycle,
+  normalizeCycleCloseDay,
+} from "../shared/reading-cycle.js";
 import { parseAuthFromClaims, requireTenantId } from "../shared/auth.js";
 import {
   createBalanceThresholdStoreFromEnv,
   createMeterStoreFromEnv,
+  createReadingCycleStoreFromEnv,
   createSourceStoreFromEnv,
 } from "../shared/dynamo-store.js";
 import { badRequest, forbidden, ok, unauthorized } from "../shared/http.js";
@@ -20,6 +25,7 @@ import { calculateWaterBalance } from "../shared/water-balance.js";
  *   Query: period=YYYY-MM (optional; defaults to latest month with data).
  *   Includes effective balanceThresholds (defaults or tenant CFG#).
  * PUT /balance/thresholds — persist per-tenant G4 thresholds (audit who/when).
+ * PUT /balance/reading-cycle — persist cycle close day (0 = UTC month, 2–28).
  * Demo: skip threshold editing for Kelly Stay; show insufficient until both sides exist.
  */
 export const handler: AuthedHandler = async (event) => {
@@ -84,6 +90,50 @@ export const handler: AuthedHandler = async (event) => {
     }
   }
 
+  if (method === "PUT" && path.endsWith("/balance/reading-cycle")) {
+    if (!event.body) {
+      return badRequest("Body must be JSON with cycleCloseDay");
+    }
+    let raw: unknown;
+    try {
+      raw = JSON.parse(event.body);
+    } catch {
+      return badRequest("Body must be JSON");
+    }
+    const cycleCloseDay = normalizeCycleCloseDay(
+      raw && typeof raw === "object"
+        ? (raw as Record<string, unknown>).cycleCloseDay
+        : undefined,
+    );
+    if (cycleCloseDay === null) {
+      return badRequest(
+        "cycleCloseDay must be 0 (UTC calendar month) or 2–28 (day of month when the cycle closes)",
+      );
+    }
+    try {
+      const store = createReadingCycleStoreFromEnv();
+      const updatedAt = new Date().toISOString();
+      const config = {
+        tenantId,
+        cycleCloseDay,
+        updatedAt,
+        updatedByUserId: auth.userId,
+        updatedByEmail: auth.email,
+      };
+      await store.putReadingCycle(config);
+      return ok({
+        tenantId,
+        readingCycle: mergeReadingCycle(config),
+        updatedAt,
+        updatedByEmail: auth.email,
+      });
+    } catch (err) {
+      return badRequest(
+        err instanceof Error ? err.message : "Failed to save reading cycle",
+      );
+    }
+  }
+
   if (method !== "GET") {
     return badRequest("Method not allowed");
   }
@@ -103,13 +153,16 @@ export const handler: AuthedHandler = async (event) => {
     const meterStore = createMeterStoreFromEnv();
     const sourceStore = createSourceStoreFromEnv();
     const thresholdStore = createBalanceThresholdStoreFromEnv();
-    const [sourceReadings, meterReadings, sources, storedThresholds] =
+    const cycleStore = createReadingCycleStoreFromEnv();
+    const [sourceReadings, meterReadings, sources, storedThresholds, storedCycle] =
       await Promise.all([
         sourceStore.listSourceReadings(tenantId),
         meterStore.listReadings(tenantId),
         sourceStore.listSources(tenantId),
         thresholdStore.getBalanceThresholds(tenantId),
+        cycleStore.getReadingCycle(tenantId),
       ]);
+    const readingCycle = mergeReadingCycle(storedCycle);
 
     const balance = calculateWaterBalance(
       tenantId,
@@ -118,6 +171,7 @@ export const handler: AuthedHandler = async (event) => {
       {
         period: periodParam,
         trendMonths,
+        cycleCloseDay: readingCycle.cycleCloseDay,
       },
     );
     const thresholds = mergeBalanceThresholds(storedThresholds);
@@ -146,6 +200,7 @@ export const handler: AuthedHandler = async (event) => {
         updatedAt: storedThresholds?.updatedAt ?? null,
         updatedByEmail: storedThresholds?.updatedByEmail ?? null,
       },
+      readingCycle,
     });
   } catch (err) {
     return badRequest(

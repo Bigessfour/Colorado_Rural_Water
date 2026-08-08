@@ -10,6 +10,10 @@
  */
 
 import type { MeterReading } from "./meter-location.js";
+import {
+  DEFAULT_CYCLE_CLOSE_DAY,
+  periodKeyFromIso,
+} from "./reading-cycle.js";
 import type { SourceReading } from "./source-reading.js";
 
 /** Production contribution for one named source in a period (dashboard breakdown). */
@@ -46,13 +50,7 @@ export interface WaterBalanceResult extends WaterBalancePeriod {
   trend: WaterBalancePeriod[];
 }
 
-export function periodKeyFromIso(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
-}
+export { periodKeyFromIso } from "./reading-cycle.js";
 
 export function periodLabel(period: string): string {
   const m = period.match(/^(\d{4})-(\d{2})$/);
@@ -89,9 +87,10 @@ export function periodLabel(period: string): string {
 export function sumSourceProductionBySource(
   readings: SourceReading[],
   period: string,
+  cycleCloseDay = DEFAULT_CYCLE_CLOSE_DAY,
 ): SourceProductionShare[] {
   const inPeriod = readings.filter(
-    (r) => periodKeyFromIso(r.timestamp) === period,
+    (r) => periodKeyFromIso(r.timestamp, cycleCloseDay) === period,
   );
 
   const bySource = new Map<string, SourceReading[]>();
@@ -157,12 +156,13 @@ export function sumSourceProductionBySource(
 export function sumSourceProduction(
   readings: SourceReading[],
   period: string,
+  cycleCloseDay = DEFAULT_CYCLE_CLOSE_DAY,
 ): {
   gallons: number;
   count: number;
   bySource: SourceProductionShare[];
 } {
-  const bySource = sumSourceProductionBySource(readings, period);
+  const bySource = sumSourceProductionBySource(readings, period, cycleCloseDay);
   let gallons = 0;
   let count = 0;
   for (const s of bySource) {
@@ -176,6 +176,7 @@ export function sumSourceProduction(
 export function sumCustomerUsage(
   readings: MeterReading[],
   period: string,
+  cycleCloseDay = DEFAULT_CYCLE_CLOSE_DAY,
 ): {
   gallons: number;
   deltaCount: number;
@@ -195,7 +196,8 @@ export function sumCustomerUsage(
       a.timestamp.localeCompare(b.timestamp),
     );
     for (let i = 1; i < sorted.length; i += 1) {
-      if (periodKeyFromIso(sorted[i].timestamp) !== period) continue;
+      if (periodKeyFromIso(sorted[i].timestamp, cycleCloseDay) !== period)
+        continue;
       const usage =
         sorted[i].cumulativeReading - sorted[i - 1].cumulativeReading;
       if (usage < 0) continue;
@@ -211,9 +213,10 @@ export function calculatePeriodBalance(
   sourceReadings: SourceReading[],
   meterReadings: MeterReading[],
   period: string,
+  cycleCloseDay = DEFAULT_CYCLE_CLOSE_DAY,
 ): WaterBalancePeriod {
-  const produced = sumSourceProduction(sourceReadings, period);
-  const billed = sumCustomerUsage(meterReadings, period);
+  const produced = sumSourceProduction(sourceReadings, period, cycleCloseDay);
+  const billed = sumCustomerUsage(meterReadings, period, cycleCloseDay);
   const unaccountedGal = produced.gallons - billed.gallons;
 
   // One-sided or empty: never label as loss/gain (would look like ~±100% dig-now).
@@ -252,19 +255,29 @@ export function calculateWaterBalance(
   tenantId: string,
   sourceReadings: SourceReading[],
   meterReadings: MeterReading[],
-  options?: { period?: string; trendMonths?: number },
+  options?: {
+    period?: string;
+    trendMonths?: number;
+    cycleCloseDay?: number;
+  },
 ): WaterBalanceResult {
   const trendMonths = options?.trendMonths ?? 12;
-  const periods = collectPeriods(sourceReadings, meterReadings);
+  const cycleCloseDay = options?.cycleCloseDay ?? DEFAULT_CYCLE_CLOSE_DAY;
+  const periods = collectPeriods(sourceReadings, meterReadings, cycleCloseDay);
   let period = options?.period?.trim() || "";
   if (!period || !/^\d{4}-\d{2}$/.test(period)) {
     period = periods[periods.length - 1] ?? currentUtcPeriod();
   }
 
-  const current = calculatePeriodBalance(sourceReadings, meterReadings, period);
+  const current = calculatePeriodBalance(
+    sourceReadings,
+    meterReadings,
+    period,
+    cycleCloseDay,
+  );
   const trendPeriods = expandTrendPeriods(period, trendMonths, periods);
   const trend = trendPeriods.map((p) =>
-    calculatePeriodBalance(sourceReadings, meterReadings, p),
+    calculatePeriodBalance(sourceReadings, meterReadings, p, cycleCloseDay),
   );
 
   return {
@@ -277,14 +290,15 @@ export function calculateWaterBalance(
 function collectPeriods(
   sourceReadings: SourceReading[],
   meterReadings: MeterReading[],
+  cycleCloseDay = DEFAULT_CYCLE_CLOSE_DAY,
 ): string[] {
   const set = new Set<string>();
   for (const r of sourceReadings) {
-    const p = periodKeyFromIso(r.timestamp);
+    const p = periodKeyFromIso(r.timestamp, cycleCloseDay);
     if (p) set.add(p);
   }
   for (const r of meterReadings) {
-    const p = periodKeyFromIso(r.timestamp);
+    const p = periodKeyFromIso(r.timestamp, cycleCloseDay);
     if (p) set.add(p);
   }
   return [...set].sort();

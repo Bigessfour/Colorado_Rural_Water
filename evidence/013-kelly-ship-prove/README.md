@@ -32,4 +32,4 @@ Browser automation: Cursor browser + Chrome DevTools against `http://localhost:4
 
 ## Honest gaps
 
-See [docs/DEMO_KNOWN_GAPS.md](../../docs/DEMO_KNOWN_GAPS.md). Feature 013 ops closed 2026-08-06 (invite sent; Reports pass via 016). Remaining product waits: **H8** (Kelly review feedback), payment Epic I, MFA live prove (Pilot).
+See [docs/PILOT_DONE.md](../../docs/PILOT_DONE.md). Feature 013 ops closed 2026-08-06 (invite sent; Reports pass via 016). Accepted deferrals at Pilot close: H8 Kelly feedback, Epic I payment, D5 live MFA ops.

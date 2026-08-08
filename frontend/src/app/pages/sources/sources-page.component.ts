@@ -16,7 +16,7 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { AuthService } from '../../core/auth.service';
 import { environment } from '../../../environments/environment';
-import { geocodeServiceAddress, type GeocodeBias } from '../../shared/geocode.service';
+import { buildSourcePlaceQuery, geocodeServiceAddress, type GeocodeBias } from '../../shared/geocode.service';
 import {
   MeterMapComponent,
   type MapLocationPick,
@@ -183,7 +183,8 @@ export class SourcesPageComponent implements OnInit {
     this.geocodeHint.set('');
     this.error.set('');
     try {
-      const hit = await geocodeServiceAddress(label, this.geocodeBias());
+      const query = buildSourcePlaceQuery(this.name, this.locationLabel, this.geocodeBias());
+      const hit = await geocodeServiceAddress(query, this.geocodeBias());
       if (!hit) {
         this.geocodeHint.set('No nearby match — try a fuller place label or place the pin by hand.');
         return;

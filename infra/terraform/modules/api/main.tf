@@ -686,6 +686,14 @@ resource "aws_apigatewayv2_route" "balance_thresholds_put" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
+resource "aws_apigatewayv2_route" "balance_reading_cycle_put" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "PUT /balance/reading-cycle"
+  target             = "integrations/${aws_apigatewayv2_integration.balance.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
 resource "aws_apigatewayv2_route" "meters_list" {
   api_id             = aws_apigatewayv2_api.http.id
   route_key          = "GET /meters"

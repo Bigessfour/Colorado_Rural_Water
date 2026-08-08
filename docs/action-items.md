@@ -1,5 +1,7 @@
 # Water Saver Action Items (Human + Agent Overlay)
 
+> **Pilot closed 2026-08-08** — canonical status: [PILOT_DONE.md](./PILOT_DONE.md) · [CLOSEOUT.md](./CLOSEOUT.md) · doc index [README.md](./README.md)
+
 **Generated inventory source:** [function-inventory.generated.md](./function-inventory.generated.md)
 **Visual tree:** [function-tree.md](./function-tree.md)
 
@@ -12,30 +14,11 @@
 
 **Surfaces mode (2026-08-08):** Inventory tracks a curated **correctness queue** only (`.function-inventory.json` → `tracking_mode: "surfaces"` + explicit `surfaces` allowlist). Empty allowlist matched **0** rows because default path hints are Town-of-Wiley CMS paths — Water Saver must keep an explicit list. Do not switch back to `tracking_mode: "all"` for day-to-day work.
 
-**Surface audit (2026-08-08 gap closure):** Pass register [`correctness-surface-passes.md`](./correctness-surface-passes.md) — **42 surfaces, 42 with proof**, one row per surface. Added `ingest-jobs`/`ingest-worker` tests; admin role gate before store; live mutation proves (ingest commit, alert Accept, sources seed). Backend `npm test` → **229** pass; hosted CloudFront subset smoke pass.
+**Surface audit (2026-08-08):** Pass register [`correctness-surface-passes.md`](./correctness-surface-passes.md) — **42 surfaces, 42 with proof**. Backend **238** pass · frontend **115** pass · hosted CloudFront subset smoke pass.
 
-**Scanner diagnosis → fix (2026-08-03):**
+**Portfolio:** Spec Kit **001–014** done · Pilot P1/P2 done — [PILOT_DONE.md](./PILOT_DONE.md). Accepted deferrals: D5 live MFA ops, H8 Kelly feedback, Epic I vNext, A6 full ABAC.
 
-| Item         | Was (broken)                                                               | Now (Water Saver)                                                                 |
-| ------------ | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Scanner      | `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py` | Same script; dual-stack                                                           |
-| Language     | C# / Blazor only                                                           | TypeScript forced via `.function-inventory.json`                                  |
-| Roots        | Whole repo                                                                 | `frontend/src`, `backend/src`                                                     |
-| Excludes     | Weak → scanned `mcp/crwa-rag/node_modules`                                 | `node_modules`, `mcp`, `dist`, `.angular`, `infra`, …                             |
-| Theme oracle | `sf_blazor_style` (TIKR)                                                   | **`primeng`** MCP (not Syncfusion Blazor)                                         |
-| Result       | **0 tracked**, noise UI table                                              | **206 tracked** \| **182 with proof** \| **24 without proof** (2026-08-04 rescan) |
-
-**Without proof is not “missing feature.”** Remaining gaps are Wave 3 deferred AWS wrappers + some SPA pages — browser prove now covers several (see Assessment features below).
-
-**Proof baselines (2026-08-04 closeout + inventory audit):**
-
-- Backend: `cd backend && npm test` — **146** unit tests (bedrock, dynamo env factories, cognito env wiring added)
-- Frontend: Vitest — **49** tests (`safe-markdown`, `client-error-reporter`, meter-map constant)
-- Inventory: `npm run inventory` → **surfaces** mode (was exhaustive 212; now curated high-level queue)
-- Spec Kit: `npm run spec-kit:smoke` wired into `npm run ci:local:fast`
-- Assessment Spec-Kit **001–011** verified · evidence under `evidence/`
-- Live F5: review API + SES; Feature **008** Cognito demo; **011** meter map browser prove
-- Engineering closeout: [CLOSEOUT.md](./CLOSEOUT.md) — code Done; ops = [KELLY_INVITE.md](./KELLY_INVITE.md)
+Rubric: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md) · Browser: [`PROVE_FEATURES.md`](./PROVE_FEATURES.md).
 
 ---
 
@@ -56,10 +39,6 @@
 | 012     | Onboarding + reports  | done (verified) | `/onboarding`, `/reports`, `/settings`      | [`evidence/016-town-wiley-24mo-prove`](../evidence/016-town-wiley-24mo-prove/); T012-19 closed 2026-08-06                                     |
 | 013     | Kelly ship prove      | done (verified) | prove + invite ops                          | [`evidence/013-kelly-ship-prove/`](../evidence/013-kelly-ship-prove/); invite sent; MFA deferred Pilot (accepted)                             |
 | 014     | Cognito RAG assistant | done (verified) | `/assistant` Bedrock KB                     | [`evidence/014-cognito-rag-assistant.md`](../evidence/014-cognito-rag-assistant.md), [`evidence/016`](../evidence/016-town-wiley-24mo-prove/) |
-
-**Portfolio (2026-08-06):** Spec Kit features **001–014** closed for Assessment/Kelly ship. **Post-Assessment (2026-08-08):** surface prove register complete; pilot/prod queue → [PILOT_TRACK.md](./PILOT_TRACK.md). Remaining out-of-scope: live MFA enrollment (Pilot), H8 Kelly feedback, payment Epic I (vNext), gated write tools Phase F (vNext).
-
-Rubric matrix: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md). Browser matrix: [`PROVE_FEATURES.md`](./PROVE_FEATURES.md).
 
 ---
 
@@ -114,27 +93,27 @@ Rubric matrix: [`specs/RUBRIC_COVERAGE.md`](../specs/RUBRIC_COVERAGE.md). Browse
 
 ## API Endpoints — Status & Verification
 
-| Route                                             | Handler                                | Proof                                                                           | Minimal? | Status                             |
-| ------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------- | -------- | ---------------------------------- |
-| `GET /health`                                     | `handlers/health.ts` `handler`         | Manual / smoke                                                                  | Yes      | OK                                 |
-| `GET /me`                                         | `handlers/me.ts` `handler`             | Manual smoke (`SMOKE_CHECKLIST`); auth helpers proven                           | Yes      | OK                                 |
-| `POST /uploads/presign`                           | `handlers/upload-url.ts` `handler`     | `upload-url.test.ts` (auth + key sanitize)                                      | Yes      | OK                                 |
-| `POST /ingest`                                    | `handlers/ingest.ts` `handler`         | Shared: `csv-parse.test.ts`, `excel-parse.test.ts`, `meter-location.test.ts`    | Yes      | Shared proven; handler thin        |
-| `POST /ingest/sources`                            | `handlers/ingest-sources.ts` `handler` | `balance-auth.test.ts` (401/403); `source-csv-parse.test.ts`                    | Yes      | Auth proven                        |
-| S3 event ingest                                   | `handlers/s3-ingest.ts` `handler`      | `s3-ingest.test.ts` (`tenantFromKey` + `handleS3IngestEvent` memory commit)     | Yes      | OK                                 |
-| `GET/POST /alerts`                                | `handlers/alerts.ts` `handler`         | `alert-engine`, `alert-status`, `flagged-export`, `balance-alerts` tests        | Yes      | Shared proven                      |
-| `POST /alerts/explain`                            | `handlers/alerts.ts` `handler`         | `agent-isolation.test.ts` → `explainAlertTemplate` (C6)                         | Yes      | Template proven                    |
-| `GET/POST /sources`, `PUT/DELETE /sources/{id}`   | `handlers/sources.ts` `handler`        | `source-store.test.ts`, `water-source.test.ts`                                  | Yes      | Shared proven                      |
-| `GET /balance`, `PUT /balance/thresholds`         | `handlers/balance.ts` `handler`        | `balance-auth.test.ts`; `water-balance`, `balance-thresholds`, `balance-alerts` | Yes      | Auth + calc proven                 |
-| `GET/POST /meters`, `GET/PUT/DELETE /meters/{id}` | `handlers/meters.ts` `handler`         | `meter-inventory.test.ts`, `meter-history.test.ts`, `meter-location.test.ts`    | Yes      | OK                                 |
-| `GET/POST /admin/tenants`                         | `handlers/admin.ts` `handler`          | `admin-isolation.test.ts`; `auth.test.ts`; `billing.test.ts`                    | Yes      | Isolation + billing fields         |
-| `GET /admin/tenants/{id}/billing`                 | `handlers/admin.ts`                    | `admin-isolation.test.ts` (ledger isolation); `billing.test.ts`                 | Yes      | Isolation proven                   |
-| `POST /admin/tenants/{id}/billing/{action}`       | `handlers/admin.ts`                    | `admin-isolation.test.ts` + `billing.test.ts`                                   | Yes      | Isolation proven                   |
-| `GET /billing`                                    | `handlers/admin.ts`                    | `admin-isolation.test.ts` (municipality view shape)                             | Yes      | Auth proven                        |
-| `GET /admin/users`, `POST /admin/users/invite`    | `handlers/admin.ts`                    | `admin-isolation.test.ts`; `auth.test.ts`                                       | Yes      | Isolation proven                   |
-| `GET /admin/rollup`                               | `handlers/admin.ts`                    | `agent-isolation.test.ts` → `crwa-rollup` sanitize (D4/G6/H5)                   | Yes      | Sanitize proven                    |
-| `GET/POST /agent`                                 | `handlers/agent.ts` `handler`          | `agent-isolation.test.ts` (E4/E5/E6 guardrails + store)                         | Yes      | Isolation proven; Bedrock optional |
-| `POST /review/sessions` (+ get/step/submit)       | `handlers/review.ts` `handler`         | `review.test.ts` + live smoke (SES `emailSent`, Dynamo completed)               | Yes      | OK (F5 live)                       |
+| Route                                                                   | Handler                                | Proof                                                                          | Minimal? | Status                             |
+| ----------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------ | -------- | ---------------------------------- |
+| `GET /health`                                                           | `handlers/health.ts` `handler`         | Manual / smoke                                                                 | Yes      | OK                                 |
+| `GET /me`                                                               | `handlers/me.ts` `handler`             | Manual smoke (`SMOKE_CHECKLIST`); auth helpers proven                          | Yes      | OK                                 |
+| `POST /uploads/presign`                                                 | `handlers/upload-url.ts` `handler`     | `upload-url.test.ts` (auth + key sanitize)                                     | Yes      | OK                                 |
+| `POST /ingest`                                                          | `handlers/ingest.ts` `handler`         | Shared: `csv-parse.test.ts`, `excel-parse.test.ts`, `meter-location.test.ts`   | Yes      | Shared proven; handler thin        |
+| `POST /ingest/sources`                                                  | `handlers/ingest-sources.ts` `handler` | `balance-auth.test.ts` (401/403); `source-csv-parse.test.ts`                   | Yes      | Auth proven                        |
+| S3 event ingest                                                         | `handlers/s3-ingest.ts` `handler`      | `s3-ingest.test.ts` (`tenantFromKey` + `handleS3IngestEvent` memory commit)    | Yes      | OK                                 |
+| `GET/POST /alerts`                                                      | `handlers/alerts.ts` `handler`         | `alert-engine`, `alert-status`, `flagged-export`, `balance-alerts` tests       | Yes      | Shared proven                      |
+| `POST /alerts/explain`                                                  | `handlers/alerts.ts` `handler`         | `agent-isolation.test.ts` → `explainAlertTemplate` (C6)                        | Yes      | Template proven                    |
+| `GET/POST /sources`, `PUT/DELETE /sources/{id}`                         | `handlers/sources.ts` `handler`        | `source-store.test.ts`, `water-source.test.ts`                                 | Yes      | Shared proven                      |
+| `GET /balance`, `PUT /balance/thresholds`, `PUT /balance/reading-cycle` | `handlers/balance.ts`                  | `balance-auth.test.ts`; `water-balance`, `balance-thresholds`, `reading-cycle` | Yes      | Auth + calc proven                 |
+| `GET/POST /meters`, `GET/PUT/DELETE /meters/{id}`                       | `handlers/meters.ts` `handler`         | `meter-inventory.test.ts`, `meter-history.test.ts`, `meter-location.test.ts`   | Yes      | OK                                 |
+| `GET/POST /admin/tenants`                                               | `handlers/admin.ts` `handler`          | `admin-isolation.test.ts`; `auth.test.ts`; `billing.test.ts`                   | Yes      | Isolation + billing fields         |
+| `GET /admin/tenants/{id}/billing`                                       | `handlers/admin.ts`                    | `admin-isolation.test.ts` (ledger isolation); `billing.test.ts`                | Yes      | Isolation proven                   |
+| `POST /admin/tenants/{id}/billing/{action}`                             | `handlers/admin.ts`                    | `admin-isolation.test.ts` + `billing.test.ts`                                  | Yes      | Isolation proven                   |
+| `GET /billing`                                                          | `handlers/admin.ts`                    | `admin-isolation.test.ts` (municipality view shape)                            | Yes      | Auth proven                        |
+| `GET /admin/users`, `POST /admin/users/invite`                          | `handlers/admin.ts`                    | `admin-isolation.test.ts`; `auth.test.ts`                                      | Yes      | Isolation proven                   |
+| `GET /admin/rollup`                                                     | `handlers/admin.ts`                    | `agent-isolation.test.ts` → `crwa-rollup` sanitize (D4/G6/H5)                  | Yes      | Sanitize proven                    |
+| `GET/POST /agent`                                                       | `handlers/agent.ts` `handler`          | `agent-isolation.test.ts` (E4/E5/E6 guardrails + store)                        | Yes      | Isolation proven; Bedrock optional |
+| `POST /review/sessions` (+ get/step/submit)                             | `handlers/review.ts` `handler`         | `review.test.ts` + live smoke (SES `emailSent`, Dynamo completed)              | Yes      | OK (F5 live)                       |
 
 **Verification commands:**
 
@@ -150,23 +129,23 @@ npm run inventory
 
 ## Pages & Major Components
 
-| Page / route  | Component                                           | Proof                                                             | Status           |
-| ------------- | --------------------------------------------------- | ----------------------------------------------------------------- | ---------------- |
-| `/login`      | `LoginPageComponent`                                | Feature 008 Cognito SPA session + `AuthService` unit tests        | Browser pass 008 |
-| `/account`    | `AccountPageComponent`                              | Manual D5 smoke (SMOKE) — deferred ops page                       | Browser deferred |
-| `/dashboard`  | `DashboardPageComponent`                            | Spec + Feature **008** live Refresh (5 meters / alerts / balance) | OK + browser 008 |
-| `/upload`     | `UploadPageComponent`                               | Spec + 008 API ingest of sample CSV + signed-in UI                | OK (API prove)   |
-| `/sources`    | `SourcesPageComponent`                              | 008 API seed (wells + source CSV)                                 | API prove 008    |
-| `/meters`     | `MetersPageComponent` + `MeterMapComponent`         | Feature **011** map (5/6 pins) + `meter-map.component.spec.ts`    | Browser pass 011 |
-| `/alerts`     | `AlertsPageComponent`                               | Spec + Feature **008** Accept on balance alert                    | OK + browser 008 |
-| `/assistant`  | `AgentPageComponent` + `SafeMarkdownPipe`           | Feature **007/008** Compose RAG + `safe-markdown.pipe.spec.ts`    | Browser pass     |
-| `/billing`    | `BillingPageComponent`                              | Manual I2 smoke (system admin) — deferred ops page                | Browser deferred |
-| `/admin`      | `AdminPageComponent`                                | Manual (system/CRWA admin + billing actions) — deferred ops       | Browser deferred |
-| `/crwa`       | `CrwaRollupPageComponent`                           | Roll-up via `/admin/rollup` — deferred ops page                   | Browser deferred |
-| `/review`     | `ReviewHowtoPageComponent` + `ReviewPanelComponent` | `review-howto-page` + `review-panel` specs; `ReviewService` spec  | OK               |
-| Shell         | `ShellComponent`                                    | Feature **008** Compose banner + Assistant nav                    | Browser pass 008 |
-| App bootstrap | `app.ts` (hosts review panel)                       | `frontend/src/app/app.spec.ts`                                    | Thin proof       |
-| Routes table  | `app.routes.ts`                                     | `app.routes.spec.ts`                                              | OK               |
+| Page / route  | Component                                           | Proof                                                                              | Status           |
+| ------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------- |
+| `/login`      | `LoginPageComponent`                                | Feature 008 Cognito SPA session + `AuthService` unit tests                         | Browser pass 008 |
+| `/account`    | `AccountPageComponent`                              | MFA UI pass; live TOTP = accepted deferral ([PILOT_DONE](./PILOT_DONE.md))         | Browser pass UI  |
+| `/dashboard`  | `DashboardPageComponent`                            | Spec + Feature **008** live Refresh (5 meters / alerts / balance)                  | OK + browser 008 |
+| `/upload`     | `UploadPageComponent`                               | Spec + 008 API ingest of sample CSV + signed-in UI                                 | OK (API prove)   |
+| `/sources`    | `SourcesPageComponent`                              | 008 API seed (wells + source CSV)                                                  | API prove 008    |
+| `/meters`     | `MetersPageComponent` + `MeterMapComponent`         | Feature **011** map (5/6 pins) + `meter-map.component.spec.ts`                     | Browser pass 011 |
+| `/alerts`     | `AlertsPageComponent`                               | Spec + Feature **008** Accept on balance alert                                     | OK + browser 008 |
+| `/assistant`  | `AgentPageComponent` + `SafeMarkdownPipe`           | Feature **007/008** Compose RAG + `safe-markdown.pipe.spec.ts`                     | Browser pass     |
+| `/billing`    | `BillingPageComponent`                              | Operator gate pass 2026-08-08; system_admin CRWA prove via kelly.review 2026-08-04 | Browser pass     |
+| `/admin`      | `AdminPageComponent`                                | Operator gate + kelly.review CRWA admin prove                                      | Browser pass     |
+| `/crwa`       | `CrwaRollupPageComponent`                           | Operator gate + kelly.review provision UI                                          | Browser pass     |
+| `/review`     | `ReviewHowtoPageComponent` + `ReviewPanelComponent` | `review-howto-page` + `review-panel` specs; `ReviewService` spec                   | OK               |
+| Shell         | `ShellComponent`                                    | Feature **008** Compose banner + Assistant nav                                     | Browser pass 008 |
+| App bootstrap | `app.ts` (hosts review panel)                       | `frontend/src/app/app.spec.ts`                                                     | Thin proof       |
+| Routes table  | `app.routes.ts`                                     | `app.routes.spec.ts`                                                               | OK               |
 
 ---
 

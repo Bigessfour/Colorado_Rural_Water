@@ -1,5 +1,7 @@
 # Assessment III demo path (browser) — Feature 008
 
+> **Historical (Assessment III).** Kelly demo delivered 2026-08-06. Current status: [PILOT_DONE.md](./PILOT_DONE.md).
+
 System UI bonus: prove the stack end-to-end with a calm operator walk (~12–15 min).
 
 **AWS:** `388691194728` / `codeplatoon` / `us-east-1` · tag `Assessment-iii`

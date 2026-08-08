@@ -29,8 +29,11 @@ import {
   buildCrwaRollupRow,
   sanitizeRollupForResponse,
 } from "../shared/crwa-rollup.js";
+import { mergeReadingCycle } from "../shared/reading-cycle.js";
 import {
+  createConfidenceStoreFromEnv,
   createMeterStoreFromEnv,
+  createReadingCycleStoreFromEnv,
   createSourceStoreFromEnv,
   createTenantStoreFromEnv,
 } from "../shared/dynamo-store.js";
@@ -391,15 +394,26 @@ async function getCrwaRollup(auth: AuthContext, store: TenantStore) {
   const profiles = await store.listTenantProfiles();
   const meterStore = createMeterStoreFromEnv();
   const sourceStore = createSourceStoreFromEnv();
+  const confidenceStore = createConfidenceStoreFromEnv();
+  const cycleStore = createReadingCycleStoreFromEnv();
 
   const rows = [];
   for (const profile of profiles) {
-    const [locations, readings, sourceReadings] = await Promise.all([
-      meterStore.listLocations(profile.tenantId),
-      meterStore.listReadings(profile.tenantId),
-      sourceStore.listSourceReadings(profile.tenantId),
-    ]);
-    rows.push(buildCrwaRollupRow(profile, locations, readings, sourceReadings));
+    const [locations, readings, sourceReadings, storedConfidence, storedCycle] =
+      await Promise.all([
+        meterStore.listLocations(profile.tenantId),
+        meterStore.listReadings(profile.tenantId),
+        sourceStore.listSourceReadings(profile.tenantId),
+        confidenceStore.getConfidence(profile.tenantId),
+        cycleStore.getReadingCycle(profile.tenantId),
+      ]);
+    const readingCycle = mergeReadingCycle(storedCycle);
+    rows.push(
+      buildCrwaRollupRow(profile, locations, readings, sourceReadings, {
+        confidence: storedConfidence,
+        cycleCloseDay: readingCycle.cycleCloseDay,
+      }),
+    );
   }
 
   return ok({

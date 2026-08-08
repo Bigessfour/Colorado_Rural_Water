@@ -3,8 +3,10 @@ import { afterEach, describe, it } from "node:test";
 import {
   createAlertStatusStoreFromEnv,
   createBalanceThresholdStoreFromEnv,
+  createConfidenceStoreFromEnv,
   createConversationStoreFromEnv,
   createMeterStoreFromEnv,
+  createReadingCycleStoreFromEnv,
   createSourceStoreFromEnv,
   createTenantStoreFromEnv,
   DynamoMeterStore,
@@ -25,6 +27,8 @@ describe("dynamo-store env factories", () => {
       createSourceStoreFromEnv,
       createAlertStatusStoreFromEnv,
       createBalanceThresholdStoreFromEnv,
+      createConfidenceStoreFromEnv,
+      createReadingCycleStoreFromEnv,
       createTenantStoreFromEnv,
       createConversationStoreFromEnv,
     ]) {

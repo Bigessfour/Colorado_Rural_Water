@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { assessTenantConfidence, evaluateAlerts } from "./alert-engine.js";
+import { assessMeterConfidence, assessTenantConfidence, evaluateAlerts } from "./alert-engine.js";
 import type { MeterLocation, MeterReading } from "./meter-location.js";
 
 function loc(
@@ -150,5 +150,47 @@ describe("evaluateAlerts", () => {
     assert.equal(diag.mode, "Actionable");
     assert.ok(diag.diagnosticFlags?.includes("LOW_BATTERY"));
     assert.ok(diag.diagnosticFlags?.includes("TAMPER"));
+  });
+
+  it("assessMeterConfidence tiers by months", () => {
+    const readings = [
+      rdg("m1", "2026-01-15T00:00:00.000Z", 100),
+      rdg("m1", "2026-02-15T00:00:00.000Z", 110),
+      rdg("m1", "2026-03-15T00:00:00.000Z", 120),
+    ];
+    assert.equal(assessMeterConfidence(readings), "Building");
+  });
+
+  it("attaches per-meter Confidence on alerts", () => {
+    const locations = [loc({ meterId: "m2" })];
+    const readings = [
+      rdg("m2", "2026-06-15T00:00:00.000Z", 100),
+      rdg("m2", "2026-07-15T00:00:00.000Z", 200, ["LOW_BATTERY", "tamper"]),
+    ];
+    const { alerts } = evaluateAlerts(locations, readings);
+    const diag = alerts.find((a) => a.type === "diagnostic_flag");
+    assert.ok(diag?.meterConfidence);
+    assert.equal(diag.meterConfidence, "Thin");
+  });
+
+  it("honors persisted tenant confidence override", () => {
+    const locations = [loc({ meterId: "m1" })];
+    const readings = [rdg("m1", "2026-07-15T00:00:00.000Z", 100)];
+    const stored = assessTenantConfidence(
+      [
+        rdg("m1", "2026-01-15T00:00:00.000Z", 90),
+        rdg("m1", "2026-02-15T00:00:00.000Z", 95),
+        rdg("m1", "2026-03-15T00:00:00.000Z", 100),
+        rdg("m1", "2026-04-15T00:00:00.000Z", 105),
+        rdg("m1", "2026-05-15T00:00:00.000Z", 110),
+        rdg("m1", "2026-06-15T00:00:00.000Z", 115),
+      ],
+      1,
+    );
+    const { confidence } = evaluateAlerts(locations, readings, {
+      confidence: stored,
+    });
+    assert.equal(confidence.level, stored.level);
+    assert.equal(confidence.statisticalMode, stored.statisticalMode);
   });
 });

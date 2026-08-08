@@ -36,6 +36,8 @@ export interface TenantAlert {
   usageRatio?: number;
   /** Normalized diagnostic flag codes (LOW_BATTERY, TAMPER, …). */
   diagnosticFlags?: string[];
+  /** Per-meter history depth (H3 Pilot optional). */
+  meterConfidence?: ConfidenceLevel;
 }
 
 export interface ConfidenceSnapshot {
@@ -112,16 +114,30 @@ export function assessTenantConfidence(
   };
 }
 
+/** Per-meter Confidence from that meter's reading history only (P2 Pilot). */
+export function assessMeterConfidence(readings: MeterReading[]): ConfidenceLevel {
+  const months = uniqueYearMonths(readings.map((r) => r.timestamp));
+  const seasonality = hasWinterAndSummer(readings.map((r) => r.timestamp));
+  if (months < 3) return "Thin";
+  if (months < 6) return "Building";
+  if (months < 12 || !seasonality) return "Solid";
+  return "Strong";
+}
+
 /**
- * Run all meter detectors for one tenant’s locations + readings.
+ * Run all meter detectors for one tenant's locations + readings.
  * Stuck/diagnostic can be Actionable even on Thin data; peer/high-usage
  * and other statistical rules defer to `confidence.statisticalMode`.
+ * Pass `options.confidence` to use a persisted tenant tier (H3).
  */
 export function evaluateAlerts(
   locations: MeterLocation[],
   readings: MeterReading[],
+  options?: { confidence?: ConfidenceSnapshot },
 ): { confidence: ConfidenceSnapshot; alerts: TenantAlert[] } {
-  const confidence = assessTenantConfidence(readings, locations.length);
+  const confidence =
+    options?.confidence ??
+    assessTenantConfidence(readings, locations.length);
   const byMeter = buildSeries(locations, readings);
   const alerts: TenantAlert[] = [];
 
@@ -135,7 +151,22 @@ export function evaluateAlerts(
   alerts.push(...highUsagePeerAlerts([...byMeter.values()], confidence));
 
   alerts.sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
-  return { confidence, alerts };
+  return {
+    confidence,
+    alerts: attachMeterConfidence(alerts, byMeter),
+  };
+}
+
+function attachMeterConfidence(
+  alerts: TenantAlert[],
+  byMeter: Map<string, MeterSeries>,
+): TenantAlert[] {
+  return alerts.map((a) => ({
+    ...a,
+    meterConfidence: assessMeterConfidence(
+      byMeter.get(a.meterId)?.readings ?? [],
+    ),
+  }));
 }
 
 function buildSeries(

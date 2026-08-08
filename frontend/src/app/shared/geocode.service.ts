@@ -196,6 +196,24 @@ export function biasColoradoAddress(address: string, bias?: GeocodeBias): string
 }
 
 /**
+ * Build a fuller place string for named sources (wells, plants) that lack street addresses.
+ * Combines location label + source name, then applies Colorado / town bias.
+ */
+export function buildSourcePlaceQuery(
+  name: string,
+  locationLabel: string,
+  bias?: GeocodeBias,
+): string {
+  const label = locationLabel.trim();
+  const sourceName = name.trim();
+  const combined =
+    label && sourceName && !label.toLowerCase().includes(sourceName.toLowerCase())
+      ? `${sourceName}, ${label}`
+      : label || sourceName;
+  return biasColoradoAddress(combined, bias);
+}
+
+/**
  * Geocode a single service address. Returns null when nothing useful is found
  * (including when all Photon hits are outside the tenant radius).
  */

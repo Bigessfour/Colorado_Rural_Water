@@ -1,65 +1,44 @@
-# Pilot / production track (post-Assessment)
+# Pilot track — closed 2026-08-08
 
-Assessment III and Kelly demo scope are **closed**. Hosted product lives at:
+> **This file is frozen.** Active status lives in **[PILOT_DONE.md](./PILOT_DONE.md)**.
 
-| Surface | URL / command |
-| ------- | ------------- |
-| SPA (CloudFront) | `https://d13u7fsvytjwxn.cloudfront.net` |
-| API | `https://f5z7yqud5c.execute-api.us-east-1.amazonaws.com` |
-| Review | `/review` on SPA |
-| Deploy | `./scripts/deploy-spa.sh` (after `terraform apply`) |
-| Terraform | workspace `dev` · account `388691194728` · tag `Assessment-iii` |
+Assessment III closed 2026-08-06. Pilot P1/P2 closed 2026-08-08 with accepted deferrals documented in PILOT_DONE.
 
-**Authority:** [SPEC.md](SPEC.md) §0 Pilot hardening. Do not expand into vNext (payment Epic I, gated write tools, live MFA) without moving items in §0.
+## Final P0
 
----
+| #   | Item                       | Status     |
+| --- | -------------------------- | ---------- |
+| 1   | Terraform Apply CI         | done       |
+| 2   | Post-apply SPA sync        | done       |
+| 3   | Cognito demo + Kelly users | done (ops) |
+| 4   | Surface prove register     | done       |
 
-## P0 — keep hosted prod healthy
+## Final P1
 
-| # | Item | Status | Notes |
-| - | ---- | ------ | ----- |
-| 1 | Terraform Apply CI green | **done** 2026-08-08 | demo-access upsert + deploy-spa CI fixes |
-| 2 | Post-apply SPA sync | **done** 2026-08-08 | run [31268350477](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/31268350477) full green |
-| 3 | Cognito demo + Kelly users | ops | Set `WATERSAVER_*` secrets in GitHub `production` environment |
-| 4 | Surface prove register | **done** | [correctness-surface-passes.md](correctness-surface-passes.md) + [PROVE_FEATURES.md](PROVE_FEATURES.md) 2026-08-08 |
+| Item                                      | Status                                                             |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| C3 persistence                            | done                                                               |
+| H3 Confidence store                       | done                                                               |
+| D1–D3 roles                               | done                                                               |
+| G4 tenant thresholds                      | done                                                               |
+| E Epic (Path A–D, cost confirm, coaching) | done                                                               |
+| D5 MFA                                    | **accepted deferral** — UI shipped; live TOTP = ops when requested |
+| D4 + H5 CRWA roll-up                      | done                                                               |
 
----
+## Final P2
 
-## P1 — first pilot municipalities (3–10 towns)
+| Item                       | Status                                          |
+| -------------------------- | ----------------------------------------------- |
+| G5/G6 balance viz + rollup | done                                            |
+| C4/C5 export + history     | done                                            |
+| Per-meter Confidence       | done                                            |
+| Reading cycles             | done                                            |
+| Sources geocode            | done                                            |
+| A6 full session-tag ABAC   | **accepted deferral** — see TENANT_ISOLATION.md |
 
-From Spec §0 Pilot hardening — ship in this order:
+## Blocked / external
 
-1. **C3 persistence** — acknowledge / dispatch / resolve + audit trail (not session-only)
-2. **H3 Confidence store** — real calculator + persisted tier (replace heuristic-only path)
-3. **D1–D3 roles** — System Admin invite, operator gates hardened, JWT group drift tests
-4. **G4 tenant thresholds** — configurable balance Watch/Actionable defaults per tenant
-5. **E Epic** — Assistant onboarding interview polish, cost confirm, Confidence coaching in replies
-6. **D5 MFA** — live Account enrollment + login challenge (Pilot ops)
-7. **D4 + H5 CRWA roll-up** — multi-tenant summary for CRWA admins
-
----
-
-## P2 — operator quality (after first town live)
-
-- G5 richer balance viz · G6 CRWA balance summary
-- C4/C5 export + meter history already proved — wire to persisted alert state
-- Per-meter Confidence · configurable reading cycles (beyond UTC month)
-- A6 true per-tenant IAM ABAC
-- Sources geocode label quality (fuller place strings for Suggest pin)
-
----
-
-## Deferred (vNext — do not start)
-
-- Payment Epic I3–I8 (processor discovery)
-- Agent mutating tools / auto config writes (Phase F)
-- Real-time AMI, resident portal, billing write-back, custom ML
-
----
-
-## Agent workflow
-
-1. Pick a P0/P1 row; open or create Spec Kit feature under `specs/` if large.
-2. Unit tests + browser prove per [PROVE_FEATURES.md](PROVE_FEATURES.md).
-3. `terraform apply` or `./scripts/deploy-spa.sh` for hosted changes.
-4. Update this file and [action-items.md](action-items.md) when a row ships.
+| Item                        | Status                                               |
+| --------------------------- | ---------------------------------------------------- |
+| H8 Kelly threshold defaults | **accepted deferral** — awaiting Kelly review submit |
+| Epic I3–I8 payment          | vNext — CRWA discovery                               |

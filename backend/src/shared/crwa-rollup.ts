@@ -3,7 +3,7 @@
  * Per-municipality balance % + Confidence only — no customer PII.
  */
 
-import { assessTenantConfidence, type ConfidenceLevel } from './alert-engine.js';
+import { assessTenantConfidence, type ConfidenceLevel, type ConfidenceSnapshot } from './alert-engine.js';
 import type { MeterLocation, MeterReading } from './meter-location.js';
 import type { SourceReading } from './source-reading.js';
 import type { TenantProfile } from './tenant-admin.js';
@@ -47,9 +47,17 @@ export function buildCrwaRollupRow(
   locations: MeterLocation[],
   readings: MeterReading[],
   sourceReadings: SourceReading[],
+  options?: {
+    confidence?: ConfidenceSnapshot | null;
+    cycleCloseDay?: number;
+  },
 ): CrwaRollupRow {
-  const confidence = assessTenantConfidence(readings, locations.length);
-  const balance = calculateWaterBalance(profile.tenantId, sourceReadings, readings);
+  const confidence =
+    options?.confidence ??
+    assessTenantConfidence(readings, locations.length);
+  const balance = calculateWaterBalance(profile.tenantId, sourceReadings, readings, {
+    cycleCloseDay: options?.cycleCloseDay,
+  });
   return {
     tenantId: profile.tenantId,
     system: profile.displayName,

@@ -27,6 +27,14 @@ import type {
   BalanceThresholdConfig,
   BalanceThresholdStore,
 } from "./balance-thresholds.js";
+import type {
+  ConfidenceRecord,
+  ConfidenceStore,
+} from "./confidence-store.js";
+import type {
+  ReadingCycleConfig,
+  ReadingCycleStore,
+} from "./reading-cycle.js";
 import type { MeterLocation, MeterReading } from "./meter-location.js";
 import type { MeterStore } from "./ingest.js";
 import type { SourceReading, SourceVolumeMode } from "./source-reading.js";
@@ -103,6 +111,8 @@ function alertStatusSk(alertId: string): string {
 }
 
 const BALANCE_THRESHOLDS_SK = "CFG#balance_thresholds";
+const CONFIDENCE_SK = "CFG#confidence";
+const READING_CYCLE_SK = "CFG#reading_cycle";
 const META_PROFILE_SK = "META#profile";
 const META_ONBOARDING_SK = "META#onboarding";
 const META_LAST_INGEST_SK = "META#last_ingest";
@@ -152,6 +162,8 @@ export class DynamoMeterStore
     SourceStore,
     AlertStatusStore,
     BalanceThresholdStore,
+    ConfidenceStore,
+    ReadingCycleStore,
     TenantStore,
     OnboardingStore,
     ConversationStore,
@@ -677,6 +689,70 @@ export class DynamoMeterStore
           lossGalMin: config.lossGalMin,
           gainTolerancePct: config.gainTolerancePct,
           gainGalMin: config.gainGalMin,
+          updatedAt: config.updatedAt,
+          updatedByUserId: config.updatedByUserId,
+          updatedByEmail: config.updatedByEmail,
+        },
+      }),
+    );
+  }
+
+  async getConfidence(tenantId: string): Promise<ConfidenceRecord | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: CONFIDENCE_SK },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToConfidence(res.Item);
+  }
+
+  async putConfidence(record: ConfidenceRecord): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(record.tenantId),
+          sk: CONFIDENCE_SK,
+          entityType: "confidence",
+          tenantId: record.tenantId,
+          level: record.level,
+          monthsOfHistory: record.monthsOfHistory,
+          meterCount: record.meterCount,
+          meterCountConfigured: record.meterCountConfigured,
+          coveragePct: record.coveragePct,
+          displayScore: record.displayScore,
+          statisticalMode: record.statisticalMode,
+          plainLanguage: record.plainLanguage,
+          improveHint: record.improveHint,
+          computedAt: record.computedAt,
+        },
+      }),
+    );
+  }
+
+  async getReadingCycle(tenantId: string): Promise<ReadingCycleConfig | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: READING_CYCLE_SK },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToReadingCycle(res.Item);
+  }
+
+  async putReadingCycle(config: ReadingCycleConfig): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(config.tenantId),
+          sk: READING_CYCLE_SK,
+          entityType: "reading_cycle",
+          tenantId: config.tenantId,
+          cycleCloseDay: config.cycleCloseDay,
           updatedAt: config.updatedAt,
           updatedByUserId: config.updatedByUserId,
           updatedByEmail: config.updatedByEmail,
@@ -1317,6 +1393,61 @@ function itemToBalanceThresholds(
   };
 }
 
+function itemToConfidence(item: Record<string, unknown>): ConfidenceRecord | null {
+  const level = item.level;
+  if (
+    level !== "Thin" &&
+    level !== "Building" &&
+    level !== "Solid" &&
+    level !== "Strong"
+  ) {
+    return null;
+  }
+  const monthsOfHistory = Number(item.monthsOfHistory);
+  const meterCount = Number(item.meterCount);
+  const meterCountConfigured = Number(item.meterCountConfigured);
+  const coveragePct = Number(item.coveragePct);
+  const displayScore = Number(item.displayScore);
+  const statisticalMode = item.statisticalMode;
+  if (
+    ![monthsOfHistory, meterCount, meterCountConfigured, coveragePct, displayScore].every(
+      Number.isFinite,
+    ) ||
+    (statisticalMode !== "Watch" && statisticalMode !== "Actionable")
+  ) {
+    return null;
+  }
+  return {
+    tenantId: String(item.tenantId),
+    level,
+    monthsOfHistory,
+    meterCount,
+    meterCountConfigured,
+    coveragePct,
+    displayScore,
+    statisticalMode,
+    plainLanguage: String(item.plainLanguage ?? ""),
+    improveHint: String(item.improveHint ?? ""),
+    computedAt: String(item.computedAt ?? new Date().toISOString()),
+  };
+}
+
+function itemToReadingCycle(
+  item: Record<string, unknown>,
+): ReadingCycleConfig | null {
+  const cycleCloseDay = Number(item.cycleCloseDay);
+  if (!Number.isFinite(cycleCloseDay) || cycleCloseDay < 0 || cycleCloseDay > 28) {
+    return null;
+  }
+  return {
+    tenantId: String(item.tenantId),
+    cycleCloseDay: Math.floor(cycleCloseDay),
+    updatedAt: String(item.updatedAt ?? new Date().toISOString()),
+    updatedByUserId: String(item.updatedByUserId ?? ""),
+    updatedByEmail: String(item.updatedByEmail ?? ""),
+  };
+}
+
 function itemToTenantProfile(
   item: Record<string, unknown>,
 ): TenantProfile | null {
@@ -1592,6 +1723,22 @@ export function createAlertStatusStoreFromEnv(): AlertStatusStore {
 }
 
 export function createBalanceThresholdStoreFromEnv(): BalanceThresholdStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error("DATA_TABLE env is not configured");
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createConfidenceStoreFromEnv(): ConfidenceStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error("DATA_TABLE env is not configured");
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createReadingCycleStoreFromEnv(): ReadingCycleStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
     throw new Error("DATA_TABLE env is not configured");

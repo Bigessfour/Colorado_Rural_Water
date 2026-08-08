@@ -4,7 +4,8 @@ CRWA-branded multi-tenant cloud tool for small rural water systems in Colorado.
 
 Operators upload messy meter CSV/Excel files, see clear usage trends, and get practical alerts that help conserve water, catch leaks early, and protect customers from surprise high bills.
 
-**Status:** MVP + Assessment III full-credit track (Compose / Actions / LangChain+Mem0)
+**Status:** Pilot **done** (2026-08-08) · Assessment III closed (2026-08-06)
+**Closeout:** [docs/PILOT_DONE.md](docs/PILOT_DONE.md) · [docs/CLOSEOUT.md](docs/CLOSEOUT.md) · [docs/README.md](docs/README.md)
 **Spec:** [docs/SPEC.md](docs/SPEC.md) · Assessment Spec-Kit: [specs/RUBRIC_COVERAGE.md](specs/RUBRIC_COVERAGE.md)
 **Agent rules (non-negotiable):** [AGENTS.md](AGENTS.md) / [agent.md](agent.md)
 **Spec Kit (SDD):** [docs/spec-kit.md](docs/spec-kit.md) · workspace: [docs/spec-kit-workspace.md](docs/spec-kit-workspace.md)

@@ -71,6 +71,20 @@ describe('GET /me', () => {
     assert.equal(body.tenantId, null);
     assert.deepEqual(body.roles, ['operator']);
   });
+
+  it('maps space-separated Cognito groups on GET /me', async () => {
+    const ev = event({ method: 'GET', path: '/me' });
+    ev.requestContext.authorizer!.jwt!.claims = {
+      sub: 'user-1',
+      email: 'admin@example.com',
+      'custom:tenant_id': 'town-wiley',
+      'cognito:groups': 'system_admins operators',
+    };
+    const res = await handler(ev, {} as never, (() => {}) as never);
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.deepEqual(body.roles.sort(), ['operator', 'system_admin'].sort());
+  });
 });
 
 describe('POST /telemetry/client-errors', () => {

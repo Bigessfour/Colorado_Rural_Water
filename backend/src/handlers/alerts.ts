@@ -1,5 +1,7 @@
 import type { AuthedHandler } from "../shared/apigw.js";
 import { evaluateAlerts } from "../shared/alert-engine.js";
+import { loadTenantConfidence } from "../shared/confidence-refresh.js";
+import { mergeConfidence } from "../shared/confidence-store.js";
 import {
   explainAlertTemplate,
   explainAlertsBatch,
@@ -17,6 +19,7 @@ import {
 import { randomUUID } from "node:crypto";
 import { evaluateBalanceAlerts } from "../shared/balance-alerts.js";
 import { mergeBalanceThresholds } from "../shared/balance-thresholds.js";
+import { mergeReadingCycle } from "../shared/reading-cycle.js";
 import { converseText } from "../shared/bedrock.js";
 import { buildFlaggedMetersCsv } from "../shared/flagged-export.js";
 import { parseAuthFromClaims, requireTenantId } from "../shared/auth.js";
@@ -25,6 +28,7 @@ import {
   createBalanceThresholdStoreFromEnv,
   createLastIngestStoreFromEnv,
   createMeterStoreFromEnv,
+  createReadingCycleStoreFromEnv,
   createSourceStoreFromEnv,
 } from "../shared/dynamo-store.js";
 import {
@@ -107,15 +111,23 @@ export const handler: AuthedHandler = async (event) => {
       const meterStore = createMeterStoreFromEnv();
       const sourceStore = createSourceStoreFromEnv();
       const thresholdStore = createBalanceThresholdStoreFromEnv();
-      const [locations, readings, sourceReadings, storedThresholds] =
+      const cycleStore = createReadingCycleStoreFromEnv();
+      const [locations, readings, sourceReadings, storedThresholds, storedCycle] =
         await Promise.all([
           meterStore.listLocations(tenantId),
           meterStore.listReadings(tenantId),
           sourceStore.listSourceReadings(tenantId),
           thresholdStore.getBalanceThresholds(tenantId),
+          cycleStore.getReadingCycle(tenantId),
         ]);
-      const { alerts } = evaluateAlerts(locations, readings);
-      const balance = calculateWaterBalance(tenantId, sourceReadings, readings);
+      const storedConfidence = await loadTenantConfidence(tenantId);
+      const { alerts } = evaluateAlerts(locations, readings, {
+        confidence: storedConfidence,
+      });
+      const readingCycle = mergeReadingCycle(storedCycle);
+      const balance = calculateWaterBalance(tenantId, sourceReadings, readings, {
+        cycleCloseDay: readingCycle.cycleCloseDay,
+      });
       const thresholds = mergeBalanceThresholds(storedThresholds);
       const balanceAlerts = evaluateBalanceAlerts(balance, {
         mode: "Watch",
@@ -201,6 +213,7 @@ export const handler: AuthedHandler = async (event) => {
     const sourceStore = createSourceStoreFromEnv();
     const statusStore = createAlertStatusStoreFromEnv();
     const thresholdStore = createBalanceThresholdStoreFromEnv();
+    const cycleStore = createReadingCycleStoreFromEnv();
     const lastIngestStore = createLastIngestStoreFromEnv();
     const [
       locations,
@@ -208,17 +221,29 @@ export const handler: AuthedHandler = async (event) => {
       sourceReadings,
       statuses,
       storedThresholds,
+      storedCycle,
       lastIngest,
+      storedConfidence,
     ] = await Promise.all([
       meterStore.listLocations(tenantId),
       meterStore.listReadings(tenantId),
       sourceStore.listSourceReadings(tenantId),
       statusStore.listAlertStatuses(tenantId),
       thresholdStore.getBalanceThresholds(tenantId),
+      cycleStore.getReadingCycle(tenantId),
       lastIngestStore.getLastIngest(tenantId),
+      loadTenantConfidence(tenantId),
     ]);
-    const { confidence, alerts } = evaluateAlerts(locations, readings);
-    const balance = calculateWaterBalance(tenantId, sourceReadings, readings);
+    const { confidence: liveConfidence, alerts } = evaluateAlerts(
+      locations,
+      readings,
+      { confidence: storedConfidence },
+    );
+    const confidence = mergeConfidence(liveConfidence, storedConfidence);
+    const readingCycle = mergeReadingCycle(storedCycle);
+    const balance = calculateWaterBalance(tenantId, sourceReadings, readings, {
+      cycleCloseDay: readingCycle.cycleCloseDay,
+    });
     const thresholds = mergeBalanceThresholds(storedThresholds);
     // Spec §7a: balance alerts stay Watch until H6 balance gating matures.
     const balanceAlerts = evaluateBalanceAlerts(balance, {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { biasColoradoAddress, municipalityTokens } from './geocode.service';
+import { biasColoradoAddress, buildSourcePlaceQuery, municipalityTokens } from './geocode.service';
 
 describe('biasColoradoAddress', () => {
   it('appends Colorado USA when missing', () => {
@@ -29,6 +29,20 @@ describe('biasColoradoAddress', () => {
   it('appends ZIP when provided', () => {
     expect(biasColoradoAddress('112 N Main St', { town: 'Wiley, CO', zip: '81092' })).toBe(
       '112 N Main St, Wiley, Colorado 81092, USA',
+    );
+  });
+});
+
+describe('buildSourcePlaceQuery', () => {
+  it('combines source name and location label with town bias', () => {
+    expect(
+      buildSourcePlaceQuery('North Well #1', 'CR 25 east of town', { town: 'Town of Wiley' }),
+    ).toBe('North Well #1, CR 25 east of town, Town of Wiley, Colorado, USA');
+  });
+
+  it('uses label alone when name is already included', () => {
+    expect(buildSourcePlaceQuery('North Well', 'North Well access road', { town: 'Wiley' })).toBe(
+      'North Well access road, Wiley, Colorado, USA',
     );
   });
 });
