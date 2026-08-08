@@ -20,6 +20,10 @@ Use this if Kelly or a grader asks what’s unfinished. Do **not** present these
 | Logged-in visit to `/login` still shows the form | Login | Soft redirect to `/dashboard` (or `/review` for Kelly) when session already valid — recorded 2026-08-08 |
 | Admin handler builds Dynamo/Cognito clients before role checks | `handlers/admin.ts` | Makes unit-testing 403 harder without `DATA_TABLE` — gate `requireAnyRole` earlier |
 | Dashboard `lastIngest` line empty for Demo/Wiley | Dashboard | Widget wired (`data-testid="last-ingest"`); API/session may omit `lastIngest` — confirm ingest metadata on next upload prove |
+| Alerts Explain sometimes returns letter-template prose | Alerts | Bedrock plainLanguage can look like a clerk memo (“Attention…”, “[Your Name]”) instead of a short field note — tighten explain prompt/template |
+| Act on alert dialog has no Cancel button | Alerts | Close via header X only; Accept/Dispatch/Mark resolved are the only footer actions |
+| Meters can flash empty during Review navigation | Meters / Review | Walkthrough route change can show “No meters yet” until Refresh/load finishes — soft UX race, not data loss |
+| Sources Suggest pin misses sparse labels | Sources | Demo source → “No nearby match — try a fuller place label…”; Fine-tune / hand pin still work |
 
 ## Fixed during 2026-08-04 demo prep (no longer gaps)
 
