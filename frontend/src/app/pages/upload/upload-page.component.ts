@@ -142,6 +142,9 @@ const ALIASES: Record<CanonicalField, string[]> = {
 /** Match backend MAX_EXCEL_BYTES — API JSON+base64 cannot carry 20MB workbooks. */
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
+/** Match backend SYNC_INGEST_MAX_ROWS — larger files use background import. */
+const SYNC_INGEST_MAX_ROWS = 250;
+
 /** Browser FileReader can hang on odd blobs; fail loudly instead of stuck “Reading…”. */
 const FILE_READ_TIMEOUT_MS = 20_000;
 
@@ -221,6 +224,9 @@ export class UploadPageComponent implements OnInit {
     'idle';
   ingestWarnings: string[] = [];
   lastStatusFriendly = '';
+  /** Rows ready after last successful dry run (drives sync vs background import). */
+  dryRunRowCount = 0;
+  useBackgroundJob = false;
   /** H2 — summary rows after multi-file bulk load. */
   queue: Array<{ name: string; status: string; ok: boolean }> = [];
   /** 0–100 for determinate bar; ignored when progressMode is indeterminate. */
@@ -295,6 +301,8 @@ export class UploadPageComponent implements OnInit {
     this.mergeArchive = false;
     this.ingestWarnings = [];
     this.ingestPhase = 'idle';
+    this.dryRunRowCount = 0;
+    this.useBackgroundJob = false;
     this.statusMessage = message;
     this.statusSeverity = 'info';
     this.lastStatusFriendly = message;
@@ -696,17 +704,25 @@ export class UploadPageComponent implements OnInit {
     }
 
     this.busy = true;
+    const background =
+      !dryRun && (this.useBackgroundJob || this.dryRunRowCount > SYNC_INGEST_MAX_ROWS);
     this.setProgress(
-      dryRun ? 55 : 65,
-      dryRun ? 'Checking file…' : 'Importing readings…',
+      dryRun ? 55 : background ? 60 : 65,
+      dryRun ? 'Checking file…' : background ? 'Starting background import…' : 'Importing readings…',
       'indeterminate',
     );
+    const idempotencyKey =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 60_000);
+    const abortTimer = setTimeout(() => controller.abort(), background ? 45_000 : 60_000);
     try {
       const body: Record<string, unknown> = {
         mapping: this.mapping,
         dryRun,
+        filename: this.fileName || undefined,
+        idempotencyKey: dryRun ? undefined : idempotencyKey,
       };
       if (this.isExcel && this.excelBase64) {
         body['excelBase64'] = this.excelBase64;
@@ -716,7 +732,8 @@ export class UploadPageComponent implements OnInit {
         body['csvText'] = this.csvText;
       }
 
-      const res = await fetch(`${environment.apiBaseUrl}/ingest`, {
+      const endpoint = background ? '/ingest/jobs' : '/ingest';
+      const res = await fetch(`${environment.apiBaseUrl}${endpoint}`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -726,7 +743,21 @@ export class UploadPageComponent implements OnInit {
         signal: controller.signal,
       });
       const payload = await res.json();
+
+      if (res.status === 413 && payload.useBackgroundJob) {
+        this.useBackgroundJob = true;
+        this.dryRunRowCount = Number(payload.rowCount ?? this.dryRunRowCount);
+        clearTimeout(abortTimer);
+        this.busy = false;
+        await this.ingest(false);
+        return;
+      }
+
       if (!res.ok) {
+        if (!dryRun && (res.status === 503 || res.status === 504)) {
+          const recovered = await this.tryRecoverFromTimeout(token, idempotencyKey);
+          if (recovered) return;
+        }
         this.ingestPhase = 'failed';
         this.ingestWarnings = Array.isArray(payload.warnings) ? payload.warnings : [];
         this.statusMessage =
@@ -736,39 +767,54 @@ export class UploadPageComponent implements OnInit {
         this.setProgress(0, 'Import failed');
         return;
       }
+
+      if (background && res.status === 202) {
+        const jobId = String(payload.jobId ?? '');
+        if (!jobId) {
+          throw new Error('Background import did not return a job id');
+        }
+        this.statusMessage = payload.statusLine ?? 'Import queued — processing in the background…';
+        this.setProgress(70, 'Background import running…');
+        const finished = await this.pollIngestJob(token, jobId, controller.signal);
+        await this.applyCommittedPayload(finished, token);
+        return;
+      }
+
       this.ingestWarnings = Array.isArray(payload.warnings) ? payload.warnings : [];
       const sheetNote = payload.selectedSheet ? ` (sheet: ${payload.selectedSheet})` : '';
       if (dryRun) {
         this.ingestPhase = 'dry_run_ok';
+        this.dryRunRowCount = Number(payload.rowCount ?? 0);
+        this.useBackgroundJob = Boolean(payload.useBackgroundJob);
         this.statusMessage =
           (payload.status?.friendly as string | undefined) ??
-          `Check OK — ${payload.rowCount} rows ready to import${sheetNote}.`;
+          `Check OK — ${payload.rowCount} rows ready to import${sheetNote}.` +
+            (this.useBackgroundJob
+              ? ` Large file — import will run in the background.`
+              : '');
         this.setProgress(85, 'Check OK — ready to import');
       } else {
-        this.ingestPhase = 'committed';
-        this.statusMessage =
-          (payload.status?.friendly as string | undefined) ??
-          `Imported ${payload.readingsWritten} readings across ${payload.metersTracked} meters${sheetNote}.` +
-            (payload.addressConflicts?.length
-              ? ` ${payload.addressConflicts.length} address conflict(s) kept on existing location.`
-              : '');
-        this.setProgress(92, 'Import complete — suggesting map pins…');
-        this.lastStatusFriendly = this.statusMessage;
-        this.statusSeverity =
-          typeof payload.rowsSkipped === 'number' && payload.rowsSkipped > 0 ? 'warn' : 'success';
-        await this.autoPinAfterIngest(token);
-        return;
+        await this.applyCommittedPayload(payload, token);
       }
       this.lastStatusFriendly = this.statusMessage;
-      this.statusSeverity =
-        typeof payload.rowsSkipped === 'number' && payload.rowsSkipped > 0 ? 'warn' : 'success';
+      if (dryRun) {
+        this.statusSeverity =
+          typeof payload.rowsSkipped === 'number' && payload.rowsSkipped > 0 ? 'warn' : 'success';
+      }
     } catch (err) {
+      if (!dryRun) {
+        const token = this.auth.getBearerToken();
+        if (token) {
+          const recovered = await this.tryRecoverFromTimeout(token);
+          if (recovered) return;
+        }
+      }
       this.ingestPhase = 'failed';
       const aborted =
         (err instanceof DOMException && err.name === 'AbortError') ||
         (err instanceof Error && err.name === 'AbortError');
       this.statusMessage = aborted
-        ? 'Import timed out — check your connection and try again.'
+        ? 'Import timed out — check Dashboard for recent data or try again.'
         : err instanceof Error
           ? err.message
           : 'Network error';
@@ -779,6 +825,100 @@ export class UploadPageComponent implements OnInit {
       clearTimeout(abortTimer);
       this.busy = false;
       this.cdr.detectChanges();
+    }
+  }
+
+  private async pollIngestJob(
+    token: string,
+    jobId: string,
+    signal?: AbortSignal,
+  ): Promise<Record<string, unknown>> {
+    const deadline = Date.now() + 10 * 60_000;
+    while (Date.now() < deadline) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      const res = await fetch(`${environment.apiBaseUrl}/ingest/jobs/${encodeURIComponent(jobId)}`, {
+        headers: { authorization: `Bearer ${token}` },
+        signal,
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload.error ?? `Job poll failed (${res.status})`);
+      }
+      const status = String(payload.status ?? '');
+      this.setProgress(
+        status === 'running' ? 80 : status === 'queued' ? 72 : 90,
+        payload.statusLine ?? `Import ${status}…`,
+      );
+      if (status === 'succeeded') {
+        return {
+          ...payload.summary,
+          ...payload,
+          readingsWritten: payload.summary?.readingsWritten ?? payload.readingsWritten,
+          metersTracked: payload.summary?.metersTracked ?? payload.metersTracked,
+          warnings: payload.summary?.warnings ?? payload.warnings ?? [],
+          addressConflicts: payload.summary?.addressConflicts ?? payload.addressConflicts,
+          status: {
+            phase: 'committed',
+            friendly:
+              payload.statusLine ??
+              `Imported ${payload.summary?.readingsWritten ?? 0} readings.`,
+          },
+        };
+      }
+      if (status === 'failed') {
+        throw new Error(payload.error ?? 'Background import failed');
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    throw new Error('Background import is taking longer than expected — check Dashboard later.');
+  }
+
+  private async applyCommittedPayload(
+    payload: Record<string, unknown>,
+    token: string,
+  ): Promise<void> {
+    this.ingestPhase = 'committed';
+    const sheetNote = payload['selectedSheet'] ? ` (sheet: ${payload['selectedSheet']})` : '';
+    this.statusMessage =
+      (payload['status'] as { friendly?: string } | undefined)?.friendly ??
+      `Imported ${payload['readingsWritten']} readings across ${payload['metersTracked']} meters${sheetNote}.` +
+        (Array.isArray(payload['addressConflicts']) && payload['addressConflicts'].length
+          ? ` ${payload['addressConflicts'].length} address conflict(s) kept on existing location.`
+          : '');
+    this.ingestWarnings = Array.isArray(payload['warnings']) ? (payload['warnings'] as string[]) : [];
+    this.setProgress(92, 'Import complete — suggesting map pins…');
+    this.lastStatusFriendly = this.statusMessage;
+    this.statusSeverity =
+      typeof payload['rowsSkipped'] === 'number' && payload['rowsSkipped'] > 0 ? 'warn' : 'success';
+    await this.autoPinAfterIngest(token);
+  }
+
+  /** If API Gateway timed out, lastIngest may still show a successful commit. */
+  private async tryRecoverFromTimeout(
+    token: string,
+    idempotencyKey?: string,
+  ): Promise<boolean> {
+    try {
+      const res = await fetch(`${environment.apiBaseUrl}/me`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return false;
+      const me = await res.json();
+      const last = me.lastIngest as
+        | { at?: string; readingsWritten?: number; filename?: string | null }
+        | undefined;
+      if (!last?.at) return false;
+      const ageMs = Date.now() - Date.parse(last.at);
+      if (ageMs > 5 * 60_000) return false;
+      if (this.fileName && last.filename && last.filename !== this.fileName) return false;
+      this.ingestPhase = 'committed';
+      this.statusMessage = `Import may have finished despite a timeout — ${last.readingsWritten ?? 0} readings recorded at ${new Date(last.at).toLocaleString()}. Refresh Dashboard to confirm.`;
+      this.lastStatusFriendly = this.statusMessage;
+      this.statusSeverity = 'warn';
+      this.setProgress(100, 'Import likely complete');
+      return true;
+    } catch {
+      return false;
     }
   }
 

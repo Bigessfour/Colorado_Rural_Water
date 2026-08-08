@@ -71,6 +71,8 @@ data "aws_iam_policy_document" "lambda_data" {
       "dynamodb:Query",
       "dynamodb:UpdateItem",
       "dynamodb:DeleteItem",
+      "dynamodb:BatchGetItem",
+      "dynamodb:BatchWriteItem",
     ]
     resources = [var.data_table_arn]
 
@@ -140,6 +142,16 @@ data "aws_iam_policy_document" "lambda_data" {
       ]
     }
   }
+
+  statement {
+    sid = "InvokeIngestWorker"
+    actions = [
+      "lambda:InvokeFunction",
+    ]
+    resources = [
+      "arn:aws:lambda:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:function:${local.name_prefix}-ingest-worker",
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "lambda_data" {
@@ -150,18 +162,18 @@ resource "aws_iam_role_policy" "lambda_data" {
 
 locals {
   lambda_env = {
-    UPLOAD_BUCKET        = var.uploads_bucket_name
-    DATA_TABLE           = var.data_table_name
-    COGNITO_USER_POOL_ID = var.cognito_user_pool_id
-    BEDROCK_MODEL_ID     = "amazon.nova-lite-v1:0"
-    BEDROCK_ENABLED      = "1"
-    REVIEW_NOTIFY_TO     = var.review_notify_to
-    REVIEW_FROM_EMAIL    = var.review_from_email
-    # Feature 014 — resolved via SSM after bedrock-kb module apply (avoids TF cycle).
-    KNOWLEDGE_SSM_PREFIX  = "/${local.name_prefix}"
-    AGENT_RATE_LIMIT_HOUR = "60"
-    BEDROCK_GUARDRAIL_ID  = var.bedrock_guardrail_id
-    BEDROCK_GUARDRAIL_VER = var.bedrock_guardrail_version
+    UPLOAD_BUCKET          = var.uploads_bucket_name
+    DATA_TABLE             = var.data_table_name
+    COGNITO_USER_POOL_ID   = var.cognito_user_pool_id
+    BEDROCK_MODEL_ID       = "amazon.nova-lite-v1:0"
+    BEDROCK_ENABLED        = "1"
+    REVIEW_NOTIFY_TO       = var.review_notify_to
+    REVIEW_FROM_EMAIL      = var.review_from_email
+    KNOWLEDGE_SSM_PREFIX   = "/${local.name_prefix}"
+    AGENT_RATE_LIMIT_HOUR  = "60"
+    BEDROCK_GUARDRAIL_ID   = var.bedrock_guardrail_id
+    BEDROCK_GUARDRAIL_VER  = var.bedrock_guardrail_version
+    INGEST_WORKER_FUNCTION = "${local.name_prefix}-ingest-worker"
   }
 }
 
@@ -213,7 +225,35 @@ resource "aws_lambda_function" "ingest" {
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
   timeout          = 60
+  memory_size      = 1024
+  environment {
+    variables = local.lambda_env
+  }
+}
+
+resource "aws_lambda_function" "ingest_jobs" {
+  function_name    = "${local.name_prefix}-ingest-jobs"
+  role             = aws_iam_role.lambda.arn
+  handler          = "ingest-jobs.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 30
   memory_size      = 512
+  environment {
+    variables = local.lambda_env
+  }
+}
+
+resource "aws_lambda_function" "ingest_worker" {
+  function_name    = "${local.name_prefix}-ingest-worker"
+  role             = aws_iam_role.lambda.arn
+  handler          = "ingest-worker.handler"
+  runtime          = "nodejs22.x"
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout          = 300
+  memory_size      = 1024
   environment {
     variables = local.lambda_env
   }
@@ -435,6 +475,13 @@ resource "aws_apigatewayv2_integration" "ingest" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "ingest_jobs" {
+  api_id                 = aws_apigatewayv2_api.http.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.ingest_jobs.invoke_arn
+  payload_format_version = "2.0"
+}
+
 resource "aws_apigatewayv2_integration" "alerts" {
   api_id                 = aws_apigatewayv2_api.http.id
   integration_type       = "AWS_PROXY"
@@ -539,6 +586,22 @@ resource "aws_apigatewayv2_route" "ingest" {
   api_id             = aws_apigatewayv2_api.http.id
   route_key          = "POST /ingest"
   target             = "integrations/${aws_apigatewayv2_integration.ingest.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "ingest_jobs_post" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "POST /ingest/jobs"
+  target             = "integrations/${aws_apigatewayv2_integration.ingest_jobs.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "ingest_jobs_get" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "GET /ingest/jobs/{jobId}"
+  target             = "integrations/${aws_apigatewayv2_integration.ingest_jobs.id}"
   authorization_type = "JWT"
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
@@ -841,6 +904,14 @@ resource "aws_lambda_permission" "ingest_apigw" {
   statement_id  = "AllowAPIGatewayInvokeIngest"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.ingest.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "ingest_jobs_apigw" {
+  statement_id  = "AllowAPIGatewayInvokeIngestJobs"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ingest_jobs.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }

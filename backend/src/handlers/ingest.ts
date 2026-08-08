@@ -1,40 +1,31 @@
 import type { AuthedHandler } from "../shared/apigw.js";
 import { parseAuthFromClaims, requireTenantId } from "../shared/auth.js";
+import { formatRowImportSummary } from "../shared/csv-parse.js";
 import {
-  MAX_CSV_CHARS,
-  formatRowImportSummary,
-  parseCustomerReadingsCsv,
-  type ColumnMapping,
-} from "../shared/csv-parse.js";
-import {
-  MAX_EXCEL_BASE64_CHARS,
-  MAX_EXCEL_BYTES,
-  bufferFromBase64,
-  listWorkbookSheets,
-  looksLikeExcelBuffer,
-  parseCustomerReadingsExcel,
-} from "../shared/excel-parse.js";
-import {
-  createLastIngestStoreFromEnv,
-  createMeterStoreFromEnv,
+  createIngestIdempotencyStoreFromEnv,
 } from "../shared/dynamo-store.js";
-import { commitCustomerIngest } from "../shared/ingest.js";
-import { buildLastIngestRecord } from "../shared/last-ingest.js";
-import { badRequest, forbidden, ok, unauthorized } from "../shared/http.js";
-
-/** Stay under API Gateway HTTP API ~10 MiB payload; leave headroom for JSON wrappers. */
-const MAX_INGEST_BODY_CHARS = 8 * 1024 * 1024;
+import { INGEST_IDEMPOTENCY_TTL_SEC, SYNC_INGEST_MAX_ROWS } from "../shared/ingest-limits.js";
+import {
+  ingestRowCounts,
+  runIngestCommit,
+} from "../shared/ingest-run.js";
+import {
+  parseIngestContent,
+  parseIngestRequestBody,
+} from "../shared/ingest-request.js";
+import {
+  badRequest,
+  forbidden,
+  ok,
+  payloadTooLarge,
+  unauthorized,
+} from "../shared/http.js";
 
 /**
  * POST /ingest — parse customer CSV or Excel and write meter locations + readings.
  *
- * Demo day: upload → parse → Dynamo under the JWT tenant only (messy CSV fixture
- * in sample-data/). Prefer dryRun from the SPA column mapper before commit.
- *
- * Body:
- *   { csvText, mapping?, dryRun? }
- *   { excelBase64, sheetName?, mergeArchive?, mapping?, dryRun? }
- *   { listSheets: true, excelBase64 } — return sheet names only
+ * Sync commit is capped at SYNC_INGEST_MAX_ROWS (API Gateway ~30s). Larger files
+ * should use POST /ingest/jobs (background worker).
  */
 export const handler: AuthedHandler = async (event) => {
   const claims = event.requestContext.authorizer?.jwt?.claims;
@@ -42,7 +33,6 @@ export const handler: AuthedHandler = async (event) => {
     return unauthorized();
   }
 
-  // Isolation: tenant_id from JWT claims — never from the ingest body.
   let tenantId: string;
   try {
     tenantId = requireTenantId(
@@ -56,108 +46,25 @@ export const handler: AuthedHandler = async (event) => {
     return badRequest("JSON body with csvText or excelBase64 is required");
   }
 
-  if (event.body.length > MAX_INGEST_BODY_CHARS) {
-    return badRequest(
-      `Request body is too large (max ${MAX_INGEST_BODY_CHARS} characters). Use a smaller file or the S3 drop-zone.`,
-    );
+  const parsedBody = parseIngestRequestBody(event.body);
+  if (parsedBody.error) {
+    return badRequest(parsedBody.error);
+  }
+  const body = parsedBody.body;
+
+  if (body.listSheets) {
+    const content = parseIngestContent(body);
+    if (content.error) return badRequest(content.error);
+    return ok({
+      tenantId,
+      sheets: content.listSheets!.sheets,
+      preferredSheet: content.listSheets!.preferredSheet,
+    });
   }
 
-  let csvText: string | undefined;
-  let excelBase64: string | undefined;
-  let sheetName: string | undefined;
-  let mergeArchive = false;
-  let listSheets = false;
-  let mapping: ColumnMapping | undefined;
-  let dryRun = false;
-
-  try {
-    const parsed = JSON.parse(event.body) as {
-      csvText?: string;
-      excelBase64?: string;
-      sheetName?: string;
-      mergeArchive?: boolean;
-      listSheets?: boolean;
-      mapping?: ColumnMapping;
-      dryRun?: boolean;
-    };
-    csvText = parsed.csvText;
-    excelBase64 = parsed.excelBase64;
-    sheetName = parsed.sheetName;
-    mergeArchive = Boolean(parsed.mergeArchive);
-    listSheets = Boolean(parsed.listSheets);
-    mapping = parsed.mapping;
-    dryRun = Boolean(parsed.dryRun);
-  } catch {
-    return badRequest("Body must be JSON");
-  }
-
-  if (excelBase64 != null && typeof excelBase64 !== "string") {
-    return badRequest("excelBase64 must be a string");
-  }
-  if (csvText != null && typeof csvText !== "string") {
-    return badRequest("csvText must be a string");
-  }
-  if (excelBase64 && excelBase64.length > MAX_EXCEL_BASE64_CHARS) {
-    return badRequest(
-      `excelBase64 is too large (max ~${MAX_EXCEL_BYTES} bytes decoded). Use a smaller workbook or S3 upload.`,
-    );
-  }
-  if (csvText && csvText.length > MAX_CSV_CHARS) {
-    return badRequest(
-      `csvText is too large (max ${MAX_CSV_CHARS} characters). Split the export or use S3 upload.`,
-    );
-  }
-
-  if (listSheets) {
-    if (!excelBase64?.trim())
-      return badRequest("excelBase64 is required when listSheets is true");
-    try {
-      const buf = bufferFromBase64(excelBase64);
-      if (!looksLikeExcelBuffer(buf)) {
-        return badRequest(
-          "excelBase64 does not look like an Excel file (.xlsx / .xls)",
-        );
-      }
-      const sheets = listWorkbookSheets(buf);
-      return ok({
-        tenantId,
-        sheets,
-        preferredSheet:
-          sheets.find((s) => s.preferred && !s.archive)?.name ?? null,
-      });
-    } catch (err) {
-      return badRequest(
-        err instanceof Error ? err.message : "Could not read Excel workbook",
-      );
-    }
-  }
-
-  const hasCsv = Boolean(csvText?.trim());
-  const hasExcel = Boolean(excelBase64?.trim());
-  if (!hasCsv && !hasExcel) {
-    return badRequest("csvText or excelBase64 is required");
-  }
-
-  let result;
-  try {
-    if (hasExcel) {
-      const buf = bufferFromBase64(excelBase64!);
-      if (!looksLikeExcelBuffer(buf)) {
-        return badRequest(
-          "excelBase64 does not look like an Excel file (.xlsx / .xls)",
-        );
-      }
-      result = parseCustomerReadingsExcel(buf, {
-        sheetName,
-        mergeArchive,
-        mapping,
-      });
-    } else {
-      result = parseCustomerReadingsCsv(csvText!, mapping);
-    }
-  } catch (err) {
-    return badRequest(err instanceof Error ? err.message : "Parse failed");
-  }
+  const content = parseIngestContent(body);
+  if (content.error) return badRequest(content.error);
+  const result = content.result!;
 
   if (result.errors.length) {
     return badRequest(result.errors.join(" "), {
@@ -176,19 +83,16 @@ export const handler: AuthedHandler = async (event) => {
     });
   }
 
-  const rowCounts = {
-    rowsSeen: result.rowsSeen,
-    rowsAccepted: result.rowsAccepted,
-    rowsSkipped: result.rowsSkipped,
-    rowsDeduped: result.rowsDeduped,
-  };
+  const rowCounts = ingestRowCounts(result);
 
-  if (dryRun) {
+  if (body.dryRun) {
     return ok({
       dryRun: true,
       tenantId,
       mapping: result.mapping,
       rowCount: result.rows.length,
+      syncMaxRows: SYNC_INGEST_MAX_ROWS,
+      useBackgroundJob: result.rows.length > SYNC_INGEST_MAX_ROWS,
       ...rowCounts,
       warnings: result.warnings,
       sample: result.rows.slice(0, 3),
@@ -206,59 +110,61 @@ export const handler: AuthedHandler = async (event) => {
     });
   }
 
-  try {
-    const store = createMeterStoreFromEnv();
-    const summary = await commitCustomerIngest(store, tenantId, result);
-    const lastIngest = buildLastIngestRecord({
-      tenantId,
-      rowsAccepted: rowCounts.rowsAccepted,
-      rowsSkipped: rowCounts.rowsSkipped,
-      readingsWritten: summary.readingsWritten,
-    });
-    try {
-      await createLastIngestStoreFromEnv().putLastIngest(lastIngest);
-    } catch (metaErr) {
-      console.warn(
-        "last_ingest_persist_failed",
-        metaErr instanceof Error ? metaErr.message : String(metaErr),
-      );
-    }
-    const locations = await store.listLocations(tenantId);
-    const conflictCount = summary.addressConflicts?.length ?? 0;
-    const friendlyParts = [
-      formatRowImportSummary(
-        { ...rowCounts, readingsWritten: summary.readingsWritten },
-        "committed",
-      ),
-      `${summary.readingsWritten.toLocaleString("en-US")} readings written across ${locations.length} meters.`,
-    ];
-    if (conflictCount > 0) {
-      friendlyParts.push(
-        `${conflictCount} address conflict(s) kept on the existing meter location.`,
-      );
-    }
-    return ok({
-      tenantId,
-      mapping: result.mapping,
-      ...summary,
-      ...rowCounts,
-      metersTracked: locations.length,
-      lastIngest,
-      sheets: "sheets" in result ? result.sheets : undefined,
-      selectedSheet:
-        "selectedSheet" in result ? result.selectedSheet : undefined,
-      mergedSheets: "mergedSheets" in result ? result.mergedSheets : undefined,
-      // Prefer commit summary warnings (includes parse warnings + address/skip notes).
-      warnings: summary.warnings,
-      status: {
-        phase: "committed",
-        friendly: friendlyParts.join(" "),
-        warningCount: summary.warnings.length,
-        errorCount: 0,
-        addressConflicts: conflictCount,
-        ...rowCounts,
+  if (result.rows.length > SYNC_INGEST_MAX_ROWS) {
+    return payloadTooLarge(
+      `This file has ${result.rows.length} rows — too many for a quick import (max ${SYNC_INGEST_MAX_ROWS}). Use background import instead.`,
+      {
+        rowCount: result.rows.length,
+        syncMaxRows: SYNC_INGEST_MAX_ROWS,
+        useBackgroundJob: true,
       },
+    );
+  }
+
+  const idempotencyKey = body.idempotencyKey?.trim();
+  if (idempotencyKey) {
+    try {
+      const idem = createIngestIdempotencyStoreFromEnv();
+      const cached = await idem.get(tenantId, idempotencyKey);
+      if (cached?.result) {
+        return ok(cached.result);
+      }
+    } catch (idemErr) {
+      console.warn(
+        "ingest_idempotency_read_failed",
+        idemErr instanceof Error ? idemErr.message : String(idemErr),
+      );
+    }
+  }
+
+  try {
+    const responseBody = await runIngestCommit({
+      tenantId,
+      result,
+      rowCounts,
+      filename: body.filename,
     });
+
+    if (idempotencyKey) {
+      try {
+        const idem = createIngestIdempotencyStoreFromEnv();
+        await idem.put({
+          tenantId,
+          key: idempotencyKey,
+          at: new Date().toISOString(),
+          result: responseBody as unknown as Record<string, unknown>,
+          expiresAt:
+            Math.floor(Date.now() / 1000) + INGEST_IDEMPOTENCY_TTL_SEC,
+        });
+      } catch (idemErr) {
+        console.warn(
+          "ingest_idempotency_write_failed",
+          idemErr instanceof Error ? idemErr.message : String(idemErr),
+        );
+      }
+    }
+
+    return ok(responseBody);
   } catch (err) {
     return badRequest(err instanceof Error ? err.message : "Ingest failed", {
       status: {

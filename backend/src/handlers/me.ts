@@ -1,6 +1,9 @@
 import type { AuthedHandler } from "../shared/apigw.js";
 import { parseAuthFromClaims } from "../shared/auth.js";
-import { createTenantStoreFromEnv } from "../shared/dynamo-store.js";
+import {
+  createLastIngestStoreFromEnv,
+  createTenantStoreFromEnv,
+} from "../shared/dynamo-store.js";
 import { badRequest, ok, unauthorized } from "../shared/http.js";
 
 const MAX_MESSAGE = 2000;
@@ -29,6 +32,9 @@ export const handler: AuthedHandler = async (event) => {
     let mapCenterLat: number | null = null;
     let mapCenterLng: number | null = null;
     let mapZoom: number | null = null;
+    let lastIngest: Awaited<
+      ReturnType<ReturnType<typeof createLastIngestStoreFromEnv>["getLastIngest"]>
+    > = null;
 
     if (auth.tenantId) {
       try {
@@ -53,6 +59,20 @@ export const handler: AuthedHandler = async (event) => {
           }),
         );
       }
+
+      try {
+        lastIngest = await createLastIngestStoreFromEnv().getLastIngest(
+          auth.tenantId,
+        );
+      } catch (err) {
+        console.warn(
+          JSON.stringify({
+            event: "me.last_ingest_load_failed",
+            tenantId: auth.tenantId,
+            message: err instanceof Error ? err.message : String(err),
+          }),
+        );
+      }
     }
 
     return ok({
@@ -65,6 +85,7 @@ export const handler: AuthedHandler = async (event) => {
       mapCenterLat,
       mapCenterLng,
       mapZoom,
+      lastIngest,
     });
   }
 

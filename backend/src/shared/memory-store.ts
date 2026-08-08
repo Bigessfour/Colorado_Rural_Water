@@ -58,4 +58,28 @@ export class MemoryMeterStore implements MeterStore {
     );
     return true;
   }
+
+  async batchGetLocations(
+    tenantId: string,
+    meterIds: string[],
+  ): Promise<Map<string, MeterLocation>> {
+    const out = new Map<string, MeterLocation>();
+    for (const meterId of [...new Set(meterIds)]) {
+      const loc = await this.getLocation(tenantId, meterId);
+      if (loc) out.set(meterId, loc);
+    }
+    return out;
+  }
+
+  async batchWriteMeterRecords(
+    locations: MeterLocation[],
+    readings: MeterReading[],
+  ): Promise<void> {
+    for (const location of locations) {
+      await this.putLocation(location);
+    }
+    for (const reading of readings) {
+      await this.putReading(reading);
+    }
+  }
 }

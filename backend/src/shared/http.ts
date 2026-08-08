@@ -16,6 +16,17 @@ export function ok(body: unknown): APIGatewayProxyResult {
   return json(200, body);
 }
 
+export function accepted(body: unknown): APIGatewayProxyResult {
+  return json(202, body);
+}
+
+export function payloadTooLarge(
+  message: string,
+  extra?: Record<string, unknown>,
+): APIGatewayProxyResult {
+  return json(413, { error: message, ...extra });
+}
+
 /** CSV download response (ticket C4). */
 export function csv(body: string, filename: string): APIGatewayProxyResult {
   const safeName = filename.replace(/[^\w.\-]+/g, "_");

@@ -4,6 +4,10 @@ import {
   type MeterReading,
 } from './meter-location.js';
 import type { IngestParseResult, MappedReadingRow } from './csv-parse.js';
+import {
+  INGEST_BATCH_GET_SIZE,
+  INGEST_BATCH_WRITE_SIZE,
+} from './ingest-limits.js';
 
 export interface MeterStore {
   getLocation(tenantId: string, meterId: string): Promise<MeterLocation | null>;
@@ -13,18 +17,23 @@ export interface MeterStore {
   getMapping(tenantId: string, kind: string): Promise<Record<string, string> | null>;
   listLocations(tenantId: string): Promise<MeterLocation[]>;
   listReadings(tenantId: string): Promise<MeterReading[]>;
-  /** Readings for one meter under the tenant (C5 history). */
   listReadingsForMeter(tenantId: string, meterId: string): Promise<MeterReading[]>;
-  /**
-   * Deletes LOC# and cascades all RDG# for that meter (tenant-scoped).
-   * Returns false if the location was not found for this tenant.
-   */
   deleteLocation(tenantId: string, meterId: string): Promise<boolean>;
+  /** Optional batch helpers (Dynamo production path). */
+  batchGetLocations?(
+    tenantId: string,
+    meterIds: string[],
+  ): Promise<Map<string, MeterLocation>>;
+  batchWriteMeterRecords?(
+    locations: MeterLocation[],
+    readings: MeterReading[],
+  ): Promise<void>;
 }
 
 export interface IngestCommitSummary {
   locationsUpserted: number;
   readingsWritten: number;
+  metersTracked: number;
   addressConflicts: Array<{ meterId: string; existingAddress: string; incomingAddress: string }>;
   warnings: string[];
 }
@@ -37,6 +46,7 @@ export async function commitCustomerIngest(
   const summary: IngestCommitSummary = {
     locationsUpserted: 0,
     readingsWritten: 0,
+    metersTracked: 0,
     addressConflicts: [],
     warnings: [...parsed.warnings],
   };
@@ -45,7 +55,6 @@ export async function commitCustomerIngest(
     throw new Error(parsed.errors.join(' '));
   }
 
-  // Persist mapping for this tenant (B4 remembers mapping).
   const mappingRecord: Record<string, string> = {};
   for (const [k, v] of Object.entries(parsed.mapping)) {
     if (v) mappingRecord[k] = v;
@@ -54,17 +63,56 @@ export async function commitCustomerIngest(
     await store.putMapping(tenantId, 'customer_readings', mappingRecord);
   }
 
-  // Address-bearing rows first so archive history without address can attach afterward.
   const rows = [...parsed.rows].sort((a, b) => {
     const aHas = a.serviceAddress.trim() ? 0 : 1;
     const bHas = b.serviceAddress.trim() ? 0 : 1;
     if (aHas !== bHas) return aHas - bHas;
     return a.timestamp.localeCompare(b.timestamp);
   });
-  for (const row of rows) {
-    await upsertFromRow(store, tenantId, row, summary);
+
+  const locationCache = new Map<string, MeterLocation | null>();
+  const uniqueMeters = new Set<string>();
+  const pendingLocations: MeterLocation[] = [];
+  const pendingReadings: MeterReading[] = [];
+  const useBatch = typeof store.batchWriteMeterRecords === 'function';
+
+  const uniqueMeterIds = [...new Set(rows.map((r) => r.meterId))];
+  if (store.batchGetLocations) {
+    const prefetched = await store.batchGetLocations(tenantId, uniqueMeterIds);
+    for (const id of uniqueMeterIds) {
+      locationCache.set(id, prefetched.get(id) ?? null);
+    }
   }
 
+  const flushBatch = async (): Promise<void> => {
+    if (!useBatch || (pendingLocations.length === 0 && pendingReadings.length === 0)) {
+      return;
+    }
+    const locs = pendingLocations.splice(0, pendingLocations.length);
+    const rdgs = pendingReadings.splice(0, pendingReadings.length);
+    await store.batchWriteMeterRecords!(locs, rdgs);
+  };
+
+  for (const row of rows) {
+    const wrote = await upsertFromRow(
+      store,
+      tenantId,
+      row,
+      summary,
+      locationCache,
+      useBatch ? pendingLocations : null,
+      useBatch ? pendingReadings : null,
+    );
+    if (wrote) {
+      uniqueMeters.add(row.meterId);
+      if (useBatch && pendingLocations.length + pendingReadings.length >= INGEST_BATCH_WRITE_SIZE * 2) {
+        await flushBatch();
+      }
+    }
+  }
+  await flushBatch();
+
+  summary.metersTracked = uniqueMeters.size;
   return summary;
 }
 
@@ -73,16 +121,22 @@ async function upsertFromRow(
   tenantId: string,
   row: MappedReadingRow,
   summary: IngestCommitSummary,
-): Promise<void> {
-  const existing = await store.getLocation(tenantId, row.meterId);
-  const incomingAddress = row.serviceAddress.trim();
+  locationCache: Map<string, MeterLocation | null>,
+  pendingLocations: MeterLocation[] | null,
+  pendingReadings: MeterReading[] | null,
+): Promise<boolean> {
+  let existing = locationCache.get(row.meterId);
+  if (existing === undefined) {
+    existing = await store.getLocation(tenantId, row.meterId);
+    locationCache.set(row.meterId, existing);
+  }
 
-  // Archive / incomplete sheets may omit address — keep saved location when present.
+  const incomingAddress = row.serviceAddress.trim();
   if (!incomingAddress && !existing) {
     summary.warnings.push(
       `Meter ${row.meterId}: skipped reading — no service address in file and this meter is not on file yet.`,
     );
-    return;
+    return false;
   }
 
   const { location, addressConflict } = applyMeterLocationUpsert(existing, {
@@ -116,9 +170,6 @@ async function upsertFromRow(
     );
   }
 
-  await store.putLocation(location);
-  summary.locationsUpserted += 1;
-
   const reading: MeterReading = {
     tenantId,
     meterId: row.meterId,
@@ -129,6 +180,20 @@ async function upsertFromRow(
     unit: row.unit,
     diagnosticFlags: row.diagnosticFlags,
   };
-  await store.putReading(reading);
+
+  locationCache.set(row.meterId, location);
+
+  if (pendingLocations && pendingReadings) {
+    pendingLocations.push(location);
+    pendingReadings.push(reading);
+  } else {
+    await store.putLocation(location);
+    await store.putReading(reading);
+  }
+
+  summary.locationsUpserted += 1;
   summary.readingsWritten += 1;
+  return true;
 }
+
+export { INGEST_BATCH_GET_SIZE, INGEST_BATCH_WRITE_SIZE };

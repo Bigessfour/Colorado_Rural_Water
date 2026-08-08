@@ -25,6 +25,8 @@ const entryPoints = {
   me: join(backend, "src/handlers/me.ts"),
   "upload-url": join(backend, "src/handlers/upload-url.ts"),
   ingest: join(backend, "src/handlers/ingest.ts"),
+  "ingest-jobs": join(backend, "src/handlers/ingest-jobs.ts"),
+  "ingest-worker": join(backend, "src/handlers/ingest-worker.ts"),
   "ingest-sources": join(backend, "src/handlers/ingest-sources.ts"),
   "s3-ingest": join(backend, "src/handlers/s3-ingest.ts"),
   alerts: join(backend, "src/handlers/alerts.ts"),
@@ -49,6 +51,7 @@ await esbuild.build({
   target: "node22",
   format: "cjs",
   sourcemap: false,
+  nodePaths: [join(backend, "node_modules")],
   // Keep AWS SDK out of the zip — available in Node 22 Lambda runtime via layer?
   // Actually AWS SDK v3 is NOT in the runtime by default for nodejs18+. Bundle it.
   external: [],

@@ -8,6 +8,8 @@
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
+  BatchGetCommand,
+  BatchWriteCommand,
   DeleteCommand,
   DynamoDBDocumentClient,
   GetCommand,
@@ -44,6 +46,17 @@ import {
 import type { ConversationMessage, ConversationStore } from "./conversation.js";
 import { conversationSk } from "./conversation.js";
 import type { OnboardingIntake, OnboardingStore } from "./onboarding-intake.js";
+import type {
+  IngestIdempotencyRecord,
+  IngestIdempotencyStore,
+  IngestJobRecord,
+  IngestJobStore,
+} from "./ingest-job.js";
+import {
+  INGEST_BATCH_GET_SIZE,
+  INGEST_BATCH_WRITE_SIZE,
+  INGEST_IDEMPOTENCY_TTL_SEC,
+} from "./ingest-limits.js";
 import type {
   LastIngestRecord,
   LastIngestStore,
@@ -93,6 +106,8 @@ const BALANCE_THRESHOLDS_SK = "CFG#balance_thresholds";
 const META_PROFILE_SK = "META#profile";
 const META_ONBOARDING_SK = "META#onboarding";
 const META_LAST_INGEST_SK = "META#last_ingest";
+const INGEST_JOB_SK_PREFIX = "INGEST_JOB#";
+const INGEST_IDEM_SK_PREFIX = "IDEM#";
 /** Synthetic tenant partition for CRWA tenant registry (stays under TENANT#* IAM). */
 const REGISTRY_TENANT_ID = "_registry";
 
@@ -140,7 +155,9 @@ export class DynamoMeterStore
     TenantStore,
     OnboardingStore,
     ConversationStore,
-    LastIngestStore
+    LastIngestStore,
+    IngestJobStore,
+    IngestIdempotencyStore
 {
   constructor(private readonly tableName: string) {}
 
@@ -162,30 +179,7 @@ export class DynamoMeterStore
     await client.send(
       new PutCommand({
         TableName: this.tableName,
-        Item: {
-          pk: pk(location.tenantId),
-          sk: locSk(location.meterId),
-          entityType: "meter_location",
-          tenantId: location.tenantId,
-          meterId: location.meterId,
-          serviceAddress: location.serviceAddress,
-          occupantName: location.occupantName,
-          accountNumber: location.accountNumber,
-          route: location.route,
-          manufacturer: location.manufacturer,
-          model: location.model,
-          serialNumber: location.serialNumber,
-          meterSize: location.meterSize,
-          installDate: location.installDate,
-          meterType: location.meterType,
-          locationDetail: location.locationDetail,
-          radioId: location.radioId,
-          lastTestedAt: location.lastTestedAt,
-          notes: location.notes,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          updatedAt: location.updatedAt,
-        },
+        Item: meterLocationItem(location),
       }),
     );
   }
@@ -194,21 +188,56 @@ export class DynamoMeterStore
     await client.send(
       new PutCommand({
         TableName: this.tableName,
-        Item: {
-          pk: pk(reading.tenantId),
-          sk: rdgSk(reading.meterId, reading.timestamp),
-          entityType: "meter_reading",
-          tenantId: reading.tenantId,
-          meterId: reading.meterId,
-          serviceAddress: reading.serviceAddress,
-          occupantName: reading.occupantName,
-          timestamp: reading.timestamp,
-          cumulativeReading: reading.cumulativeReading,
-          unit: reading.unit,
-          diagnosticFlags: reading.diagnosticFlags,
-        },
+        Item: meterReadingItem(reading),
       }),
     );
+  }
+
+  async batchGetLocations(
+    tenantId: string,
+    meterIds: string[],
+  ): Promise<Map<string, MeterLocation>> {
+    const out = new Map<string, MeterLocation>();
+    const unique = [...new Set(meterIds.filter(Boolean))];
+    for (let i = 0; i < unique.length; i += INGEST_BATCH_GET_SIZE) {
+      const chunk = unique.slice(i, i + INGEST_BATCH_GET_SIZE);
+      const keys = chunk.map((meterId) => ({
+        pk: pk(tenantId),
+        sk: locSk(meterId),
+      }));
+      const res = await client.send(
+        new BatchGetCommand({
+          RequestItems: {
+            [this.tableName]: { Keys: keys },
+          },
+        }),
+      );
+      for (const item of res.Responses?.[this.tableName] ?? []) {
+        const loc = itemToLocation(item);
+        if (loc) out.set(loc.meterId, loc);
+      }
+    }
+    return out;
+  }
+
+  async batchWriteMeterRecords(
+    locations: MeterLocation[],
+    readings: MeterReading[],
+  ): Promise<void> {
+    const items = [
+      ...locations.map((location) => meterLocationItem(location)),
+      ...readings.map((reading) => meterReadingItem(reading)),
+    ];
+    for (let i = 0; i < items.length; i += INGEST_BATCH_WRITE_SIZE) {
+      const chunk = items.slice(i, i + INGEST_BATCH_WRITE_SIZE);
+      await client.send(
+        new BatchWriteCommand({
+          RequestItems: {
+            [this.tableName]: chunk.map((Item) => ({ PutRequest: { Item } })),
+          },
+        }),
+      );
+    }
   }
 
   async putMapping(
@@ -775,6 +804,82 @@ export class DynamoMeterStore
     );
   }
 
+  async putJob(job: IngestJobRecord): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: ingestJobItem(job),
+      }),
+    );
+  }
+
+  async getJob(
+    tenantId: string,
+    jobId: string,
+  ): Promise<IngestJobRecord | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: `${INGEST_JOB_SK_PREFIX}${jobId}` },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToIngestJob(res.Item);
+  }
+
+  async updateJob(
+    tenantId: string,
+    jobId: string,
+    patch: Partial<
+      Pick<
+        IngestJobRecord,
+        "status" | "updatedAt" | "error" | "summary" | "lastIngest"
+      >
+    >,
+  ): Promise<void> {
+    const existing = await this.getJob(tenantId, jobId);
+    if (!existing) {
+      throw new Error(`Ingest job ${jobId} not found`);
+    }
+    await this.putJob({
+      ...existing,
+      ...patch,
+      updatedAt: patch.updatedAt ?? new Date().toISOString(),
+    });
+  }
+
+  async get(
+    tenantId: string,
+    key: string,
+  ): Promise<IngestIdempotencyRecord | null> {
+    const res = await client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { pk: pk(tenantId), sk: `${INGEST_IDEM_SK_PREFIX}${key}` },
+      }),
+    );
+    if (!res.Item) return null;
+    return itemToIngestIdempotency(res.Item);
+  }
+
+  async put(record: IngestIdempotencyRecord): Promise<void> {
+    await client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: pk(record.tenantId),
+          sk: `${INGEST_IDEM_SK_PREFIX}${record.key}`,
+          entityType: "ingest_idempotency",
+          tenantId: record.tenantId,
+          key: record.key,
+          at: record.at,
+          result: record.result,
+          expiresAt: record.expiresAt,
+        },
+      }),
+    );
+  }
+
   async listTenantProfiles(): Promise<TenantProfile[]> {
     const res = await client.send(
       new QueryCommand({
@@ -933,6 +1038,123 @@ export class DynamoMeterStore
     if (!res.Item) return null;
     return itemToTenantUser(res.Item);
   }
+}
+
+function meterLocationItem(location: MeterLocation): Record<string, unknown> {
+  return {
+    pk: pk(location.tenantId),
+    sk: locSk(location.meterId),
+    entityType: "meter_location",
+    tenantId: location.tenantId,
+    meterId: location.meterId,
+    serviceAddress: location.serviceAddress,
+    occupantName: location.occupantName,
+    accountNumber: location.accountNumber,
+    route: location.route,
+    manufacturer: location.manufacturer,
+    model: location.model,
+    serialNumber: location.serialNumber,
+    meterSize: location.meterSize,
+    installDate: location.installDate,
+    meterType: location.meterType,
+    locationDetail: location.locationDetail,
+    radioId: location.radioId,
+    lastTestedAt: location.lastTestedAt,
+    notes: location.notes,
+    latitude: location.latitude,
+    longitude: location.longitude,
+    updatedAt: location.updatedAt,
+  };
+}
+
+function meterReadingItem(reading: MeterReading): Record<string, unknown> {
+  return {
+    pk: pk(reading.tenantId),
+    sk: rdgSk(reading.meterId, reading.timestamp),
+    entityType: "meter_reading",
+    tenantId: reading.tenantId,
+    meterId: reading.meterId,
+    serviceAddress: reading.serviceAddress,
+    occupantName: reading.occupantName,
+    timestamp: reading.timestamp,
+    cumulativeReading: reading.cumulativeReading,
+    unit: reading.unit,
+    diagnosticFlags: reading.diagnosticFlags,
+  };
+}
+
+function ingestJobItem(job: IngestJobRecord): Record<string, unknown> {
+  return {
+    pk: pk(job.tenantId),
+    sk: `${INGEST_JOB_SK_PREFIX}${job.jobId}`,
+    entityType: "ingest_job",
+    tenantId: job.tenantId,
+    jobId: job.jobId,
+    status: job.status,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+    rowCount: job.rowCount,
+    payloadS3Key: job.payloadS3Key,
+    idempotencyKey: job.idempotencyKey ?? null,
+    filename: job.filename ?? null,
+    error: job.error ?? null,
+    summary: job.summary ?? null,
+    lastIngest: job.lastIngest ?? null,
+  };
+}
+
+function itemToIngestJob(item: Record<string, unknown>): IngestJobRecord | null {
+  const tenantId = item.tenantId;
+  const jobId = item.jobId;
+  const status = item.status;
+  if (
+    typeof tenantId !== "string" ||
+    typeof jobId !== "string" ||
+    (status !== "queued" &&
+      status !== "running" &&
+      status !== "succeeded" &&
+      status !== "failed")
+  ) {
+    return null;
+  }
+  return {
+    tenantId,
+    jobId,
+    status,
+    createdAt: String(item.createdAt ?? new Date().toISOString()),
+    updatedAt: String(item.updatedAt ?? new Date().toISOString()),
+    rowCount: Number(item.rowCount ?? 0),
+    payloadS3Key: String(item.payloadS3Key ?? ""),
+    idempotencyKey:
+      typeof item.idempotencyKey === "string" ? item.idempotencyKey : null,
+    filename: typeof item.filename === "string" ? item.filename : null,
+    error: typeof item.error === "string" ? item.error : null,
+    summary:
+      item.summary && typeof item.summary === "object"
+        ? (item.summary as IngestJobRecord["summary"])
+        : null,
+    lastIngest:
+      item.lastIngest && typeof item.lastIngest === "object"
+        ? itemToLastIngest(item.lastIngest as Record<string, unknown>)
+        : null,
+  };
+}
+
+function itemToIngestIdempotency(
+  item: Record<string, unknown>,
+): IngestIdempotencyRecord | null {
+  const tenantId = item.tenantId;
+  const key = item.key;
+  if (typeof tenantId !== "string" || typeof key !== "string") return null;
+  const result = item.result;
+  if (!result || typeof result !== "object") return null;
+  return {
+    tenantId,
+    key,
+    at: String(item.at ?? new Date().toISOString()),
+    result: result as Record<string, unknown>,
+    expiresAt: Number(item.expiresAt ?? 0),
+  };
 }
 
 function itemToLocation(item: Record<string, unknown>): MeterLocation {
@@ -1402,6 +1624,22 @@ export function createLastIngestStoreFromEnv(): LastIngestStore {
 }
 
 export function createConversationStoreFromEnv(): ConversationStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error("DATA_TABLE env is not configured");
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createIngestJobStoreFromEnv(): IngestJobStore {
+  const table = process.env.DATA_TABLE;
+  if (!table) {
+    throw new Error("DATA_TABLE env is not configured");
+  }
+  return new DynamoMeterStore(table);
+}
+
+export function createIngestIdempotencyStoreFromEnv(): IngestIdempotencyStore {
   const table = process.env.DATA_TABLE;
   if (!table) {
     throw new Error("DATA_TABLE env is not configured");
