@@ -9,6 +9,7 @@ import {
   pickTopOutliers,
   softBalanceKpiHint,
   softBalanceStatusLabel,
+  formatBalanceKpiValue,
 } from './dashboard-summary';
 
 describe('dashboard-summary', () => {
@@ -71,6 +72,14 @@ describe('dashboard-summary', () => {
     expect(softBalanceStatusLabel('loss', 'Solid')).toBe('Unaccounted loss');
     expect(softBalanceKpiHint('gain', 'Thin')).toMatch(/Watch|history/i);
     expect(softBalanceKpiHint('gain', 'Solid')).toBe('Sold > pumped');
+  });
+
+  it('formats Water balance KPI calmly for gain and extreme loss', () => {
+    expect(formatBalanceKpiValue('gain', -2146.1, 'Solid')).toBe('Sold > pumped');
+    expect(formatBalanceKpiValue('loss', 2146.1, 'Solid')).toBe('High unaccounted');
+    expect(formatBalanceKpiValue('loss', 10, 'Solid')).toBe('10%');
+    expect(formatBalanceKpiValue('gain', -50, 'Thin')).toBe('Early');
+    expect(formatBalanceKpiValue('insufficient', null, 'Solid')).toBe('—');
   });
 
   it('ranks top outliers by ratio then volume', () => {

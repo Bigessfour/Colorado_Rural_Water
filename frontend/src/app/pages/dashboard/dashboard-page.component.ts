@@ -34,6 +34,7 @@ import {
   buildSourceProductionChart,
   buildUnaccountedSparkline,
   formatLastIngestLine,
+  formatBalanceKpiValue,
   isThinConfidence,
   pickTopOutliers,
   softBalanceKpiHint,
@@ -402,9 +403,8 @@ export class DashboardPageComponent implements OnInit {
           live: true,
           hint: liveHint,
         });
-        // Thin: do not surface raw unaccounted % as a dig-now KPI claim.
-        balanceKpi =
-          thin || pct == null ? (thin && balanceStatus !== 'insufficient' ? 'Early' : '—') : `${pct}%`;
+        // Thin / extreme: calm KPI wording — raw gal/% stay in the balance card.
+        balanceKpi = formatBalanceKpiValue(balanceStatus, pct == null ? null : Number(pct), level);
         balanceKpiHint = softBalanceKpiHint(balanceStatus, level);
         balanceHint = periodLabel;
 

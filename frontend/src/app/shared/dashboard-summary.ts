@@ -181,6 +181,31 @@ export function softBalanceKpiHint(
   }
 }
 
+/**
+ * Calm top-KPI value for Water balance — never scare operators with extreme %.
+ * Detail stays in the balance card (gal + %).
+ */
+export function formatBalanceKpiValue(
+  status: 'loss' | 'gain' | 'ok' | 'insufficient',
+  unaccountedPct: number | null | undefined,
+  confidenceLevel: string,
+): string {
+  if (isThinConfidence(confidenceLevel)) {
+    return status === 'insufficient' ? '—' : 'Early';
+  }
+  if (status === 'insufficient' || unaccountedPct == null) return '—';
+  if (status === 'gain') return 'Sold > pumped';
+  if (status === 'ok') {
+    const pct = Number(unaccountedPct);
+    return Number.isFinite(pct) ? `${pct}%` : 'Balanced';
+  }
+  // loss
+  const pct = Number(unaccountedPct);
+  if (!Number.isFinite(pct)) return '—';
+  if (Math.abs(pct) > 100) return 'High unaccounted';
+  return `${pct}%`;
+}
+
 export function pickTopOutliers(
   alerts: Array<{
     type?: string;

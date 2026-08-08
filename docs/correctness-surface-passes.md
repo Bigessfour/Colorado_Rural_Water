@@ -4,28 +4,28 @@ Register for the curated queue in [`.function-inventory.json`](../.function-inve
 
 **Legend:** Unit = co-located `*.test.ts` / `*.spec.ts` · Integration = cross-module / isolation · E2E = [`PROVE_FEATURES.md`](./PROVE_FEATURES.md) browser prove.
 
-| Tier | Surface | Unit | Integration | E2E / Prove | Config notes | Pass date |
-| ---- | ------- | ---- | ----------- | ----------- | ------------ | --------- |
-| P1 | `auth.service.ts` | yes | JWT/`auth.test.ts` | Sign-in pass | Cognito pool matches `AWS_ACCOUNT` | 2026-08-08 |
-| P1 | `login-page` | yes (expanded) | Cognito live | **pass** 2026-08-08 widgets+sign-in+bad-password | Password fields use `pInputText`; Cognito IDs match secrets | 2026-08-08 |
-| P1 | `upload-page` | yes | ingest dryRun | Upload pass | Excel-first | 2026-08-08 |
-| P1 | `dashboard-page` | yes | balance/alerts shared | Dashboard pass | Thin softens | 2026-08-08 |
-| P1 | `alerts-page` | yes | `alerts.test.ts` | Alerts + C3 pass | — | 2026-08-08 |
-| P1 | `review.service` | yes | `review.test.ts` | Kelly Review pass | — | 2026-08-08 |
-| P1 | `me.ts` | yes | — | Sign-in /me | — | 2026-08-08 |
-| P1 | `ingest.ts` | **added** `ingest.test.ts` | csv/excel parse | Upload pass | JWT tenant only; dryRun | 2026-08-08 |
-| P1 | `alerts.ts` | **added** `alerts.test.ts` | alert-engine/status | Alerts pass | — | 2026-08-08 |
-| P1 | `review.ts` | yes | SES path | Kelly Review pass | — | 2026-08-08 |
-| P2 | `review-panel` / howto | yes | — | Kelly Review pass | `/review` | 2026-08-08 |
-| P2 | `upload-url` / `s3-ingest` | yes | memory S3 event | Upload path | key tenant prefix | 2026-08-08 |
-| P2 | `balance.ts` | **added** + `balance-auth` | water-balance | Dashboard | — | 2026-08-08 |
-| P2 | `shared/auth` / alert-engine / water-balance | yes | isolation suites | — | — | 2026-08-08 |
-| P2 | meters/sources/agent/admin/reports/onboarding pages | yes (smokes) | — | see PROVE matrix | Sources/Reports **partial** prove | 2026-08-08 |
-| P2 | `meters`/`sources`/`ingest-sources`/`agent`/`admin`/`onboarding` handlers | **added** auth tests | admin-isolation, agent-isolation | matching prove rows | Admin creates stores before role check | 2026-08-08 |
-| P2 | `reports.ts` | **added** `reports.test.ts` | work-order-export | Reports **partial** | TF routes `/reports/work-orders`+`/summary` | 2026-08-08 |
-| P2 | `health.ts` | **added** `health.test.ts` | smoke.sh | live `/health` 200 | — | 2026-08-08 |
-| P2 | `dynamo-store` | `dynamo-store-env.test.ts` | memory CRUD tests | — | requires `DATA_TABLE` in AWS | 2026-08-08 |
-| P2 | `kb-retrieve` | yes | — | Cognito JWT RAG pass | — | 2026-08-08 |
+| Tier | Surface                                                                   | Unit                        | Integration                      | E2E / Prove                                      | Config notes                                                | Pass date  |
+| ---- | ------------------------------------------------------------------------- | --------------------------- | -------------------------------- | ------------------------------------------------ | ----------------------------------------------------------- | ---------- |
+| P1   | `auth.service.ts`                                                         | yes                         | JWT/`auth.test.ts`               | Sign-in pass                                     | Cognito pool matches `AWS_ACCOUNT`                          | 2026-08-08 |
+| P1   | `login-page`                                                              | yes (expanded)              | Cognito live                     | **pass** 2026-08-08 widgets+sign-in+bad-password | Password fields use `pInputText`; Cognito IDs match secrets | 2026-08-08 |
+| P1   | `upload-page`                                                             | yes                         | ingest dryRun                    | Upload pass                                      | Excel-first                                                 | 2026-08-08 |
+| P1   | `dashboard-page`                                                          | yes                         | balance/alerts shared            | Dashboard pass                                   | Thin softens                                                | 2026-08-08 |
+| P1   | `alerts-page`                                                             | yes                         | `alerts.test.ts`                 | Alerts + C3 pass                                 | —                                                           | 2026-08-08 |
+| P1   | `review.service`                                                          | yes                         | `review.test.ts`                 | Kelly Review pass                                | —                                                           | 2026-08-08 |
+| P1   | `me.ts`                                                                   | yes                         | —                                | Sign-in /me                                      | —                                                           | 2026-08-08 |
+| P1   | `ingest.ts`                                                               | **added** `ingest.test.ts`  | csv/excel parse                  | Upload pass                                      | JWT tenant only; dryRun                                     | 2026-08-08 |
+| P1   | `alerts.ts`                                                               | **added** `alerts.test.ts`  | alert-engine/status              | Alerts pass                                      | —                                                           | 2026-08-08 |
+| P1   | `review.ts`                                                               | yes                         | SES path                         | Kelly Review pass                                | —                                                           | 2026-08-08 |
+| P2   | `review-panel` / howto                                                    | yes                         | —                                | Kelly Review pass                                | `/review`                                                   | 2026-08-08 |
+| P2   | `upload-url` / `s3-ingest`                                                | yes                         | memory S3 event                  | Upload path                                      | key tenant prefix                                           | 2026-08-08 |
+| P2   | `balance.ts`                                                              | **added** + `balance-auth`  | water-balance                    | Dashboard                                        | —                                                           | 2026-08-08 |
+| P2   | `shared/auth` / alert-engine / water-balance                              | yes                         | isolation suites                 | —                                                | —                                                           | 2026-08-08 |
+| P2   | meters/sources/agent/admin/reports/onboarding pages                       | yes (smokes)                | —                                | see PROVE matrix                                 | Sources/Reports **partial** prove                           | 2026-08-08 |
+| P2   | `meters`/`sources`/`ingest-sources`/`agent`/`admin`/`onboarding` handlers | **added** auth tests        | admin-isolation, agent-isolation | matching prove rows                              | Admin creates stores before role check                      | 2026-08-08 |
+| P2   | `reports.ts`                                                              | **added** `reports.test.ts` | work-order-export                | Reports **partial**                              | TF routes `/reports/work-orders`+`/summary`                 | 2026-08-08 |
+| P2   | `health.ts`                                                               | **added** `health.test.ts`  | smoke.sh                         | live `/health` 200                               | —                                                           | 2026-08-08 |
+| P2   | `dynamo-store`                                                            | `dynamo-store-env.test.ts`  | memory CRUD tests                | —                                                | requires `DATA_TABLE` in AWS                                | 2026-08-08 |
+| P2   | `kb-retrieve`                                                             | yes                         | —                                | Cognito JWT RAG pass                             | —                                                           | 2026-08-08 |
 
 ## Misconfigurations found & fixed (2026-08-08)
 
