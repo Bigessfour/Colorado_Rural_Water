@@ -1,0 +1,73 @@
+name: Terraform Apply
+
+# Feature 006 — apply on push to main or manual workflow_dispatch.
+# Manual apply requires confirm=apply. Uses production environment gate.
+# Account 388691194728 · Assessment-iii tag.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform-plan.yml"
+      - ".github/workflows/terraform-apply.yml"
+      - "backend/src/**"
+      - "scripts/build-lambda-zip.mjs"
+      - "package.json"
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type apply to confirm manual apply"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: true
+  TF_VAR_FILE: environments/ci.tfvars.example
+
+jobs:
+  apply:
+    name: terraform apply
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.event_name == 'push' || inputs.confirm == 'apply'
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: "~> 1.10"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Guard account
+        run: |
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          echo "Caller account=${ACCOUNT}"
+          test "${ACCOUNT}" = "388691194728"
+      - name: Bundle Lambdas
+        working-directory: .
+        run: |
+          npm ci
+          npm --prefix backend ci
+          npm run backend:bundle
+      - name: Terraform init + apply
+        run: |
+          terraform init -input=false
+          terraform workspace select dev || terraform workspace new dev
+          terraform apply -var-file="${TF_VAR_FILE}" -auto-approve -no-color -input=false
