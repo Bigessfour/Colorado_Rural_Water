@@ -2,7 +2,7 @@
 <!-- Do NOT edit manually. Lightweight correctness-surface tracker. -->
 
 # Function Inventory — Colorado Rural Water
-Generated: 2026-08-08T13:19:56.411732+00:00
+Generated: 2026-08-08T13:25:42.716456+00:00
 **Stack:** TypeScript/Angular
 **Tracking mode:** `surfaces`
 **Scan roots:** `frontend/src`, `backend/src`
@@ -46,14 +46,14 @@ Ship gate remains project acceptance / smoke checklists — inventory count alon
 | P1 | Angular Page / Component | AlertsPageComponent.AlertsPageComponent | frontend/src/app/pages/alerts/alerts-page.component.ts:95 | frontend/src/app/pages/alerts/alerts-page.component.spec.ts | has logic |
 | P1 | Core Service | ReviewService.ReviewService | frontend/src/app/review/review.service.ts:28 | frontend/src/app/review/review.service.spec.ts, backend/src/... | has logic |
 | P1 | API Endpoint | me.handler | backend/src/handlers/me.ts:16 | backend/src/handlers/me.test.ts | has logic |
-| P1 | API Endpoint | ingest.handler | backend/src/handlers/ingest.ts:39 | backend/src/shared/excel-parse.test.ts, backend/src/shared/s... | has logic |
-| P1 | API Endpoint | alerts.handler | backend/src/handlers/alerts.ts:50 | backend/src/shared/balance-alerts.test.ts, backend/src/share... | has logic |
+| P1 | API Endpoint | ingest.handler | backend/src/handlers/ingest.ts:39 | backend/src/handlers/ingest.test.ts, backend/src/shared/exce... | has logic |
+| P1 | API Endpoint | alerts.handler | backend/src/handlers/alerts.ts:50 | backend/src/handlers/alerts.test.ts | has logic |
 | P1 | API Endpoint | review.handler | backend/src/handlers/review.ts:116 | backend/src/handlers/review.test.ts | has logic |
 | P2 | Angular Page / Component | ReviewPanelComponent.ReviewPanelComponent | frontend/src/app/review/review-panel.component.ts:10 | frontend/src/app/review/review-panel.component.spec.ts | has logic |
 | P2 | Angular Page / Component | ReviewHowtoPageComponent.ReviewHowtoPageComponent | frontend/src/app/pages/review/review-howto-page.component.ts:10 | frontend/src/app/pages/review/review-howto-page.component.sp... | has logic |
 | P2 | API Endpoint | upload-url.handler | backend/src/handlers/upload-url.ts:19 | backend/src/handlers/upload-url.test.ts | has logic |
 | P2 | API Endpoint | s3-ingest.handler | backend/src/handlers/s3-ingest.ts:43 | backend/src/handlers/s3-ingest.test.ts | has logic |
-| P2 | API Endpoint | balance.handler | backend/src/handlers/balance.ts:25 | backend/src/shared/balance-alerts.test.ts, backend/src/share... | has logic |
+| P2 | API Endpoint | balance.handler | backend/src/handlers/balance.ts:25 | backend/src/handlers/balance.test.ts | has logic |
 | P2 | Other Public | auth.auth | backend/src/shared/auth.ts:1 | backend/src/shared/auth.test.ts | has logic |
 | P2 | Other Public | alert-engine.alert-engine | backend/src/shared/alert-engine.ts:1 | backend/src/shared/alert-engine.test.ts | has logic |
 | P2 | Other Public | water-balance.water-balance | backend/src/shared/water-balance.ts:1 | backend/src/shared/water-balance.test.ts | has logic |
@@ -69,14 +69,14 @@ Ship gate remains project acceptance / smoke checklists — inventory count alon
 | P2 | Angular Page / Component | SettingsPageComponent.SettingsPageComponent | frontend/src/app/pages/settings/settings-page.component.ts:21 | frontend/src/app/pages/settings/settings-page.component.spec... | has logic |
 | P2 | Angular Page / Component | HelpPageComponent.HelpPageComponent | frontend/src/app/pages/help/help-page.component.ts:33 | frontend/src/app/pages/help/help-page.component.spec.ts | has logic |
 | P2 | Angular Page / Component | ShellComponent.ShellComponent | frontend/src/app/layout/shell.component.ts:21 | frontend/src/app/layout/shell.component.spec.ts, .venv-ci/li... | has logic |
-| P2 | API Endpoint | meters.handler | backend/src/handlers/meters.ts:22 | backend/src/shared/meter-inventory.test.ts, backend/src/shar... | has logic |
-| P2 | API Endpoint | sources.handler | backend/src/handlers/sources.ts:17 | backend/src/shared/kb-retrieve.test.ts, backend/src/shared/s... | has logic |
-| P2 | API Endpoint | ingest-sources.handler | backend/src/handlers/ingest-sources.ts:21 | backend/src/handlers/balance-auth.test.ts | has logic |
-| P2 | AI Tool / Orchestrator | agent.handler | backend/src/handlers/agent.ts:73 | backend/src/shared/agent-reply-normalize.test.ts, backend/sr... | has logic |
-| P2 | API Endpoint | admin.handler | backend/src/handlers/admin.ts:73 | backend/src/shared/auth.test.ts, backend/src/shared/cognito-... | has logic |
-| P2 | API Endpoint | reports.handler | backend/src/handlers/reports.ts:36 | frontend/src/app/app.routes.spec.ts, frontend/src/app/pages/... | has logic |
-| P2 | API Endpoint | onboarding.handler | backend/src/handlers/onboarding.ts:25 | backend/src/shared/onboarding-intake.test.ts, backend/src/sh... | has logic |
-| P2 | API Endpoint | health.handler | backend/src/handlers/health.ts:3 | frontend/src/app/pages/dashboard/dashboard-page.component.sp... | small body |
+| P2 | API Endpoint | meters.handler | backend/src/handlers/meters.ts:22 | backend/src/handlers/meters.test.ts | has logic |
+| P2 | API Endpoint | sources.handler | backend/src/handlers/sources.ts:17 | backend/src/handlers/sources.test.ts | has logic |
+| P2 | API Endpoint | ingest-sources.handler | backend/src/handlers/ingest-sources.ts:21 | backend/src/handlers/ingest-sources.test.ts | has logic |
+| P2 | AI Tool / Orchestrator | agent.handler | backend/src/handlers/agent.ts:73 | backend/src/handlers/agent.test.ts | has logic |
+| P2 | API Endpoint | admin.handler | backend/src/handlers/admin.ts:73 | backend/src/handlers/admin.test.ts | has logic |
+| P2 | API Endpoint | reports.handler | backend/src/handlers/reports.ts:36 | backend/src/handlers/reports.test.ts | has logic |
+| P2 | API Endpoint | onboarding.handler | backend/src/handlers/onboarding.ts:25 | backend/src/handlers/onboarding.test.ts | has logic |
+| P2 | API Endpoint | health.handler | backend/src/handlers/health.ts:3 | backend/src/handlers/health.test.ts | small body |
 | P2 | Core Service | DynamoMeterStore.DynamoMeterStore | backend/src/shared/dynamo-store.ts:133 | backend/src/shared/dynamo-store-env.test.ts | has logic |
 | P2 | Other Public | kb-retrieve.kb-retrieve | backend/src/shared/kb-retrieve.ts:1 | backend/src/shared/kb-retrieve.test.ts | has logic |
 

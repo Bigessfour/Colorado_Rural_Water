@@ -4,7 +4,8 @@ export const environment = {
   production: false,
   composeDemo: false,
   apiBaseUrl: 'https://uqujnhmk31.execute-api.us-east-1.amazonaws.com',
-  ragPath: '/api/rag',
+  /** Cognito SPA uses POST /agent only — Compose /api/rag is unused here. */
+  ragPath: '',
   agentPath: '/agent',
   historyPath: '/agent',
   demoTenantId: '',
