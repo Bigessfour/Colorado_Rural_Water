@@ -68,8 +68,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           chmod +x scripts/empty-water-saver-buckets.sh
-          unset AWS_PROFILE || true
-          AWS_PROFILE= ./scripts/empty-water-saver-buckets.sh
+          env -u AWS_PROFILE ./scripts/empty-water-saver-buckets.sh
       - name: Terraform plan -destroy (dry run)
         if: inputs.dry_run
         working-directory: infra/terraform
@@ -88,8 +87,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           chmod +x scripts/destroy-residual-scan.sh
-          unset AWS_PROFILE || true
-          AWS_PROFILE= ./scripts/destroy-residual-scan.sh
+          env -u AWS_PROFILE ./scripts/destroy-residual-scan.sh
       - name: Evidence note
         if: always()
         run: |

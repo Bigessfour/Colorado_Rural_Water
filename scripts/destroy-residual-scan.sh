@@ -6,6 +6,13 @@ set -euo pipefail
 REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-1}}"
 PROFILE="${AWS_PROFILE:-}"
 
+# Empty AWS_PROFILE breaks the AWS CLI ("config profile () could not be found").
+if [[ -n ${PROFILE} ]]; then
+	export AWS_PROFILE="${PROFILE}"
+else
+	unset AWS_PROFILE
+fi
+
 aws_cli() {
 	if [[ -n ${PROFILE} ]]; then
 		aws --profile "${PROFILE}" --region "${REGION}" "$@"
