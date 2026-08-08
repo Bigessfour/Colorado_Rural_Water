@@ -42,7 +42,7 @@ State bucket is **bootstrap-only** (outside this root module). Re-create steps: 
 | Resource   | Name / URL                                                              |
 | ---------- | ----------------------------------------------------------------------- |
 | API        | `https://uqujnhmk31.execute-api.us-east-1.amazonaws.com`                |
-| SPA        | `https://d1gokx5wxrd4x6.cloudfront.net` (`./scripts/deploy-spa.sh`)     |
+| SPA        | `https://d13u7fsvytjwxn.cloudfront.net` (`./scripts/deploy-spa.sh`)     |
 | Uploads    | `water-saver-dev-uploads-388691194728`                                  |
 | Data table | `water-saver-dev-data`                                                  |
 | Cognito    | `us-east-1_eeMuYPlMK` / client `1a4ao09ljbohofa0377sm82alu`             |

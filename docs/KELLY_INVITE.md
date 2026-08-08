@@ -2,8 +2,8 @@
 
 **Status:** Invite sent **2026-08-06** · CloudFront / review URLs re-verified live the same day.
 
-**Live SPA (CloudFront):** `https://d1gokx5wxrd4x6.cloudfront.net`
-**Guided review:** `https://d1gokx5wxrd4x6.cloudfront.net/review`
+**Live SPA (CloudFront):** `https://d13u7fsvytjwxn.cloudfront.net`
+**Guided review:** `https://d13u7fsvytjwxn.cloudfront.net/review`
 
 ## What was sent
 
@@ -15,7 +15,7 @@
 >
 > The Water Saver guided review is ready. It walks the live app section by section and emails me a structured summary when you finish.
 >
-> **Start here:** https://d1gokx5wxrd4x6.cloudfront.net/review
+> **Start here:** https://d13u7fsvytjwxn.cloudfront.net/review
 >
 > **Sign-in:** use the review operator account Steve shared separately (not in email).
 >
@@ -33,7 +33,7 @@
 
 ## Pre-send checklist
 
-- [x] CloudFront SPA live — `https://d1gokx5wxrd4x6.cloudfront.net` (re-applied + Cognito users re-provisioned 2026-08-06 after destroy prove)
+- [x] CloudFront SPA live — `https://d13u7fsvytjwxn.cloudfront.net` (CI deploy 2026-08-08)
 - [x] API Gateway / review Lambda healthy — `GET /health` 200 on `https://uqujnhmk31.execute-api.us-east-1.amazonaws.com`
 - [x] Kelly can sign in with review credentials — pool `us-east-1_eeMuYPlMK`; password file updated (`./scripts/provision-demo-users.sh`)
 - [x] `./scripts/smoke.sh` or [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md) F2 boxes reviewed — all F2 boxes checked 2026-08-04

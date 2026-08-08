@@ -2,7 +2,7 @@
 
 **Audience:** Kelly Stone / CRWA leadership
 **Time:** about 20–30 minutes
-**URL:** `https://d1gokx5wxrd4x6.cloudfront.net/review` (or local `cd frontend && npm start` → `http://localhost:4200/review`). API is already live.
+**URL:** `https://d13u7fsvytjwxn.cloudfront.net/review` (or local `cd frontend && npm start` → `http://localhost:4200/review`). API is already live.
 
 ---
 
@@ -44,7 +44,7 @@ A private, guided walkthrough of the live Water Saver app. On each section you l
 1. [x] SES `REVIEW_NOTIFY_TO` / `REVIEW_FROM_EMAIL` on `water-saver-dev-review` (Steve Gmail identity verified 2026-08-07; also in gitignored `dev.tfvars`).
 2. [x] Cognito `kelly.review@watersaver.local` — `operators` + `crwa_admins`, tenant `town-wiley` (password in `~/.cursor/secrets/watersaver-kelly-review-cognito.txt`, not git).
 3. [x] Deploy API (review Lambda + routes) — live smoke: create → 9 steps → submit → `emailSent: true` (Gmail received; check **Spam** on first send).
-4. [x] SPA `/review` + panel — **CloudFront** <https://d1gokx5wxrd4x6.cloudfront.net/review> (redeploy: `./scripts/deploy-spa.sh`).
+4. [x] SPA `/review` + panel — **CloudFront** <https://d13u7fsvytjwxn.cloudfront.net/review> (redeploy: `./scripts/deploy-spa.sh`).
 5. [x] Runtime error capture — SPA `ErrorHandler` / window errors → `POST /telemetry/client-errors` → CloudWatch `/aws/lambda/water-saver-dev-me` (`CLIENT_ERROR`). Review Lambda errors → `/aws/lambda/water-saver-dev-review`.
 6. [x] Send Kelly: CloudFront URL + out-of-band credentials — **use [KELLY_INVITE.md](./KELLY_INVITE.md)** (invite ops ready 2026-08-07)
 

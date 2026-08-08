@@ -15,8 +15,8 @@
 | Backend tests                                                                                                  | 133 pass         |
 | Frontend tests                                                                                                 | ~38 pass         |
 
-**Live API:** `https://uqujnhmk31.execute-api.us-east-1.amazonaws.com`
-**SPA (CloudFront):** `https://d1gokx5wxrd4x6.cloudfront.net` · review: `/review` · redeploy: `./scripts/deploy-spa.sh`
+**Live API:** `https://f5z7yqud5c.execute-api.us-east-1.amazonaws.com`
+**SPA (CloudFront):** `https://d13u7fsvytjwxn.cloudfront.net` · review: `/review` · redeploy: `./scripts/deploy-spa.sh`
 **Local SPA (dev):** `cd frontend && npm start` → `http://localhost:4200`
 **AWS:** account `388691194728` · profile `codeplatoon` · `us-east-1` · tag `Assessment-iii`
 **Account doc:** [AWS_ACCOUNT.md](AWS_ACCOUNT.md)

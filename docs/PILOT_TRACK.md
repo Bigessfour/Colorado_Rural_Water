@@ -4,7 +4,8 @@ Assessment III and Kelly demo scope are **closed**. Hosted product lives at:
 
 | Surface | URL / command |
 | ------- | ------------- |
-| SPA (CloudFront) | `https://d1gokx5wxrd4x6.cloudfront.net` |
+| SPA (CloudFront) | `https://d13u7fsvytjwxn.cloudfront.net` |
+| API | `https://f5z7yqud5c.execute-api.us-east-1.amazonaws.com` |
 | Review | `/review` on SPA |
 | Deploy | `./scripts/deploy-spa.sh` (after `terraform apply`) |
 | Terraform | workspace `dev` · account `388691194728` · tag `Assessment-iii` |
@@ -17,8 +18,8 @@ Assessment III and Kelly demo scope are **closed**. Hosted product lives at:
 
 | # | Item | Status | Notes |
 | - | ---- | ------ | ----- |
-| 1 | Terraform Apply CI green | **in progress** | demo-access upsert fixed 2026-08-08; deploy-spa CI profile fix same day |
-| 2 | Post-apply SPA sync | **in progress** | `sync-hosted-environment.sh` → `ng build --configuration hosted` → S3 + invalidation |
+| 1 | Terraform Apply CI green | **done** 2026-08-08 | demo-access upsert + deploy-spa CI fixes |
+| 2 | Post-apply SPA sync | **done** 2026-08-08 | run [31268350477](https://github.com/Bigessfour/Colorado_Rural_Water/actions/runs/31268350477) full green |
 | 3 | Cognito demo + Kelly users | ops | Set `WATERSAVER_*` secrets in GitHub `production` environment |
 | 4 | Surface prove register | **done** | [correctness-surface-passes.md](correctness-surface-passes.md) + [PROVE_FEATURES.md](PROVE_FEATURES.md) 2026-08-08 |
 

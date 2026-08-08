@@ -32,7 +32,8 @@ aws sts get-caller-identity --profile codeplatoon
 | Groups       | `operators`, `system_admins`, `crwa_admins`              |
 | MFA          | per Cognito pool config                                  |
 | HTTP API     | `https://uqujnhmk31.execute-api.us-east-1.amazonaws.com` |
-| SPA (CDN)    | `https://d1gokx5wxrd4x6.cloudfront.net`                  |
+| SPA (CDN)    | `https://d13u7fsvytjwxn.cloudfront.net`                  |
+| API Gateway  | `https://f5z7yqud5c.execute-api.us-east-1.amazonaws.com` |
 | CF dist ID   | `E3QK223UFP4LZE`                                         |
 | Health       | `GET …/health` (public)                                  |
 | Me           | `GET …/me` (JWT)                                         |
