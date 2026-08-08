@@ -40,18 +40,38 @@ locals {
   })
 }
 
-resource "aws_dynamodb_table_item" "tenant_profile" {
-  table_name = var.dynamodb_table_name
-  hash_key   = "pk"
-  range_key  = "sk"
+# Upsert seed rows (PutItem without condition). aws_dynamodb_table_item Create fails with
+# ConditionalCheckFailedException when admin/onboarding already wrote the same pk/sk.
+resource "terraform_data" "tenant_profile" {
+  input = sha256(jsonencode(local.tenant_profile))
 
-  item = jsonencode(local.tenant_profile)
+  provisioner "local-exec" {
+    interpreter = ["bash", "-ec"]
+    command     = <<-EOT
+      ITEM="$(mktemp)"
+      trap 'rm -f "$ITEM"' EXIT
+      echo '${base64encode(jsonencode(local.tenant_profile))}' | base64 -d >"$ITEM"
+      aws dynamodb put-item \
+        --table-name '${var.dynamodb_table_name}' \
+        --item "file://$ITEM"
+    EOT
+  }
 }
 
-resource "aws_dynamodb_table_item" "tenant_registry" {
-  table_name = var.dynamodb_table_name
-  hash_key   = "pk"
-  range_key  = "sk"
+resource "terraform_data" "tenant_registry" {
+  input = sha256(jsonencode(local.tenant_registry))
 
-  item = jsonencode(local.tenant_registry)
+  provisioner "local-exec" {
+    interpreter = ["bash", "-ec"]
+    command     = <<-EOT
+      ITEM="$(mktemp)"
+      trap 'rm -f "$ITEM"' EXIT
+      echo '${base64encode(jsonencode(local.tenant_registry))}' | base64 -d >"$ITEM"
+      aws dynamodb put-item \
+        --table-name '${var.dynamodb_table_name}' \
+        --item "file://$ITEM"
+    EOT
+  }
+
+  depends_on = [terraform_data.tenant_profile]
 }
