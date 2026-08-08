@@ -80,3 +80,33 @@ variable "review_from_email" {
   description = "F5 Kelly Review: SES From address (must be verified)"
   default     = ""
 }
+
+variable "enable_demo_access" {
+  type        = bool
+  description = "Seed town-wiley Dynamo tenant registry/profile after apply (Cognito users via provision-demo-users.sh)"
+  default     = true
+}
+
+variable "demo_tenant_id" {
+  type        = string
+  description = "Tenant id for demo operator and Kelly review users"
+  default     = "town-wiley"
+}
+
+variable "demo_tenant_display_name" {
+  type        = string
+  description = "Display name seeded in Dynamo for demo tenant"
+  default     = "Town of Wiley"
+}
+
+variable "demo_operator_email" {
+  type        = string
+  description = "Cognito email for Assessment demo operator"
+  default     = "demo.operator@watersaver.local"
+}
+
+variable "kelly_review_email" {
+  type        = string
+  description = "Cognito email for Kelly guided review"
+  default     = "kelly.review@watersaver.local"
+}

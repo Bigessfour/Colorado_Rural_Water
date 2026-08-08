@@ -10,8 +10,32 @@ ROOT="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROFILE="${AWS_PROFILE:-codeplatoon}"
 REGION="${AWS_REGION:-us-east-1}"
 SECRETS_DIR="${HOME}/.cursor/secrets"
-DEMO_SECRET="${SECRETS_DIR}/watersaver-demo-operator-cognito.txt"
-KELLY_SECRET="${SECRETS_DIR}/watersaver-kelly-review-cognito.txt"
+DEMO_SECRET="${WATERSAVER_DEMO_SECRET:-${SECRETS_DIR}/watersaver-demo-operator-cognito.txt}"
+KELLY_SECRET="${WATERSAVER_KELLY_SECRET:-${SECRETS_DIR}/watersaver-kelly-review-cognito.txt}"
+
+write_ci_secret_stub() {
+	local path="$1" email="$2" password="$3" tenant="$4" groups="$5"
+	umask 077
+	cat >"${path}" <<EOF
+email=${email}
+permanent_password=${password}
+tenant_id=${tenant}
+groups=${groups}
+EOF
+	chmod 600 "${path}"
+}
+
+# CI: build ephemeral secret stubs from GH Actions env (never committed).
+if [[ -n ${WATERSAVER_DEMO_OPERATOR_PASSWORD:-} && -n ${WATERSAVER_KELLY_REVIEW_PASSWORD:-} ]]; then
+	TMP_SECRETS="$(mktemp -d)"
+	trap 'rm -rf "${TMP_SECRETS}"' EXIT
+	DEMO_SECRET="${TMP_SECRETS}/demo.txt"
+	KELLY_SECRET="${TMP_SECRETS}/kelly.txt"
+	write_ci_secret_stub "${DEMO_SECRET}" "${WATERSAVER_DEMO_OPERATOR_EMAIL:-demo.operator@watersaver.local}" \
+		"${WATERSAVER_DEMO_OPERATOR_PASSWORD}" "${WATERSAVER_DEMO_TENANT_ID:-town-wiley}" "operators"
+	write_ci_secret_stub "${KELLY_SECRET}" "${WATERSAVER_KELLY_REVIEW_EMAIL:-kelly.review@watersaver.local}" \
+		"${WATERSAVER_KELLY_REVIEW_PASSWORD}" "${WATERSAVER_KELLY_TENANT_ID:-town-wiley}" "operators,crwa_admins"
+fi
 
 export AWS_PROFILE="${PROFILE}"
 export AWS_REGION="${REGION}"

@@ -80,6 +80,10 @@
               },
               "fileReplacements": [
                 {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.hosted.generated.ts"
+                },
+                {
                   "replace": "src/environments/primeng-license.ts",
                   "with": "src/environments/primeng-license.local.ts"
                 }

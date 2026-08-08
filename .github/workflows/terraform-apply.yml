@@ -2,6 +2,7 @@ name: Terraform Apply
 
 # Feature 006 — apply on push to main or manual workflow_dispatch.
 # Manual apply requires confirm=apply. Uses production environment gate.
+# Post-apply: sync hosted env + deploy SPA so CloudFront is never empty after apply.
 # Account 388691194728 · Assessment-iii tag.
 
 on:
@@ -13,6 +14,9 @@ on:
       - ".github/workflows/terraform-apply.yml"
       - "backend/src/**"
       - "scripts/build-lambda-zip.mjs"
+      - "scripts/deploy-spa.sh"
+      - "scripts/sync-hosted-environment.sh"
+      - "frontend/**"
       - "package.json"
   workflow_dispatch:
     inputs:
@@ -30,6 +34,8 @@ env:
   AWS_REGION: us-east-1
   TF_IN_AUTOMATION: true
   TF_VAR_FILE: environments/ci.tfvars.example
+  WATERSAVER_DEMO_OPERATOR_PASSWORD: ${{ secrets.WATERSAVER_DEMO_OPERATOR_PASSWORD }}
+  WATERSAVER_KELLY_REVIEW_PASSWORD: ${{ secrets.WATERSAVER_KELLY_REVIEW_PASSWORD }}
 
 jobs:
   apply:
@@ -37,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     if: github.event_name == 'push' || inputs.confirm == 'apply'
-    timeout-minutes: 90
+    timeout-minutes: 120
     defaults:
       run:
         working-directory: infra/terraform
@@ -71,3 +77,48 @@ jobs:
           terraform init -input=false
           terraform workspace select dev || terraform workspace new dev
           terraform apply -var-file="${TF_VAR_FILE}" -auto-approve -no-color -input=false
+      - name: Deploy SPA to CloudFront (post-apply)
+        if: success()
+        working-directory: .
+        env:
+          PRIMENG_LICENSE: ${{ secrets.PRIMENG_LICENSE }}
+        run: |
+          chmod +x scripts/sync-hosted-environment.sh scripts/deploy-spa.sh
+          env -u AWS_PROFILE ./scripts/deploy-spa.sh
+      - name: Provision demo + Kelly Cognito users (post-apply)
+        if: success()
+        working-directory: .
+        run: |
+          chmod +x scripts/provision-demo-users.sh
+          if [[ -z "${WATERSAVER_DEMO_OPERATOR_PASSWORD}" || -z "${WATERSAVER_KELLY_REVIEW_PASSWORD}" ]]; then
+            echo "Skip Cognito provision — set WATERSAVER_* password secrets in GitHub"
+            exit 0
+          fi
+          env -u AWS_PROFILE ./scripts/provision-demo-users.sh
+      - name: Cognito auth smoke (demo + Kelly)
+        if: success()
+        working-directory: infra/terraform
+        run: |
+          if [[ -z "${WATERSAVER_DEMO_OPERATOR_PASSWORD}" || -z "${WATERSAVER_KELLY_REVIEW_PASSWORD}" ]]; then
+            echo "Skip auth smoke — WATERSAVER_* password secrets not configured"
+            exit 0
+          fi
+          CLIENT_ID="$(terraform output -raw cognito_spa_client_id)"
+          DEMO_EMAIL="$(terraform output -raw demo_operator_email)"
+          KELLY_EMAIL="$(terraform output -raw kelly_review_email)"
+          smoke() {
+            local email="$1" pass="$2" label="$3"
+            local out
+            out="$(aws cognito-idp initiate-auth \
+              --auth-flow USER_PASSWORD_AUTH \
+              --client-id "${CLIENT_ID}" \
+              --auth-parameters "USERNAME=${email},PASSWORD=${pass}" \
+              --query 'AuthenticationResult.IdToken' --output text 2>&1)" || {
+              echo "FAIL ${label}: ${out}" >&2
+              exit 1
+            }
+            test -n "${out}" && test "${out}" != "None"
+            echo "OK ${label} (${#out} char id token)"
+          }
+          smoke "${DEMO_EMAIL}" "${WATERSAVER_DEMO_OPERATOR_PASSWORD}" "demo.operator"
+          smoke "${KELLY_EMAIL}" "${WATERSAVER_KELLY_REVIEW_PASSWORD}" "kelly.review"

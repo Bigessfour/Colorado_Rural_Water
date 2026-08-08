@@ -10,3 +10,6 @@ enable_api     = true
 enable_storage = true
 enable_spa     = true
 enable_bedrock_kb = true
+
+# town-wiley Dynamo seed; Cognito + SPA deploy run post-apply in terraform-apply.yml
+enable_demo_access = true

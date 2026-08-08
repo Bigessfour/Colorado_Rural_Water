@@ -18,6 +18,7 @@ coverage/
 .env.secrets
 # Local PrimeUI license module (Angular loads this via fileReplacements)
 **/primeng-license.local.ts
+frontend/src/environments/environment.hosted.generated.ts
 *.pem
 *.tfvars
 !*.tfvars.example

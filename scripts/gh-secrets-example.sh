@@ -5,6 +5,9 @@ cat <<'EOF'
 
 AWS_ACCESS_KEY_ID          # codeplatoon IAM user/key for CI (or OIDC role later)
 AWS_SECRET_ACCESS_KEY
+WATERSAVER_DEMO_OPERATOR_PASSWORD   # Cognito demo.operator (provision-demo-users.sh post-apply)
+WATERSAVER_KELLY_REVIEW_PASSWORD    # Cognito kelly.review — keep stable for Kelly invite
+PRIMENG_LICENSE                     # PrimeNG hosted SPA build (deploy-spa.sh post-apply)
 MEM0_API_KEY               # optional Mem0 cloud
 LANGCHAIN_API_KEY          # LangSmith
 RAG_API_KEY                # optional shared gate for Compose /api/*
