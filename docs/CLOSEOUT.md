@@ -1,6 +1,8 @@
-# Water Saver — Engineering Closeout (2026-08-03)
+# Water Saver — Engineering Closeout (2026-08-03, final 2026-08-08)
 
-**Verdict:** **Code Done** — Spec Kit features **001–014** closed 2026-08-06. **Kelly invite sent 2026-08-06** ([KELLY_INVITE.md](KELLY_INVITE.md)); CloudFront/review URLs live. Demo data polished 2026-08-05. External/Pilot only: H8 (Kelly’s real review submit), payment Epic I3+, live MFA enrollment, Phase F gated writes.
+**Verdict:** **Code Done** — Spec Kit features **001–014** closed 2026-08-06. **Surface gap closure done 2026-08-08** — 42/42 inventory surfaces with proof ([correctness-surface-passes.md](correctness-surface-passes.md)); hosted CloudFront subset smoke pass. **Kelly invite sent 2026-08-06** ([KELLY_INVITE.md](KELLY_INVITE.md)). External/Pilot only: H8 (Kelly’s real review submit), payment Epic I3+, live MFA enrollment, Phase F gated writes.
+
+**Repo state (2026-08-08):** All code on `main` · no open PRs · GitHub branch `main` only · CI + Terraform Apply green on `a02cd9c`.
 
 ## Shipped on `main`
 
@@ -12,8 +14,9 @@
 | Alert accept / dispatch / resolve + meter timeline (hardened)                                                  | done             |
 | F5 review API + SES + Cognito Kelly user                                                                       | done (API smoke) |
 | Prove protocol (`PROVE_FEATURES.md` + Cursor rule)                                                             | done             |
-| Backend tests                                                                                                  | 133 pass         |
-| Frontend tests                                                                                                 | ~38 pass         |
+| Backend tests                                                                                                  | 229 pass         |
+| Frontend tests                                                                                                 | 113 pass         |
+| Surface inventory (`.function-inventory.json`)                                                                 | 42/42 with proof |
 
 **Live API:** `https://f5z7yqud5c.execute-api.us-east-1.amazonaws.com`
 **SPA (CloudFront):** `https://d13u7fsvytjwxn.cloudfront.net` · review: `/review` · redeploy: `./scripts/deploy-spa.sh`
@@ -23,12 +26,12 @@
 
 ## Not code (ops / external)
 
-1. ~~**Send Kelly invite**~~ — **done** 2026-08-06 ([KELLY_INVITE.md](KELLY_INVITE.md)); SPA `https://d1gokx5wxrd4x6.cloudfront.net` + `/review` HTTP 200 / CloudFront Deployed (re-check same day)
+1. ~~**Send Kelly invite**~~ — **done** 2026-08-06 ([KELLY_INVITE.md](KELLY_INVITE.md)); SPA `https://d13u7fsvytjwxn.cloudfront.net` + `/review` (re-check after stack recreate 2026-08-08)
 2. ~~**Kelly F2 smoke**~~ — **done** Steve dry-run 2026-08-04 ([SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) all boxes; [DEMO_KNOWN_GAPS.md](DEMO_KNOWN_GAPS.md))
 3. **H8** — blocked until Kelly submits **her** real review feedback (Steve dry-run submit already exercised SES)
 4. **I3–I8 payment** — blocked on CRWA processor discovery
 5. **E2/E3 agent polish** — Pilot (form + Assistant Path A–D wired; deeper interview polish optional)
-6. ~~**Public HTTPS SPA**~~ — **done** CloudFront `d1gokx5wxrd4x6.cloudfront.net` (re-applied 2026-08-06; re-verified 2026-08-08)
+6. ~~**Public HTTPS SPA**~~ — **done** CloudFront `d13u7fsvytjwxn.cloudfront.net` (stack re-applied 2026-08-08; hosted smoke pass)
 
 ## Demo-prep fixes (2026-08-04)
 
