@@ -8,7 +8,7 @@
  *
  * Usage:
  *   SMOKE_ID_TOKEN=<Cognito JWT> node scripts/agent-eval.mjs [BASE_URL]
- *   # BASE_URL default: https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com
+ *   # BASE_URL default: https://uqujnhmk31.execute-api.us-east-1.amazonaws.com
  *
  * Quarterly refresh: run after knowledge-sync + KB ingest (docs/colorado-ops-refresh.md).
  * Nonzero exit on any failed case — suitable as an opt-in CI / smoke step.
@@ -22,7 +22,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE =
   process.argv[2] ||
   process.env.AGENT_EVAL_BASE ||
-  "https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com";
+  "https://uqujnhmk31.execute-api.us-east-1.amazonaws.com";
 const TOKEN = process.env.SMOKE_ID_TOKEN?.trim();
 
 if (!TOKEN) {

@@ -42,3 +42,5 @@ Upload messy CSV → dashboard/alerts → acknowledge — calm rural-operator UX
 ## AWS
 
 Profile **`codeplatoon`** / account **`388691194728`** / **`us-east-1`**. Tag **`Assessment-iii`**.
+
+**Live Cognito SPA:** https://d1gokx5wxrd4x6.cloudfront.net · **API:** https://uqujnhmk31.execute-api.us-east-1.amazonaws.com/health · Zap sheet: [`docs/ASSESSMENT_III_SUBMISSION.md`](docs/ASSESSMENT_III_SUBMISSION.md)

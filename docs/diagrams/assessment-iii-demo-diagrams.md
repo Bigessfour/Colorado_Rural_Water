@@ -24,7 +24,7 @@ Related (older / alternate): [`assessment-iii-system-architecture.mmd`](./assess
 ```mermaid
 flowchart TB
   subgraph Client["Operator Browser"]
-    SPA[Angular + PrimeNG SPA<br/>CloudFront duqk1pqvmrsuh]
+    SPA[Angular + PrimeNG SPA<br/>CloudFront d1gokx5wxrd4x6]
   end
 
   subgraph Edge["Edge / Auth"]

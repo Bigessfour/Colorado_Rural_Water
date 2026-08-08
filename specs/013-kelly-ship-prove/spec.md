@@ -36,7 +36,7 @@ Close the open rows in `docs/PROVE_FEATURES.md` and ops items in `docs/action-it
 - New product features beyond proving existing surfaces
 - Live Account MFA prove (Pilot — template + Vitest only for Kelly F1)
 
-~~CloudFront / public HTTPS SPA~~ — **live** `https://duqk1pqvmrsuh.cloudfront.net` (2026-08-04; re-verified 2026-08-06)
+~~CloudFront / public HTTPS SPA~~ — **live** `https://d1gokx5wxrd4x6.cloudfront.net` (2026-08-04; re-verified 2026-08-06)
 
 ## Primary paths
 

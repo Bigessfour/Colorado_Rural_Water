@@ -34,7 +34,7 @@ Statuses: `todo` | `in_progress` | `done` | `blocked`
 | A2  | Terraform skeleton (accounts, naming, tags)   | P0       | done   | Kelly | Account **388691194728** / profile **codeplatoon** / `us-east-1`; tag `Assessment-iii`; provider ~> 6.0                             |
 | A3  | Cognito user pool + app client (MFA optional) | P0       | done   | Kelly | Live pool `us-east-1_oZlKJ1y39` (codeplatoon)                                                                                       |
 | A4  | Tenant model + isolation strategy doc         | P0       | done   | Kelly | DynamoDB single-table + S3 uploads; see TENANT_ISOLATION.md                                                                         |
-| A5  | API Gateway + Lambda stub (health + me)       | P0       | done   | Kelly | Live API tz6rqlus7b (us-east-1); /health 200, /me JWT 401 without token                                                             |
+| A5  | API Gateway + Lambda stub (health + me)       | P0       | done   | Kelly | Live API uqujnhmk31 (us-east-1); /health 200, /me JWT 401 without token                                                             |
 | A6  | Per-tenant IAM ABAC / session tags            | P1       | done   | Pilot | Thin: `tenants/*` S3 + LeadingKeys `TENANT#*` + **Deny Scan** + Bedrock model ARNs; residual = no session-tag ABAC yet (documented) |
 
 ## Epic B — Ingestion (critical path)
@@ -196,7 +196,7 @@ JSON attachment or inline block optional for archive.
 #### Ops checklist (ship week)
 
 1. [x] Cognito `kelly.review@watersaver.local` — groups `operators` + `crwa_admins`, tenant `town-wiley` (creds in local secrets, not git).
-2. [x] Deploy F5 API (`POST /review/sessions` live) + SES from/to verified; SPA `/review` on CloudFront `https://duqk1pqvmrsuh.cloudfront.net/review`.
+2. [x] Deploy F5 API (`POST /review/sessions` live) + SES from/to verified; SPA `/review` on CloudFront `https://d1gokx5wxrd4x6.cloudfront.net/review`.
 3. [ ] Send Kelly: app URL (`/review`), credentials / [KELLY_REVIEW.md](KELLY_REVIEW.md), “~20–30 minutes, Submit at the end.”
 4. [ ] After Kelly submit: file feedback → Spec §7b / H8 (Confidence) and product backlog cuts.
 

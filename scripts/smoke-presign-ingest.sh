@@ -8,7 +8,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CLIENT="${COGNITO_CLIENT_ID:-3lbh20n9383nhraaioaa5is5an}"
-API="${API_BASE:-https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com}"
+API="${API_BASE:-https://uqujnhmk31.execute-api.us-east-1.amazonaws.com}"
 PROFILE="${AWS_PROFILE:-codeplatoon}"
 REGION="${AWS_REGION:-us-east-1}"
 FILE="${1:-${ROOT}/sample-data/messy-readings-july.csv}"

@@ -23,4 +23,4 @@
 
 - Demo / Kelly Cognito users on us-east-1 SPA pool
 - Live API (`codeplatoon` / Assessment III)
-- CloudFront SPA `https://duqk1pqvmrsuh.cloudfront.net` (Deployed; re-verified 2026-08-06)
+- CloudFront SPA `https://d1gokx5wxrd4x6.cloudfront.net` (Deployed; re-verified 2026-08-06)

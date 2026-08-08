@@ -15,20 +15,20 @@
 | Backend tests                                                                                                  | 133 pass         |
 | Frontend tests                                                                                                 | ~38 pass         |
 
-**Live API:** `https://tz6rqlus7b.execute-api.us-east-1.amazonaws.com`
-**SPA (CloudFront):** `https://duqk1pqvmrsuh.cloudfront.net` · review: `/review` · redeploy: `./scripts/deploy-spa.sh`
+**Live API:** `https://uqujnhmk31.execute-api.us-east-1.amazonaws.com`
+**SPA (CloudFront):** `https://d1gokx5wxrd4x6.cloudfront.net` · review: `/review` · redeploy: `./scripts/deploy-spa.sh`
 **Local SPA (dev):** `cd frontend && npm start` → `http://localhost:4200`
 **AWS:** account `388691194728` · profile `codeplatoon` · `us-east-1` · tag `Assessment-iii`
 **Account doc:** [AWS_ACCOUNT.md](AWS_ACCOUNT.md)
 
 ## Not code (ops / external)
 
-1. ~~**Send Kelly invite**~~ — **done** 2026-08-06 ([KELLY_INVITE.md](KELLY_INVITE.md)); SPA `https://duqk1pqvmrsuh.cloudfront.net` + `/review` HTTP 200 / CloudFront Deployed (re-check same day)
+1. ~~**Send Kelly invite**~~ — **done** 2026-08-06 ([KELLY_INVITE.md](KELLY_INVITE.md)); SPA `https://d1gokx5wxrd4x6.cloudfront.net` + `/review` HTTP 200 / CloudFront Deployed (re-check same day)
 2. ~~**Kelly F2 smoke**~~ — **done** Steve dry-run 2026-08-04 ([SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) all boxes; [DEMO_KNOWN_GAPS.md](DEMO_KNOWN_GAPS.md))
 3. **H8** — blocked until Kelly submits **her** real review feedback (Steve dry-run submit already exercised SES)
 4. **I3–I8 payment** — blocked on CRWA processor discovery
 5. **E2/E3 agent polish** — Pilot (form + Assistant Path A–D wired; deeper interview polish optional)
-6. ~~**Public HTTPS SPA**~~ — **done** CloudFront `duqk1pqvmrsuh.cloudfront.net` (2026-08-04; re-verified 2026-08-06)
+6. ~~**Public HTTPS SPA**~~ — **done** CloudFront `d1gokx5wxrd4x6.cloudfront.net` (re-applied 2026-08-06; re-verified 2026-08-08)
 
 ## Demo-prep fixes (2026-08-04)
 

@@ -6,7 +6,7 @@ Run before inviting Pilot municipalities. Tag resources `Assessment-iii` · acco
 
 ## AuthZ
 
-- [x] Cognito JWT authorizer on `POST /agent` — no body `tenant_id` trust on AWS path — 2026-08-05: API `tz6rqlus7b` routes `GET/POST /agent` use JWT authorizer `water-saver-dev-jwt` (issuer `us-east-1_oZlKJ1y39`, audience SPA client)
+- [x] Cognito JWT authorizer on `POST /agent` — no body `tenant_id` trust on AWS path — 2026-08-05: API `tz6rqlus7b` (pre-destroy) routes `GET/POST /agent` use JWT authorizer `water-saver-dev-jwt`. **Current (re-applied):** API `uqujnhmk31`, pool `us-east-1_eeMuYPlMK` — same authorizer pattern.
 - [x] Every Bedrock `Retrieve` uses metadata filter `scope=shared OR tenant_id=<jwt>` — 2026-08-05: `buildTenantRetrievalFilter` in `backend/src/shared/kb-retrieve.ts`; unit-covered in `kb-retrieve.test.ts` (168/168 pass)
 - [x] Cross-tenant negative test: tenant A JWT cannot see tenant B SOP chunks — 2026-08-05 live: town-wiley JWT asking for town-of-steve SOPs → reply declines; sources only shared CDPHE material, zero `tenants/` URIs
 - [x] Compose `RAG_API_KEY` set for any non-localhost exposure — 2026-08-05: documented in `.env.example` (empty = localhost Assessment only); `backend/rag/auth.py` enforces header/Bearer when set
