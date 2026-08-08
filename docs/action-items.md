@@ -10,6 +10,8 @@
 3. Record proof (test file, smoke script, or acceptance checklist item) and whether impl is minimal.
 4. Update [function-tree.md](./function-tree.md) when high-level structure changes.
 
+**Surfaces mode (2026-08-08):** Inventory tracks a curated **correctness queue** only (`.function-inventory.json` → `tracking_mode: "surfaces"` + explicit `surfaces` allowlist). Empty allowlist matched **0** rows because default path hints are Town-of-Wiley CMS paths — Water Saver must keep an explicit list. Do not switch back to `tracking_mode: "all"` for day-to-day work.
+
 **Scanner diagnosis → fix (2026-08-03):**
 
 | Item         | Was (broken)                                                               | Now (Water Saver)                                                                 |
@@ -27,7 +29,7 @@
 
 - Backend: `cd backend && npm test` — **146** unit tests (bedrock, dynamo env factories, cognito env wiring added)
 - Frontend: Vitest — **49** tests (`safe-markdown`, `client-error-reporter`, meter-map constant)
-- Inventory: `npm run inventory` → **212 / 212 with proof** (Vitest smokes for remaining SPA pages + `DynamoReviewStore` env factory)
+- Inventory: `npm run inventory` → **surfaces** mode (was exhaustive 212; now curated high-level queue)
 - Spec Kit: `npm run spec-kit:smoke` wired into `npm run ci:local:fast`
 - Assessment Spec-Kit **001–011** verified · evidence under `evidence/`
 - Live F5: review API + SES; Feature **008** Cognito demo; **011** meter map browser prove

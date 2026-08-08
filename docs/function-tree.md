@@ -2,7 +2,7 @@
 
 **Auto-generated raw data:** [function-inventory.generated.md](./function-inventory.generated.md) (TS scanner — `frontend/src` + `backend/src`; run `npm run inventory`)
 **Status overlay:** [action-items.md](./action-items.md)
-**Last scan:** 2026-08-04 — **206** tracked · **182** with proof · **24** without (scanner)
+**Last scan:** 2026-08-08 — **surfaces** mode · **40** correctness surfaces · **40** with proof · **0** without (explicit allowlist in `.function-inventory.json`)
 
 ```mermaid
 flowchart TB

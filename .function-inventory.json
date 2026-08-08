@@ -1,5 +1,6 @@
 {
   "stack": "typescript",
+  "tracking_mode": "surfaces",
   "scan_roots": [
     "frontend/src",
     "backend/src"
@@ -16,5 +17,47 @@
     "__pycache__",
     ".terraform"
   ],
-  "notes": "Water Saver / Colorado Rural Water — Angular 22 + PrimeNG 22 SPA and TS Lambda handlers. Do not use C# / Syncfusion Blazor theme oracles."
+  "surfaces": [
+    "frontend/src/app/core/auth.service.ts",
+    "frontend/src/app/pages/login/login-page.component.ts",
+    "frontend/src/app/pages/upload/upload-page.component.ts",
+    "frontend/src/app/pages/dashboard/dashboard-page.component.ts",
+    "frontend/src/app/pages/alerts/alerts-page.component.ts",
+    "frontend/src/app/review/review.service.ts",
+    "backend/src/handlers/me.ts",
+    "backend/src/handlers/ingest.ts",
+    "backend/src/handlers/alerts.ts",
+    "backend/src/handlers/review.ts",
+    "frontend/src/app/review/review-panel.component.ts",
+    "frontend/src/app/pages/review/review-howto-page.component.ts",
+    "backend/src/handlers/upload-url.ts",
+    "backend/src/handlers/s3-ingest.ts",
+    "backend/src/handlers/balance.ts",
+    "backend/src/shared/auth.ts",
+    "backend/src/shared/alert-engine.ts",
+    "backend/src/shared/water-balance.ts",
+    "frontend/src/app/pages/meters/meters-page.component.ts",
+    "frontend/src/app/pages/sources/sources-page.component.ts",
+    "frontend/src/app/pages/agent/agent-page.component.ts",
+    "frontend/src/app/pages/reports/reports-page.component.ts",
+    "frontend/src/app/pages/onboarding/onboarding-page.component.ts",
+    "frontend/src/app/pages/admin/admin-page.component.ts",
+    "frontend/src/app/pages/crwa/crwa-rollup-page.component.ts",
+    "frontend/src/app/pages/billing/billing-page.component.ts",
+    "frontend/src/app/pages/account/account-page.component.ts",
+    "frontend/src/app/pages/settings/settings-page.component.ts",
+    "frontend/src/app/pages/help/help-page.component.ts",
+    "frontend/src/app/layout/shell.component.ts",
+    "backend/src/handlers/meters.ts",
+    "backend/src/handlers/sources.ts",
+    "backend/src/handlers/ingest-sources.ts",
+    "backend/src/handlers/agent.ts",
+    "backend/src/handlers/admin.ts",
+    "backend/src/handlers/reports.ts",
+    "backend/src/handlers/onboarding.ts",
+    "backend/src/handlers/health.ts",
+    "backend/src/shared/dynamo-store.ts",
+    "backend/src/shared/kb-retrieve.ts"
+  ],
+  "notes": "Water Saver / Colorado Rural Water — Angular 22 + PrimeNG 22 SPA and TS Lambda handlers. tracking_mode=surfaces (high-level correctness queue only). First 10 surfaces are P1. Default Wiley CMS path hints do not apply — keep this explicit allowlist."
 }
