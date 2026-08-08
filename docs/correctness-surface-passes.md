@@ -20,6 +20,11 @@ Register for the curated queue in [`.function-inventory.json`](../.function-inve
 | P2   | `upload-url` / `s3-ingest`                                                | yes                         | memory S3 event                  | Upload path                                      | key tenant prefix                                           | 2026-08-08 |
 | P2   | `balance.ts`                                                              | **added** + `balance-auth`  | water-balance                    | Dashboard                                        | —                                                           | 2026-08-08 |
 | P2   | `shared/auth` / alert-engine / water-balance                              | yes                         | isolation suites                 | —                                                | —                                                           | 2026-08-08 |
+| P2   | `help-page`                                                               | yes (smokes)                | —                                | **pass** 2026-08-08 Operator + CRWA guides     | `/help/tenant` + `/help/crwa` `.guide-body` markdown        | 2026-08-08 |
+| P2   | `account-page`                                                            | yes (smokes)                | —                                | **pass** 2026-08-08 UI poke; MFA enroll deferred | password fields + MFA Off + Set up authenticator; no submit | 2026-08-08 |
+| P2   | `billing-page` (operator gate)                                            | yes (smokes)                | —                                | **pass** 2026-08-08 calm deny                  | not in More nav; System Admin-only info message              | 2026-08-08 |
+| P2   | `admin-page` (operator gate)                                              | yes (smokes)                | admin-isolation                  | **pass** 2026-08-08 calm deny                  | not in More nav; Operator-only info; no invite form          | 2026-08-08 |
+| P2   | `crwa-rollup-page` (operator gate)                                        | yes (smokes)                | —                                | **pass** 2026-08-08 calm deny                  | not in More nav; CRWA Admin role required info               | 2026-08-08 |
 | P2   | meters/sources/agent/admin/reports/onboarding pages                       | yes (smokes)                | —                                | Meters+Sources+Reports **pass** 2026-08-08       | Suggest-pin miss / meters flash → DEMO_KNOWN_GAPS           | 2026-08-08 |
 | P2   | `meters`/`sources`/`ingest-sources`/`agent`/`admin`/`onboarding` handlers | **added** auth tests        | admin-isolation, agent-isolation | matching prove rows                              | Admin creates stores before role check                      | 2026-08-08 |
 | P2   | `reports.ts`                                                              | **added** `reports.test.ts` | work-order-export                | Reports **pass** 2026-08-08                      | TF routes `/reports/work-orders`+`/summary`                 | 2026-08-08 |
@@ -37,7 +42,8 @@ Register for the curated queue in [`.function-inventory.json`](../.function-inve
 
 - Sources map pin / Reports printable sheet live poke → `partial` in PROVE_FEATURES.
 - Account MFA live enrollment → deferred Pilot.
-- Help / Billing pages → unit smoke only; no dedicated prove row (acceptable P2).
+- Help / Account / Billing / Admin / CRWA operator gates → **pass** 2026-08-08 browser prove (see PROVE_FEATURES matrix).
+- Account MFA live enrollment → still deferred Pilot (UI poke only).
 
 ## How to re-verify
 
