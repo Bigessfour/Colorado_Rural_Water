@@ -7,7 +7,7 @@ Register for the curated queue in [`.function-inventory.json`](../.function-inve
 | Tier | Surface | Unit | Integration | E2E / Prove | Config notes | Pass date |
 | ---- | ------- | ---- | ----------- | ----------- | ------------ | --------- |
 | P1 | `auth.service.ts` | yes | JWT/`auth.test.ts` | Sign-in pass | Cognito pool matches `AWS_ACCOUNT` | 2026-08-08 |
-| P1 | `login-page` | yes | — | Sign-in pass | `/login` route | 2026-08-08 |
+| P1 | `login-page` | yes (expanded) | Cognito live | **pass** 2026-08-08 widgets+sign-in+bad-password | Password fields use `pInputText`; Cognito IDs match secrets | 2026-08-08 |
 | P1 | `upload-page` | yes | ingest dryRun | Upload pass | Excel-first | 2026-08-08 |
 | P1 | `dashboard-page` | yes | balance/alerts shared | Dashboard pass | Thin softens | 2026-08-08 |
 | P1 | `alerts-page` | yes | `alerts.test.ts` | Alerts + C3 pass | — | 2026-08-08 |
